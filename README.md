@@ -1,5 +1,7 @@
-# Project Title
-One-line description (e.g., "Volunteer scheduling app for [Non‑Profit Name]")
+# Magen Dvorim Adom 2026
+Aseel Janazira
+Aya Diab
+Doaa Abdeen
 
 ## Contents
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
