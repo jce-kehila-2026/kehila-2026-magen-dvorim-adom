@@ -15,7 +15,7 @@ Briefly describe what the project does, who it serves, and the main value (1–2
 ## Team Introduction
 - Team lead — Aseel Janazira — Janaziraaseel@gmail.com — aseel-zira  
 - Member — Doaa Abdeen —developer — GitHub
-- Member — Aya Diab — developer — AyaDiab-dev
+- Member — Aya Diab — diabaya2004@gmail.com — AyaDiab-dev
  
 Include student IDs if required.
 
