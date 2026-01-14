@@ -5,7 +5,7 @@ Non-profit bee saving organization, team will be working on building them a syst
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
 
 ## Overview
-serves the magen dvorim adom volunteers to organiza tasks and bee saving missions
+serves the magen dvorim adom volunteers to organiza tasks and bee saving missions.
 
 ## Non‑Profit
 - Organization: [Non‑Profit Name]  
