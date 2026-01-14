@@ -1,7 +1,5 @@
 # Magen Dvorim Adom 2026
-Aseel Janazira
-Aya Diab
-Doaa Abdeen
+Non-profit bee saving organization, team will be working on building them a system for handeling volunteer tasks.
 
 ## Contents
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
