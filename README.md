@@ -1,7 +1,5 @@
 # Magen Dvorim Adom 2026
-Aseel Janazira
-Aya Diab
-Doaa Abdeen
+Non-profit bee saving organization, team will be working on building them a system for handeling volunteer tasks.
 
 ## Contents
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
@@ -14,11 +12,11 @@ Briefly describe what the project does, who it serves, and the main value (1–2
 - Primary stakeholder(s): Name — role — email  
 - Key deliverable for them: e.g., "Simple roster export and sign-up form."
 
-## Team
-- Team lead — Name — email — GitHub  
-- Members — Name — role — GitHub
-- Aya Diab — developer — AyaDiab-dev
-- 
+## Team Introduction
+- Team lead — Aseel Janazira — Janaziraaseel@gmail.com — aseel-zira  
+- Member — Doaa Abdeen —developer — GitHub
+- Member — Aya Diab — developer — AyaDiab-dev
+ 
 Include student IDs if required.
 
 ## Quick start (local)
