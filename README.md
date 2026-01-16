@@ -9,7 +9,7 @@ serves the magen dvorim adom volunteers to organiza tasks and bee saving mission
 
 ## Non‑Profit
 - Organization: [Non‑Profit Name]  
-- Primary stakeholder(s): Name — role — email  
+- Primary stakeholder(s): Name — role — email  .
 - Key deliverable for them: e.g., "Simple roster export and sign-up form."
 
 ## Team Introduction
