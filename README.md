@@ -7,6 +7,11 @@ Non-profit bee saving organization, team will be working on building them a syst
 ## Overview
 serves the magen dvorim adom volunteers to organiza tasks and bee saving missions.
 
+## Project Goals
+- Build a system to manage volunteer tasks and assignments for Magen Dvorim Adom.
+- Help team leaders track progress, responsibilities, and schedules.
+- Keep information clear, secure, and easy to maintain.
+
 ## Non‑Profit
 - Organization: [Non‑Profit Name]  
 - Primary stakeholder(s): Name — role — email  
