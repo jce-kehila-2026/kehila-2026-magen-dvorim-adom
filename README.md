@@ -36,7 +36,7 @@ Open http://localhost:3000
 ## Handover (minimum)
 - [ ] Deployed URL + admin credentials (shared securely)  
 - [ ] HANDOVER.md with maintenance steps  
-- [ ] Add non‑profit staff as repo collaborators or transfer repo
+- [ ] Add non‑profit staff as repo collaborators or transfer repo.
 
 ## Privacy & Security
 List data collected (names, emails), storage location, and retention policy. Never commit secrets; use environment variables and GitHub secrets.
