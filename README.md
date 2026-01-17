@@ -14,7 +14,7 @@ serves the magen dvorim adom volunteers to organiza tasks and bee saving mission
 
 ## Team Introduction
 - Team lead — Aseel Janazira — Janaziraaseel@gmail.com — aseel-zira  
-- Member — Doaa Abdeen —developer — GitHub
+- Member — Doaa Abdeen — doaaab@post.jce.ac.il — doaa-ab
 - Member — Aya Diab — diabaya2004@gmail.com — AyaDiab-dev
  
 Include student IDs if required.
