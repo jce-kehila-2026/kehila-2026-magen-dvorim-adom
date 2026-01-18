@@ -1,20 +1,22 @@
-# Project Title
-One-line description (e.g., "Volunteer scheduling app for [Non‑Profit Name]")
+# Magen Dvorim Adom 2026
+Non-profit bee saving organization, team will be working on building them a system for handeling volunteer tasks.
 
 ## Contents
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
 
 ## Overview
-Briefly describe what the project does, who it serves, and the main value (1–2 sentences).
+serves the magen dvorim adom volunteers to organiza tasks and bee saving missions.
 
 ## Non‑Profit
 - Organization: [Non‑Profit Name]  
-- Primary stakeholder(s): Name — role — email  
+- Primary stakeholder(s): Name — role — email  .
 - Key deliverable for them: e.g., "Simple roster export and sign-up form."
 
-## Team
-- Team lead — Name — email — GitHub  
-- Members — Name — role — GitHub  
+## Team Introduction
+- Team lead — Aseel Janazira — Janaziraaseel@gmail.com — aseel-zira  
+- Member — Doaa Abdeen — doaaab@post.jce.ac.il — doaa-ab
+- Member — Aya Diab — diabaya2004@gmail.com — AyaDiab-dev
+ 
 Include student IDs if required.
 
 ## Quick start (local)
@@ -34,7 +36,7 @@ Open http://localhost:3000
 ## Handover (minimum)
 - [ ] Deployed URL + admin credentials (shared securely)  
 - [ ] HANDOVER.md with maintenance steps  
-- [ ] Add non‑profit staff as repo collaborators or transfer repo
+- [ ] Add non‑profit staff as repo collaborators or transfer repo.
 
 ## Privacy & Security
 List data collected (names, emails), storage location, and retention policy. Never commit secrets; use environment variables and GitHub secrets.
