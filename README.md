@@ -51,3 +51,7 @@ Briefly list major limitations or missing features and any workarounds.
 
 ## License
 Specify license (e.g., MIT) and any IP/ownership notes relevant to the non‑profit.
+
+## Use Case Documentation
+The detailed use case documentation for the system is available in the project Wiki.
+See: https://github.com/REPO/wiki/Use-case-documentation
