@@ -1,16 +1,56 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Magen Dvorim Adom 2026
+Non-profit bee saving organization, team will be working on building them a system for handeling volunteer tasks.
 
-Currently, two official plugins are available:
+## Contents
+- [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Overview
+serves the magen dvorim adom volunteers to organiza tasks and bee saving missions.
 
-## React Compiler
+## Non‑Profit
+- Organization: Magen Dvorim Adom  
+- Primary stakeholder(s): Name — role — email .
+- Key deliverable for them: e.g., "Simple roster export and sign-up form."
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Team Introduction
+- Team lead — Aseel Janazira — Janaziraaseel@gmail.com — Aseel-zira  
+- Member — Doaa Abdeen — doaaab@post.jce.ac.il — doaa-ab
+- Member — Aya Diab — diabaya2004@gmail.com — AyaDiab-dev
+ 
+Include student IDs if required.
 
-## Expanding the ESLint configuration
+## Quick start (local)
+1. git clone https://github.com/<org>/<repo>.git
+2. cd <repo>
+3. cp .env.example .env  # edit values
+4. npm install
+5. npm run dev
+Open http://localhost:3000
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+(Or: docker-compose up --build)
+
+## Demo / Deployment
+- Deployed app: https://your-app.example.com  
+- CI: GitHub Actions (push → deploy)
+
+## Handover (minimum)
+- [ ] Deployed URL + admin credentials (shared securely)  
+- [ ] HANDOVER.md with maintenance steps  
+- [ ] Add non‑profit staff as repo collaborators or transfer repo.
+
+## Privacy & Security
+List data collected (names, emails), storage location, and retention policy. Never commit secrets; use environment variables and GitHub secrets.
+
+## Known limitations
+Briefly list major limitations or missing features and any workarounds.
+
+## Contacts
+- Project lead: Asee Janazira — janaziraaseel@gmail.com  
+
+
+## License
+Specify license (e.g., MIT) and any IP/ownership notes relevant to the non‑profit.
+
+## Use Case Documentation
+The detailed use case documentation for the system is available in the project Wiki.
