@@ -51,7 +51,10 @@ dist-ssr
 backend/privateKey.json
 .env*
 
-# Firebase
+# Firebase configuration and keys
 .firebase/
 .firebaserc
+src/firebase.js
+
+
 
