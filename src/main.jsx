@@ -8,3 +8,10 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+
+
+import { auth, db } from "./firebase";
+
+console.log("Firebase auth:", auth);
+console.log("Firestore db:", db);
+

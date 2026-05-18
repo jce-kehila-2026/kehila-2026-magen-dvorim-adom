@@ -8,6 +8,11 @@ function Navbar() {
       <Link to="/volunteer">Volunteer</Link>{" | "}
       <Link to="/coordinator">Coordinator</Link>{" | "}
       <Link to="/admin">Admin</Link>
+      <Link to="/coordinator/send-form">
+        Coordinator – Send Form
+      </Link>
+      <Link to="/coordinator/cases">Coordinator Cases</Link>
+
     </nav>
   );
 }
