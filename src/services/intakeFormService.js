@@ -115,4 +115,3 @@ export async function markIntakeFormSubmitted(id, caseId) {
     submitted_at: Timestamp.now(),
   });
 }
-``

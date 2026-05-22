@@ -36,16 +36,20 @@ async function getCoordinatorIdByPhone(phone) {
 async function hasOpenCase(requester_phone) {
   const snap = await getDocs(collection(db, "cases"));
 
-  for (const doc of snap.docs) {
-    const data = doc.data();
+  for (const docItem of snap.docs) {
+  const data = docItem.data();
 
-    if (
-      data.requester_phone === requester_phone &&
-      (data.status === "open" || data.status === "in_progress")
-    ) {
-      return true;
-    }
+  // ✅ PROTECT AGAINST BAD DATA
+  if (!data) continue;
+
+  if (
+    data.requester_phone === requester_phone &&
+    (data.status === "open" || data.status === "in_progress")
+  ) {
+    return true;
   }
+}
+
 
   return false;
 }
@@ -139,19 +143,24 @@ export async function getCasesForCoordinator(coordinator_phone) {
 /**
  * Update case status
  */
+const ALLOWED_STATUSES = ["open", "in_progress", "closed"];
+
 export async function updateCaseStatus(caseId, newStatus) {
+  // ✅ VALIDATE STATUS
+  if (!ALLOWED_STATUSES.includes(newStatus)) {
+    throw new Error("Invalid status");
+  }
+
   const ref = doc(db, "cases", caseId);
 
   const updateData = {
     status: newStatus,
   };
 
-  // ✅ if closing → set closed_at
   if (newStatus === "closed") {
     updateData.closed_at = Timestamp.now();
   }
 
-  // ✅ if reopening → clear closed_at
   if (newStatus === "open") {
     updateData.closed_at = null;
   }
