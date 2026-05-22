@@ -13,6 +13,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Navbar />
+
       <Routes>
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/submit-case" element={<SubmitCase />} />
