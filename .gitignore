@@ -44,7 +44,7 @@ dist-ssr
 *.sw?
 
 # =========================
-# Backend secrets (if exists)
+# Backend secrets
 # =========================
 backend/privateKey.json
 
