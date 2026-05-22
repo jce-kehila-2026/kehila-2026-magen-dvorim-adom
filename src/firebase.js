@@ -1,3 +1,4 @@
+
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
@@ -10,8 +11,6 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_SENDER_ID,
   appId: import.meta.env.VITE_APP_ID,
 };
-
-
 
 
 const app = initializeApp(firebaseConfig);

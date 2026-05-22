@@ -1,7 +1,7 @@
 
 # Magen Dvorim Adom 2026
-Non-profit bee saving organization, team will be working on building them a system for handeling volunteer tasks.
-
+A web application designed for a non-profit organization dedicated to saving and safely relocating bees. The system enables members of the public to report cases involving bees in distress and allows organizational staff to manage cases efficiently through structured workflows.
+The system supports case intake, volunteer coordination, progress tracking, feedback collection, notifications, and statistical reporting.
 ## Contents
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
 

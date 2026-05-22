@@ -71,10 +71,12 @@ function Login() {
 
       <div style={styles.leftPanel}>
         <div style={styles.badge}>🐝 Bee Rescue Platform</div>
+
         <h1 style={styles.heroTitle}>Magen Dvorim Adom</h1>
+
         <p style={styles.heroText}>
-          A smart volunteer system for managing bee rescue cases, coordinators,
-          and field volunteers.
+          A smart volunteer system for managing bee rescue cases,
+          coordinators, and field volunteers.
         </p>
       </div>
 
@@ -82,7 +84,10 @@ function Login() {
         <div style={styles.beeIcon}>🐝</div>
 
         <h2 style={styles.title}>Welcome Back</h2>
-        <p style={styles.subtitle}>Sign in to continue your rescue mission</p>
+
+        <p style={styles.subtitle}>
+          Sign in to continue your rescue mission
+        </p>
 
         {message && (
           <div
@@ -114,7 +119,11 @@ function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button style={styles.loginButton} type="submit" disabled={loading}>
+          <button
+            style={styles.loginButton}
+            type="submit"
+            disabled={loading}
+          >
             {loading ? "Checking..." : "Login"}
           </button>
         </form>
@@ -146,6 +155,7 @@ const styles = {
     position: "relative",
     overflow: "hidden",
   },
+
   honeycombOne: {
     position: "absolute",
     width: "260px",
@@ -156,6 +166,7 @@ const styles = {
       "radial-gradient(circle, rgba(245,181,37,0.35) 0%, rgba(245,181,37,0.08) 60%, transparent 70%)",
     borderRadius: "50%",
   },
+
   honeycombTwo: {
     position: "absolute",
     width: "360px",
@@ -166,10 +177,12 @@ const styles = {
       "radial-gradient(circle, rgba(31,122,92,0.22) 0%, rgba(31,122,92,0.08) 55%, transparent 70%)",
     borderRadius: "50%",
   },
+
   leftPanel: {
     maxWidth: "430px",
     zIndex: 1,
   },
+
   badge: {
     display: "inline-block",
     padding: "10px 16px",
@@ -179,17 +192,20 @@ const styles = {
     fontWeight: "bold",
     marginBottom: "20px",
   },
+
   heroTitle: {
     fontSize: "54px",
     lineHeight: "1.05",
     margin: "0 0 20px",
     color: "#173b2f",
   },
+
   heroText: {
     fontSize: "18px",
     lineHeight: "1.7",
     color: "#4f5f58",
   },
+
   card: {
     width: "390px",
     padding: "36px",
@@ -201,6 +217,7 @@ const styles = {
     backdropFilter: "blur(12px)",
     border: "1px solid rgba(255, 255, 255, 0.8)",
   },
+
   beeIcon: {
     width: "64px",
     height: "64px",
@@ -213,20 +230,24 @@ const styles = {
     fontSize: "34px",
     boxShadow: "0 10px 22px rgba(246, 183, 60, 0.35)",
   },
+
   title: {
     margin: "0 0 8px",
     fontSize: "32px",
     color: "#173b2f",
   },
+
   subtitle: {
     marginBottom: "24px",
     color: "#66736d",
   },
+
   form: {
     display: "flex",
     flexDirection: "column",
     gap: "14px",
   },
+
   input: {
     padding: "14px 16px",
     borderRadius: "14px",
@@ -235,6 +256,7 @@ const styles = {
     outline: "none",
     backgroundColor: "#ffffff",
   },
+
   loginButton: {
     padding: "14px",
     borderRadius: "14px",
@@ -246,6 +268,7 @@ const styles = {
     cursor: "pointer",
     boxShadow: "0 10px 20px rgba(31, 122, 92, 0.25)",
   },
+
   forgotButton: {
     marginTop: "18px",
     border: "none",
@@ -255,16 +278,19 @@ const styles = {
     fontSize: "14px",
     fontWeight: "bold",
   },
+
   message: {
     marginBottom: "18px",
     padding: "12px",
     borderRadius: "14px",
     fontSize: "14px",
   },
+
   successMessage: {
     backgroundColor: "#e5f6ec",
     color: "#146c43",
   },
+
   errorMessage: {
     backgroundColor: "#fde8e8",
     color: "#b42318",
