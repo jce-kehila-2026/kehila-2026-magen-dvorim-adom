@@ -2,19 +2,18 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Firebase configuration (from Firebase Console)
+//  values come from .env
 const firebaseConfig = {
-  apiKey: "AIzaSyDPrulOdDNHzcP0dV5iHqeO4tZgIxLku6E",
-  authDomain: "magen-dvorim-adom-5024e.firebaseapp.com",
-  projectId: "magen-dvorim-adom-5024e",
-  storageBucket: "magen-dvorim-adom-5024e.firebasestorage.app",
-  messagingSenderId: "889209956809",
-  appId: "1:889209956809:web:5ecdb8f966d455eb4ee018"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_SENDER_ID,
+  appId: import.meta.env.VITE_APP_ID,
 };
 
-// Initialize Firebase
+
 const app = initializeApp(firebaseConfig);
 
-// Export Firebase services 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
