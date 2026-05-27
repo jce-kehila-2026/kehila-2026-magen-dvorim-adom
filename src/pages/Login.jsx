@@ -1,22 +1,50 @@
 import { useState } from "react";
-import {
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-} from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+import { sendPasswordResetEmail } from "firebase/auth";
+
 import { auth } from "../firebase";
+import { loginUser } from "../services/authService";
+import { USER_ROLES } from "../services/userSchema";
 
 function Login() {
+  const navigate = useNavigate();
+
+  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // UI state
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Display success/error message
   const showMessage = (text, type) => {
     setMessage(text);
     setMessageType(type);
   };
 
+  // Redirect user according to role
+  const redirectByRole = (role) => {
+    switch (role) {
+      case USER_ROLES.ADMIN:
+        navigate("/admin-dashboard");
+        break;
+
+      case USER_ROLES.COORDINATOR:
+        navigate("/coordinator-dashboard");
+        break;
+
+      case USER_ROLES.VOLUNTEER:
+        navigate("/volunteer-dashboard");
+        break;
+
+      default:
+        navigate("/dashboard");
+    }
+  };
+
+  // Handle login submit
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -29,17 +57,24 @@ function Login() {
       setLoading(true);
       setMessage("");
 
-      await signInWithEmailAndPassword(auth, email, password);
+      // Login through authService
+      // This checks Firebase Auth, gets Firestore profile,
+      // checks is_active, and updates last_login_at.
+      const { profile } = await loginUser(email, password);
 
       showMessage("Login successful. Welcome back!", "success");
+
+      // Redirect based on user role
+      redirectByRole(profile.role);
     } catch (error) {
-      console.log(error);
-      showMessage("Invalid email or password. Please try again.", "error");
+      console.error("Login failed:", error);
+      showMessage(error.message || "Login failed. Please try again.", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle password reset
   const handleForgotPassword = async () => {
     if (!email) {
       showMessage("Please enter your email first.", "error");
@@ -50,14 +85,14 @@ function Login() {
       setLoading(true);
       setMessage("");
 
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email.trim().toLowerCase());
 
       showMessage(
         "Password reset email sent. Please check your inbox.",
         "success"
       );
     } catch (error) {
-      console.log(error);
+      console.error("Password reset failed:", error);
       showMessage("Could not send reset email. Please try again.", "error");
     } finally {
       setLoading(false);
@@ -75,8 +110,8 @@ function Login() {
         <h1 style={styles.heroTitle}>Magen Dvorim Adom</h1>
 
         <p style={styles.heroText}>
-          A smart volunteer system for managing bee rescue cases,
-          coordinators, and field volunteers.
+          A smart volunteer system for managing bee rescue cases, coordinators,
+          and field volunteers.
         </p>
       </div>
 
@@ -85,9 +120,7 @@ function Login() {
 
         <h2 style={styles.title}>Welcome Back</h2>
 
-        <p style={styles.subtitle}>
-          Sign in to continue your rescue mission
-        </p>
+        <p style={styles.subtitle}>Sign in to continue your rescue mission</p>
 
         {message && (
           <div
@@ -108,6 +141,7 @@ function Login() {
             type="email"
             placeholder="Email address"
             value={email}
+            disabled={loading}
             onChange={(e) => setEmail(e.target.value)}
           />
 
@@ -116,11 +150,15 @@ function Login() {
             type="password"
             placeholder="Password"
             value={password}
+            disabled={loading}
             onChange={(e) => setPassword(e.target.value)}
           />
 
           <button
-            style={styles.loginButton}
+            style={{
+              ...styles.loginButton,
+              ...(loading ? styles.disabledButton : {}),
+            }}
             type="submit"
             disabled={loading}
           >
@@ -267,6 +305,11 @@ const styles = {
     fontWeight: "bold",
     cursor: "pointer",
     boxShadow: "0 10px 20px rgba(31, 122, 92, 0.25)",
+  },
+
+  disabledButton: {
+    opacity: 0.7,
+    cursor: "not-allowed",
   },
 
   forgotButton: {
