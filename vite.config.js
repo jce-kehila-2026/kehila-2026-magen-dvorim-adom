@@ -7,6 +7,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    include: ["src/test/**/*.test.jsx"],
+
+    // Look for all test files inside src/tests
+    include: ["src/tests/**/*.{test,spec}.js"],
   },
 });
