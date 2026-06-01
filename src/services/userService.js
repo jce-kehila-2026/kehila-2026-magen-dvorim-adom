@@ -116,6 +116,51 @@ export async function getUserById(uid) {
   }
 }
 
+// Get one user by phone number
+export async function getUserByPhone(phone) {
+  try {
+    const normalized = String(phone).replace(/\D/g, "");
+
+    if (!normalized) {
+      throw new Error("Phone number is required.");
+    }
+
+    const usersRef = collection(db, USERS_COLLECTION);
+    const q = query(usersRef, where("phone", "==", normalized), limit(1));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    return mapUserDocument(snapshot.docs[0]);
+  } catch (error) {
+    handleServiceError("Fetch user by phone", error);
+  }
+}
+
+export async function getUserByEmail(email) {
+  try {
+    const normalized = String(email).trim().toLowerCase();
+
+    if (!normalized) {
+      throw new Error("Email is required.");
+    }
+
+    const usersRef = collection(db, USERS_COLLECTION);
+    const q = query(usersRef, where("email", "==", normalized), limit(1));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    return mapUserDocument(snapshot.docs[0]);
+  } catch (error) {
+    handleServiceError("Fetch user by email", error);
+  }
+}
+
 // Get users with pagination
 export async function getAllUsers(pageSize = 20, lastDoc = null) {
   try {
@@ -249,6 +294,23 @@ export async function deactivateUser(uid) {
   return updateUserProfile(uid, {
     is_active: false,
   });
+}
+
+// Admin-specific profile update that allows role changes
+export async function updateUserProfileAdmin(uid, updates) {
+  try {
+    validateUid(uid);
+
+    const userRef = doc(db, USERS_COLLECTION, uid);
+    await updateDoc(userRef, {
+      ...updates,
+      updated_at: serverTimestamp(),
+    });
+
+    return true;
+  } catch (error) {
+    handleServiceError("Update user profile", error);
+  }
 }
 
 // Soft delete: keep the document but mark it as deleted/inactive

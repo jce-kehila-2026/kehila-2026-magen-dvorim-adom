@@ -88,7 +88,7 @@ export async function assignUserToCase({
   required_equipment = [],
   notes = null,
 }) {
-  const activeAssignments = await getActiveUserAssignments(user_id, case_id);
+  const activeAssignments = await getActiveUserAssignments(user_id);
 
   if (activeAssignments.length) {
     throw new Error("This user already has an active case.");
@@ -105,7 +105,12 @@ export async function assignUserToCase({
 
   const ref = await addDoc(collection(db, "assignments"), assignment);
 
-  await updateCaseStatus(case_id, "assigned");
+  try {
+    await updateCaseStatus(case_id, "assigned");
+  } catch (error) {
+    await deleteDoc(ref);
+    throw error;
+  }
 
   return ref.id;
 }

@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { sendPasswordResetEmail } from "firebase/auth";
 
 import { auth } from "../firebase";
 import { loginUser } from "../services/authService";
+import { useAuth } from "../contexts/AuthContext";
 import { USER_ROLES } from "../services/userSchema";
+import { getDashboardPathByRole } from "../utils/routes";
 
 function Login() {
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
 
   // Form state
   const [email, setEmail] = useState("");
@@ -23,6 +26,12 @@ function Login() {
     setMessage(text);
     setMessageType(type);
   };
+
+  useEffect(() => {
+    if (userProfile) {
+      navigate(getDashboardPathByRole(userProfile.role));
+    }
+  }, [navigate, userProfile]);
 
   // Redirect user according to role
   const redirectByRole = (role) => {
@@ -57,9 +66,6 @@ function Login() {
       setLoading(true);
       setMessage("");
 
-      // Login through authService
-      // This checks Firebase Auth, gets Firestore profile,
-      // checks is_active, and updates last_login_at.
       const { profile } = await loginUser(email, password);
 
       showMessage("Login successful. Welcome back!", "success");
@@ -293,6 +299,7 @@ const styles = {
     fontSize: "15px",
     outline: "none",
     backgroundColor: "#ffffff",
+    color: "#0f172a",
   },
 
   loginButton: {

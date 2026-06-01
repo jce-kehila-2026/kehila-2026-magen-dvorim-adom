@@ -10,6 +10,7 @@ import { auth } from "../firebase";
 import {
   createUserProfile,
   getUserById,
+  getUserByEmail,
   updateLastLogin,
 } from "./userService";
 
@@ -96,6 +97,21 @@ export async function registerUser(email, password, userData = {}) {
   }
 }
 
+async function findUserProfile(uid, email) {
+  const profileById = await getUserById(uid);
+
+  if (profileById) {
+    return profileById;
+  }
+
+  if (!email) {
+    return null;
+  }
+
+  const profileByEmail = await getUserByEmail(email);
+  return profileByEmail;
+}
+
 // Login existing user
 export async function loginUser(email, password) {
   try {
@@ -112,23 +128,17 @@ export async function loginUser(email, password) {
 
     const uid = userCredential.user.uid;
 
-    // Fetch Firestore profile
-    const profile = await getUserById(uid);
+    // Fetch Firestore profile by uid, then fallback to email lookup
+    const profile = await findUserProfile(uid, normalizedEmail);
 
-    // If profile does not exist -> logout immediately
     if (!profile) {
       await signOut(auth);
-      throw new Error("User profile not found.");
+      throw new Error(
+        "User profile not found. Please ensure your Firestore user document uses your Firebase Auth UID as the document ID or includes the login email in the email field."
+      );
     }
 
-    // Block inactive users
-    if (profile.is_active === false) {
-      await signOut(auth);
-      throw new Error("User account is inactive.");
-    }
-
-    // Update last login timestamp
-    await updateLastLogin(uid);
+    await updateLastLogin(profile.uid);
 
     return {
       authUser: userCredential.user,
@@ -176,7 +186,9 @@ export async function getCurrentUserProfile() {
     }
 
     // Fetch Firestore profile
-    return await getUserById(currentUser.uid);
+    const email = currentUser.email ? normalizeEmail(currentUser.email) : "";
+
+    return await findUserProfile(currentUser.uid, email);
   } catch (error) {
     console.error(
       "Fetch current user profile failed:",

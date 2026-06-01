@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
+import Navbar from "../components/Navbar";
+import { useAuth } from "../contexts/AuthContext";
 import {
-  getCasesForCoordinator,
+  getCasesForCoordinatorById,
+  getAllCases,
   updateCaseStatus,
-  getCoordinatorIdByPhone,
+  updateCaseCoordinator,
   updateCaseComplexity,
-  getUserByPhone,
 } from "../services/caseService";
+import { getUsersByRole } from "../services/userService";
 import {
   getAssignableUsers,
   getAssignmentsByCaseIds,
@@ -15,23 +18,52 @@ import {
 } from "../services/assignmentService";
 
 function CoordinatorCases() {
-  const [phone, setPhone] = useState("");
+  const { userProfile } = useAuth();
   const [cases, setCases] = useState([]);
   const [users, setUsers] = useState([]);
   const [assignments, setAssignments] = useState({});
   const [assignmentInputs, setAssignmentInputs] = useState({});
+  const [coordinatorSelections, setCoordinatorSelections] = useState({});
+  const [coordinatorList, setCoordinatorList] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [coordinatorId, setCoordinatorId] = useState(null);
-  const [coordinatorInfo, setCoordinatorInfo] = useState(null);
+  const [assigning, setAssigning] = useState(false);
   const [modalState, setModalState] = useState({ open: false, caseId: null, userId: "", selected: [], other: "", notes: "" });
   const [userSearch, setUserSearch] = useState("");
   const [editingComplexity, setEditingComplexity] = useState(null);
+
+  const currentUserId = userProfile?.uid || null;
+  const currentUserRole = userProfile?.role || "";
   const [closingCase, setClosingCase] = useState({ caseId: null, result_status: "evacuated_by_volunteer", notes: "" });
   const [showClosedHistory, setShowClosedHistory] = useState(false);
   const [historyPhoneSearch, setHistoryPhoneSearch] = useState("");
 
   const PRESET_EQUIPMENT = ["ladder", "net", "bee house"];
+  const caseCardBase = {
+    border: "1px solid rgba(255, 193, 7, 0.35)",
+    padding: "10px",
+    marginBottom: "12px",
+    borderRadius: "18px",
+    background: "#fffdf4",
+    boxShadow: "0 8px 18px rgba(255, 152, 0, 0.12)",
+    minWidth: "180px",
+    maxWidth: "240px",
+    flex: "1 1 200px",
+    fontSize: "0.9em",
+  };
+  const compactInfoGrid = {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: "8px",
+    marginBottom: "8px",
+  };
+  const compactPanel = {
+    padding: "8px",
+    borderRadius: "14px",
+    background: "#fff8e1",
+    border: "1px solid #ffe082",
+    marginBottom: "10px",
+  };
   const FINISHING_STATUSES = [
     { value: "evacuated_by_volunteer", label: "Evacuated by a volunteer" },
     { value: "sent_to_chofesh_farm", label: "Sent to Chofesh Farm" },
@@ -90,8 +122,10 @@ function CoordinatorCases() {
   );
 
   useEffect(() => {
+    if (!currentUserId) return;
     loadUsers();
-  }, []);
+    loadCases();
+  }, [currentUserId, currentUserRole]);
 
   // lock body scroll when modal is open
   useEffect(() => {
@@ -109,6 +143,11 @@ function CoordinatorCases() {
     try {
       const allUsers = await getAssignableUsers();
       setUsers(allUsers);
+
+      if (currentUserRole === "admin") {
+        const coordinators = await getUsersByRole("coordinator");
+        setCoordinatorList(coordinators || []);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -119,16 +158,15 @@ function CoordinatorCases() {
     setLoading(true);
 
     try {
-      const id = await getCoordinatorIdByPhone(phone);
-      setCoordinatorId(id);
+      let data = [];
 
-      // ✅ Load coordinator info
-      const coordinatorUser = await getUserByPhone(phone);
-      setCoordinatorInfo(coordinatorUser);
+      if (currentUserRole === "admin") {
+        data = await getAllCases();
+      } else if (currentUserRole === "coordinator") {
+        data = await getCasesForCoordinatorById(currentUserId);
+      }
 
-      const data = await getCasesForCoordinator(phone);
       setCases(data);
-
       const assignmentMap = await getAssignmentsByCaseIds(data.map((item) => item.id));
       setAssignments(assignmentMap);
     } catch (err) {
@@ -139,7 +177,6 @@ function CoordinatorCases() {
   };
 
   const refreshData = async () => {
-    if (!phone) return;
     await loadCases();
     await loadUsers();
   };
@@ -156,6 +193,21 @@ function CoordinatorCases() {
 
     try {
       await updateCaseStatus(caseId, newStatus);
+      await loadCases();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleCoordinatorChange = async (caseId, newCoordinatorId) => {
+    setError("");
+    if (!newCoordinatorId) {
+      setError("Please select a coordinator.");
+      return;
+    }
+
+    try {
+      await updateCaseCoordinator(caseId, newCoordinatorId);
       await loadCases();
     } catch (err) {
       setError(err.message);
@@ -189,11 +241,11 @@ function CoordinatorCases() {
       await updateCaseStatus(closingCase.caseId, "closed", {
         result_status: closingCase.result_status,
         result_notes: closingCase.notes || null,
-        closed_by: coordinatorInfo ? {
-          user_id: coordinatorId,
-          full_name: coordinatorInfo.full_name || coordinatorInfo.email,
-          role: "coordinator",
-        } : null,
+        closed_by: {
+          user_id: userProfile?.uid || null,
+          full_name: userProfile?.full_name || userProfile?.email || "Unknown",
+          role: userProfile?.role || "coordinator",
+        },
       });
 
       cancelCloseCase();
@@ -254,7 +306,7 @@ function CoordinatorCases() {
       await assignUserToCase({
         case_id: caseId,
         user_id: input.userId,
-        assigned_by: coordinatorId,
+        assigned_by: currentUserId,
         required_equipment: equipment,
         notes: input.notes || null,
       });
@@ -275,14 +327,16 @@ function CoordinatorCases() {
   };
 
   const handleAssignFromModal = async () => {
+    if (assigning) return;
     setError("");
     const { caseId, userId, selected, other, notes } = modalState;
 
-    if (!userId) {
-      setError("Please select a user before assigning.");
+    if (!caseId || !userId) {
+      setError("Please select a valid case and volunteer before assigning.");
       return;
     }
 
+    setAssigning(true);
     try {
       const equipment = [
         ...selected,
@@ -292,7 +346,7 @@ function CoordinatorCases() {
       await assignUserToCase({
         case_id: caseId,
         user_id: userId,
-        assigned_by: coordinatorId,
+        assigned_by: currentUserId,
         required_equipment: equipment,
         notes: notes || null,
       });
@@ -302,6 +356,8 @@ function CoordinatorCases() {
       await refreshData();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -317,27 +373,32 @@ function CoordinatorCases() {
   };
 
   return (
-    <div style={{ maxWidth: "980px", margin: "40px auto", padding: "32px", background: "linear-gradient(180deg, #fffdf3 0%, #fff7e0 100%)", borderRadius: 28, boxShadow: "0 32px 90px rgba(0,0,0,0.08)" }}>
+    <div>
+      <Navbar />
+      <div style={{ maxWidth: "980px", margin: "40px auto", padding: "32px", background: "linear-gradient(180deg, #fffdf3 0%, #fff7e0 100%)", borderRadius: 28, boxShadow: "0 32px 90px rgba(0,0,0,0.08)" }}>
       <div style={{ marginBottom: "12px" }}>
-        <h1 style={{ margin: "0 0 8px", color: "#f57c00", fontSize: "2.6rem" }}>Coordinator Cases</h1>
+        <h1 style={{ margin: "0 0 8px", color: "#f57c00", fontSize: "2.6rem" }}>
+          {currentUserRole === "admin" ? "All Coordinator Cases" : "My Coordinator Cases"}
+        </h1>
         <p style={{ margin: 0, color: "#6b4f00", lineHeight: 1.6 }}>
-          Manage active and closed cases with a friendly bee rescue dashboard. Assign volunteers, set case results, and keep history neat.
+          {currentUserRole === "admin"
+            ? "View every coordinator case in the system, and reassign or manage responsibility across coordinators."
+            : "Your cases are shown here automatically, based on your coordinator account."}
         </p>
       </div>
 
       <div style={{ marginBottom: "24px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
-        <input
-          placeholder="Coordinator phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          style={{ marginRight: "10px", padding: "14px 16px", width: "260px", borderRadius: 14, border: "2px solid #ffd54f", background: "#fffef5", color: "#333", boxShadow: "0 12px 24px rgba(255, 193, 7, 0.14)" }}
-        />
+        <div style={{ flex: "1 1 220px", minWidth: "240px", padding: "16px", borderRadius: 18, background: "#fff9e6", border: "1px solid #ffe082", color: "#5d4037" }}>
+          {currentUserRole === "admin"
+            ? "Admin view: all coordinator cases are shown here. You can reassign the responsible coordinator for each case."
+            : "Your coordinator cases are loaded automatically from your account."}
+        </div>
         <button
-          onClick={loadCases}
+          onClick={refreshData}
           disabled={loading}
-          style={{ padding: "14px 22px", borderRadius: 14, border: "none", background: "linear-gradient(135deg, #ffb300 0%, #fb8c00 100%)", color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: "0 12px 24px rgba(255, 152, 0, 0.18)" }}
+          style={{ padding: "14px 22px", borderRadius: 14, border: "none", background: "linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)", color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: "0 12px 24px rgba(76, 175, 80, 0.18)" }}
         >
-          {loading ? "Loading..." : "Load Cases"}
+          {loading ? "Refreshing..." : "Refresh Cases"}
         </button>
       </div>
 
@@ -355,7 +416,7 @@ function CoordinatorCases() {
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {cases.length === 0 && !error && (
-        <p>No cases loaded yet. Enter a coordinator phone and click Load Cases.</p>
+        <p>No cases found yet. If you are a coordinator, your assigned cases will appear automatically. If you are an admin, there may be no coordinator cases in the system.</p>
       )}
 
       {activeCases.length === 0 && closedCases.length > 0 && !error && (
@@ -367,30 +428,48 @@ function CoordinatorCases() {
           const caseAssignments = assignments[c.id] || [];
           const availableUsers = users.filter((user) => !assignedUserIds.includes(user.id));
           const input = assignmentInputs[c.id] || {};
+          const assignedCoordinator = users.find((user) => user.id === c.coordinator_id);
 
           return (
-            <div
-              key={c.id}
-              style={{
-                border: "1px solid rgba(255, 193, 7, 0.35)",
-                padding: "18px",
-                marginBottom: "18px",
-                borderRadius: "22px",
-                background: "#fffdf4",
-                boxShadow: "0 14px 30px rgba(255, 152, 0, 0.12)",
-                minWidth: "220px",
-                maxWidth: "340px",
-                flex: "1 1 240px",
-              }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
-              <h3 style={{ margin: 0, color: "#ff6f00" }}>🐝 Case Details</h3>
-              <span style={{ background: c.status === "closed" ? "#ccc" : c.status === "assigned" ? "#ffd54f" : "#ffe082", padding: "6px 12px", borderRadius: 20, fontWeight: 600, fontSize: "0.85em", color: c.status === "closed" ? "#666" : "#e65100" }}>
+            <div key={c.id} style={caseCardBase}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
+              <h3 style={{ margin: 0, color: "#ff6f00", fontSize: "1.05rem" }}>🐝 Case Details</h3>
+              <span style={{ background: c.status === "closed" ? "#ccc" : c.status === "assigned" ? "#ffd54f" : "#ffe082", padding: "6px 10px", borderRadius: 18, fontWeight: 600, fontSize: "0.78em", color: c.status === "closed" ? "#666" : "#e65100" }}>
                 {c.status.toUpperCase()}
               </span>
             </div>
+            <div style={{ marginBottom: "8px", color: "#5d4037", fontSize: "0.9em" }}>
+              Assigned coordinator: <strong>{assignedCoordinator ? assignedCoordinator.full_name || assignedCoordinator.email : c.coordinator_id || "None"}</strong>
+            </div>
+            {currentUserRole === "admin" && (
+              <div style={{ ...compactPanel, marginBottom: "10px" }}>
+                <label style={{ display: "grid", gap: "8px", fontSize: "0.95em", color: "#5d4037" }}>
+                  Responsible coordinator
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                    <select
+                      value={coordinatorSelections[c.id] || c.coordinator_id || ""}
+                      onChange={(e) => setCoordinatorSelections((prev) => ({ ...prev, [c.id]: e.target.value }))}
+                      style={{ flex: "1 1 220px", padding: "10px 14px", borderRadius: 10, border: "1px solid #d9b56f", background: "#fff", color: "#333" }}
+                    >
+                      <option value="">Select coordinator</option>
+                      {coordinatorList.map((coord) => (
+                        <option key={coord.uid} value={coord.uid}>
+                          {coord.full_name || coord.email}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => handleCoordinatorChange(c.id, coordinatorSelections[c.id] || c.coordinator_id)}
+                      style={{ padding: "10px 18px", borderRadius: 10, border: "none", background: "#fb8c00", color: "#fff", cursor: "pointer", fontWeight: 700 }}
+                    >
+                      Save
+                    </button>
+                  </div>
+                </label>
+              </div>
+            )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px", fontSize: "0.95em" }}>
+            <div style={{ ...compactInfoGrid, fontSize: "0.9em", marginBottom: "10px" }}>
               <div>
                 <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Requester:</strong></p>
                 <p style={{ margin: "0 0 8px 0", color: "#333" }}>{c.requester_first_name} {c.requester_last_name}</p>
@@ -426,7 +505,7 @@ function CoordinatorCases() {
               </div>
             </div>
 
-            <div style={{ background: "#fff8e1", padding: "12px", borderRadius: 8, marginBottom: "16px", borderLeft: "4px solid #ffd54f" }}>
+            <div style={{ background: "#fff8e1", padding: "10px", borderRadius: 10, marginBottom: "14px", borderLeft: "4px solid #ffd54f" }}>
               <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>📍 Location:</strong></p>
               <p style={{ margin: "4px 0", color: "#333" }}>
                 {c.street} {c.house_number && <span>#{c.house_number}</span>}, {c.city}
@@ -439,7 +518,7 @@ function CoordinatorCases() {
               )}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "16px", fontSize: "0.9em", background: "#fff5e6", padding: "10px", borderRadius: 6 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "8px", marginBottom: "10px", fontSize: "0.86em", background: "#fff5e6", padding: "10px", borderRadius: 8 }}>
               <div>
                 <p style={{ margin: "2px 0", color: "#666", fontSize: "0.8em" }}><strong>Height</strong></p>
                 <p style={{ margin: "0", color: "#ff6f00", fontWeight: 600 }}>{c.height_from_ground}m</p>
@@ -455,7 +534,7 @@ function CoordinatorCases() {
             </div>
 
             {c.navigation_link && (
-              <div style={{ marginBottom: "16px", background: "#f5f5f5", padding: "12px", borderRadius: 8, borderLeft: "4px solid #ff9800" }}>
+              <div style={{ marginBottom: "10px", background: "#f5f5f5", padding: "10px", borderRadius: 8, borderLeft: "4px solid #ff9800" }}>
                 <p style={{ margin: "0 0 8px 0", fontWeight: 600, color: "#e65100" }}>🗺 Navigation Link</p>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   {isValidUrl(c.navigation_link) ? (
@@ -526,11 +605,11 @@ function CoordinatorCases() {
               )}
             </div>
 
-            <div style={{ marginTop: "16px", marginBottom: "12px" }}>
+            <div style={{ marginTop: "12px", marginBottom: "10px" }}>
               <button
                 onClick={() => setModalState((s) => ({ ...s, open: true, caseId: c.id }))}
-                style={{ padding: "12px 28px", background: "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "1.05em", boxShadow: "0 4px 12px rgba(76, 175, 80, 0.3)", transition: "all 0.2s" }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
+                style={{ padding: "10px 20px", background: "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.95em", boxShadow: "0 4px 10px rgba(76, 175, 80, 0.3)", transition: "all 0.2s" }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}
                 onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
               >
                 ✓ Assign User to Case
@@ -579,7 +658,7 @@ function CoordinatorCases() {
               <div style={{ marginTop: "18px" }}>
                 <button
                   onClick={() => beginCloseCase(c.id)}
-                  style={{ padding: "10px 24px", borderRadius: 8, background: "linear-gradient(135deg, #f44336 0%, #c62828 100%)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 600, boxShadow: "0 4px 12px rgba(244, 67, 54, 0.3)", transition: "all 0.2s" }}
+                  style={{ padding: "10px 20px", borderRadius: 8, background: "linear-gradient(135deg, #f44336 0%, #c62828 100%)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 600, boxShadow: "0 4px 10px rgba(244, 67, 54, 0.3)", transition: "all 0.2s" }}
                   onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}
                   onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
                 >
@@ -630,14 +709,11 @@ function CoordinatorCases() {
                   <div
                     key={c.id}
                     style={{
+                      ...caseCardBase,
                       border: "2px solid #ffcc80",
-                      padding: "14px",
-                      marginBottom: "16px",
-                      borderRadius: "18px",
                       background: "#fff8e1",
-                      minWidth: "220px",
-                      maxWidth: "340px",
-                      flex: "1 1 240px",
+                      minWidth: "200px",
+                      maxWidth: "260px",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
@@ -647,7 +723,7 @@ function CoordinatorCases() {
                       </span>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px", fontSize: "0.95em" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px", fontSize: "0.92em" }}>
                       <div>
                         <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Requester:</strong></p>
                         <p style={{ margin: "0 0 8px 0", color: "#333" }}>{c.requester_first_name} {c.requester_last_name}</p>
@@ -680,7 +756,7 @@ function CoordinatorCases() {
                       </div>
                     </div>
 
-                    <div style={{ background: "#fff8e1", padding: "12px", borderRadius: 8, marginBottom: "16px", borderLeft: "4px solid #ffd54f" }}>
+                    <div style={{ background: "#fff8e1", padding: "10px", borderRadius: 10, marginBottom: "14px", borderLeft: "4px solid #ffd54f" }}>
                       <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>📍 Location:</strong></p>
                       <p style={{ margin: "4px 0", color: "#333" }}>
                         {c.street} {c.house_number && <span>#{c.house_number}</span>}, {c.city}
@@ -939,24 +1015,25 @@ function CoordinatorCases() {
                 </button>
                 <button
                   onClick={handleAssignFromModal}
-                  disabled={!modalState.userId}
+                  disabled={!modalState.userId || assigning}
                   style={{
                     padding: "10px 18px",
                     borderRadius: 8,
-                    background: modalState.userId ? "#ff9800" : "#ccc",
+                    background: modalState.userId && !assigning ? "#ff9800" : "#ccc",
                     color: "#fff",
                     border: "none",
-                    cursor: modalState.userId ? "pointer" : "not-allowed",
+                    cursor: modalState.userId && !assigning ? "pointer" : "not-allowed",
                     fontWeight: 600,
                   }}
                 >
-                  🐝 Assign
+                  {assigning ? "Assigning…" : "🐝 Assign"}
                 </button>
               </div>
             </div>
         </div>
       )}
     </div>
+  </div>
   );
 }
 

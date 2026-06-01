@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import {
   getCasesForVolunteer,
   updateCaseStatus,
-  getUserByPhone,
 } from "../services/caseService";
+import { getUserByPhone } from "../services/userService";
 import {
   getAssignmentsByCaseIds,
   getAssignableUsers,

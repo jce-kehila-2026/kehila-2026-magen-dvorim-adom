@@ -1,23 +1,45 @@
-import { useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import Navbar from "../components/Navbar";
+import CoordinatorSendForm from "./CoordinatorSendForm";
 import { logoutUser } from "../services/authService";
+import { getAllCases } from "../services/caseService";
+import { getUsersByRole } from "../services/userService";
 import { USER_ROLES } from "../services/userSchema";
+import { useAuth } from "../contexts/AuthContext";
 
-function Dashboard({ userProfile }) {
+function Dashboard() {
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
   const [error, setError] = useState("");
-
-  // Temporary dashboard data until case/activity services are ready
-  const stats = {
+  const [stats, setStats] = useState({
     openCases: 0,
-    activeVolunteers: 0,
+    volunteers: 0,
     completedRescues: 0,
-  };
+  });
+  const [sendFormOpen, setSendFormOpen] = useState(false);
 
-  const recentActivity = [
-    "No recent activity to show yet.",
-  ];
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [allCases, volunteerUsers] = await Promise.all([
+          getAllCases(),
+          getUsersByRole(USER_ROLES.VOLUNTEER),
+        ]);
+
+        setStats({
+          openCases: allCases.filter((c) => c.status === "open").length,
+          volunteers: volunteerUsers.length,
+          completedRescues: allCases.filter((c) => c.status === "closed").length,
+        });
+      } catch (err) {
+        console.error("Dashboard stats load failed:", err);
+      }
+    };
+
+    loadStats();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -57,85 +79,20 @@ function Dashboard({ userProfile }) {
   };
 
   return (
-    <div style={styles.page}>
-      <aside style={styles.sidebar}>
-        <div style={styles.logo}>🐝</div>
-        <h2 style={styles.brand}>Magen Dvorim Adom</h2>
-
-        <div style={styles.userBox}>
-          <strong>{userProfile?.full_name || "User"}</strong>
-          <span>{userProfile?.role || "No role"}</span>
-        </div>
-
-        {error && <div style={styles.errorBox}>{error}</div>}
-
-        <nav style={styles.nav}>
-          <button style={styles.navItem} onClick={() => navigate("/dashboard")}>
-            Dashboard
-          </button>
-
-          {(userProfile?.role === USER_ROLES.ADMIN ||
-            userProfile?.role === USER_ROLES.COORDINATOR) && (
-            <>
-              <button style={styles.navItem} onClick={() => navigate("/cases")}>
-                Cases
-              </button>
-
-              <button
-                style={styles.navItem}
-                onClick={() => navigate("/volunteers")}
-              >
-                Volunteers
-              </button>
-            </>
-          )}
-
-          {userProfile?.role === USER_ROLES.ADMIN && (
-            <>
-              <button style={styles.navItem} onClick={() => navigate("/users")}>
-                Users
-              </button>
-
-              <button style={styles.navItem} onClick={() => navigate("/reports")}>
-                Reports
-              </button>
-            </>
-          )}
-
-          {userProfile?.role === USER_ROLES.VOLUNTEER && (
-            <>
-              <button
-                style={styles.navItem}
-                onClick={() => navigate("/my-cases")}
-              >
-                My Cases
-              </button>
-
-              <button
-                style={styles.navItem}
-                onClick={() => navigate("/availability")}
-              >
-                Availability
-              </button>
-            </>
-          )}
-        </nav>
-
-        <button style={styles.logout} onClick={handleLogout}>
-          Logout
-        </button>
-      </aside>
+    <div>
+      <Navbar />
 
       <main style={styles.main}>
         <header style={styles.header}>
           <div>
             <h1 style={styles.title}>{getDashboardTitle()}</h1>
             <p style={styles.subtitle}>
-              Welcome back, {userProfile?.full_name || "User"}.{" "}
-              {getDashboardSubtitle()}
+              Welcome back, {userProfile?.full_name || "User"}. {getDashboardSubtitle()}
             </p>
           </div>
         </header>
+
+        {error && <div style={styles.errorBox}>{error}</div>}
 
         <section style={styles.cards}>
           <div style={styles.card}>
@@ -146,8 +103,8 @@ function Dashboard({ userProfile }) {
 
           <div style={styles.card}>
             <span style={styles.icon}>🐝</span>
-            <h3>Active Volunteers</h3>
-            <p style={styles.number}>{stats.activeVolunteers}</p>
+            <h3>Volunteers</h3>
+            <p style={styles.number}>{stats.volunteers}</p>
           </div>
 
           <div style={styles.card}>
@@ -157,60 +114,66 @@ function Dashboard({ userProfile }) {
           </div>
         </section>
 
-        <section style={styles.panel}>
-          <h2>Recent Activity</h2>
-          <ul style={styles.list}>
-            {recentActivity.map((activity, index) => (
-              <li key={index}>{activity}</li>
-            ))}
-          </ul>
-        </section>
+        {(userProfile?.role === USER_ROLES.ADMIN || userProfile?.role === USER_ROLES.COORDINATOR) && (
+          <section style={styles.panel}>
+            <h2>Send Intake Form</h2>
+            <p style={styles.subtitle}>
+              Generate a request form for a requester, or copy the public form link to share via WhatsApp.
+            </p>
+            <div style={styles.sendRow}>
+              <button
+                onClick={() => setSendFormOpen(true)}
+                style={styles.actionButton}
+              >
+                Open Send Form
+              </button>
+              <button
+                onClick={() => {
+                  const link = `${window.location.origin}/submit-case`;
+                  navigator.clipboard.writeText(link);
+                  alert("Public request form link copied to clipboard.");
+                }}
+                style={{ ...styles.actionButton, background: "#1f7a5c" }}
+              >
+                Copy Request Form Link
+              </button>
+            </div>
+
+            {sendFormOpen && (
+              <div style={styles.modalOverlay} onClick={() => setSendFormOpen(false)}>
+                <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                  <CoordinatorSendForm onClose={() => setSendFormOpen(false)} />
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
       </main>
     </div>
   );
 }
 
 const styles = {
-  page: {
+  main: {
     minHeight: "100vh",
-    display: "flex",
-    flexWrap: "wrap",
-    background: "linear-gradient(135deg, #fff7df 0%, #eef7f2 100%)",
-    fontFamily: "Arial, sans-serif",
-  },
-
-  sidebar: {
-    width: "260px",
-    minHeight: "100vh",
-    padding: "28px",
-    backgroundColor: "#173b2f",
-    color: "white",
-    display: "flex",
-    flexDirection: "column",
+    padding: "40px",
     boxSizing: "border-box",
+    fontFamily: "Arial, sans-serif",
+    background: "linear-gradient(135deg, #fff7df 0%, #eef7f2 100%)",
   },
-
-  logo: {
+  header: {
+    marginBottom: "30px",
+  },
+  title: {
     fontSize: "42px",
-    marginBottom: "12px",
+    color: "#173b2f",
+    margin: 0,
   },
-
-  brand: {
-    fontSize: "22px",
-    marginBottom: "24px",
+  subtitle: {
+    color: "#5f6f68",
+    fontSize: "17px",
   },
-
-  userBox: {
-    padding: "14px",
-    borderRadius: "14px",
-    backgroundColor: "rgba(255,255,255,0.12)",
-    marginBottom: "18px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    fontSize: "14px",
-  },
-
   errorBox: {
     padding: "12px",
     borderRadius: "12px",
@@ -219,92 +182,71 @@ const styles = {
     fontSize: "14px",
     marginBottom: "18px",
   },
-
-  nav: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-  },
-
-  navItem: {
-    padding: "12px",
-    borderRadius: "12px",
-    border: "none",
-    textAlign: "left",
-    backgroundColor: "rgba(255,255,255,0.12)",
-    color: "white",
-    cursor: "pointer",
-    fontSize: "15px",
-  },
-
-  logout: {
-    marginTop: "auto",
-    padding: "12px",
-    borderRadius: "12px",
-    border: "none",
-    backgroundColor: "#f6b73c",
-    color: "#173b2f",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-
-  main: {
-    flex: 1,
-    minWidth: "320px",
-    padding: "40px",
-    boxSizing: "border-box",
-  },
-
-  header: {
-    marginBottom: "30px",
-  },
-
-  title: {
-    fontSize: "42px",
-    color: "#173b2f",
-    margin: 0,
-  },
-
-  subtitle: {
-    color: "#5f6f68",
-    fontSize: "17px",
-  },
-
   cards: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: "20px",
     marginBottom: "28px",
   },
-
   card: {
     backgroundColor: "white",
     padding: "24px",
     borderRadius: "22px",
     boxShadow: "0 14px 35px rgba(20,64,48,0.12)",
   },
-
   icon: {
     fontSize: "30px",
   },
-
   number: {
     fontSize: "38px",
     fontWeight: "bold",
     color: "#1f7a5c",
     margin: 0,
   },
-
   panel: {
     backgroundColor: "white",
     padding: "26px",
     borderRadius: "22px",
     boxShadow: "0 14px 35px rgba(20,64,48,0.12)",
   },
-
+  sendRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "14px",
+    marginTop: "18px",
+  },
+  actionButton: {
+    flex: "1 1 220px",
+    padding: "14px 22px",
+    borderRadius: "18px",
+    border: "none",
+    background: "#ff9800",
+    color: "white",
+    fontWeight: 700,
+    cursor: "pointer",
+    boxShadow: "0 14px 30px rgba(255, 152, 0, 0.18)",
+  },
   list: {
     lineHeight: "2",
     color: "#4f5f58",
+  },
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.42)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    padding: "20px",
+  },
+  modalContent: {
+    width: "100%",
+    maxWidth: "560px",
+    background: "white",
+    borderRadius: "24px",
+    padding: "24px",
+    boxShadow: "0 24px 80px rgba(0,0,0,0.18)",
   },
 };
 

@@ -184,22 +184,3 @@ export function validateUserProfile(user = {}) {
   };
 }
 
-// import { z } from "zod";
-
-// /**
-//  * Schema for validating user documents before saving to Firestore.
-//  */
-// export const UserSchema = z.object({
-//   full_name: z.string().min(1),
-//   email: z.string().email(),
-//   password: z.string().min(6),
-//   phone: z.string().nullable().optional(),
-//   occupation: z.string().nullable().optional(),
-//   city: z.string().nullable().optional(),
-//   role: z.enum(["admin", "coordinator", "volunteer"]),
-//   experience_level: z.string().nullable().optional(),
-//   has_height_license: z.boolean().default(false),
-//   total_rescues: z.number().int().nonnegative().default(0),
-//   is_available: z.boolean().default(true),
-//   created_at: z.date().default(() => new Date()),
-// });

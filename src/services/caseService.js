@@ -16,7 +16,7 @@ function normalizePhone(phone) {
 }
 
 // ✅ find coordinator ID from phone
-async function getCoordinatorIdByPhone(phone) {
+export async function getCoordinatorIdByPhone(phone) {
   const q = query(
     collection(db, "users"),
     where("phone", "==", phone),
@@ -121,19 +121,111 @@ export async function getCasesForCoordinator(coordinator_phone) {
 
   const coordinator_id = userSnap.docs[0].id;
 
-  // get all cases
-  const casesSnap = await getDocs(collection(db, "cases"));
+  return getCasesForCoordinatorById(coordinator_id);
+}
 
+export async function getCasesForCoordinatorById(coordinatorId) {
+  if (!coordinatorId) {
+    throw new Error("Coordinator ID is required.");
+  }
+
+  const casesSnap = await getDocs(collection(db, "cases"));
   const cases = [];
 
   casesSnap.forEach((docItem) => {
     const data = docItem.data();
+    if (data && data.coordinator_id === coordinatorId) {
+      cases.push({ id: docItem.id, ...data });
+    }
+  });
 
-    if (data.coordinator_id === coordinator_id) {
-      cases.push({
-        id: docItem.id,
-        ...data,
-      });
+  return cases;
+}
+
+export async function getAllCases() {
+  const casesSnap = await getDocs(collection(db, "cases"));
+
+  return casesSnap.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() }));
+}
+
+export async function updateCaseCoordinator(caseId, coordinatorId) {
+  if (!caseId) {
+    throw new Error("Case ID is required.");
+  }
+
+  if (!coordinatorId) {
+    throw new Error("Coordinator ID is required.");
+  }
+
+  const ref = doc(db, "cases", caseId);
+  await updateDoc(ref, {
+    coordinator_id: coordinatorId,
+    updated_at: Timestamp.now(),
+  });
+}
+
+export async function getCasesForUser(userId) {
+  if (!userId) {
+    throw new Error("User ID is required.");
+  }
+
+  const caseSnap = await getDocs(collection(db, "cases"));
+  const cases = [];
+
+  caseSnap.forEach((docItem) => {
+    const data = docItem.data();
+    if (!data) return;
+    if (data.coordinator_id === userId) {
+      cases.push({ id: docItem.id, ...data });
+    }
+  });
+
+  const assignmentSnap = await getDocs(query(collection(db, "assignments"), where("user_id", "==", userId)));
+  const assignedCaseIds = assignmentSnap.docs
+    .map((docItem) => docItem.data())
+    .filter((assignment) => assignment?.case_id)
+    .map((assignment) => assignment.case_id);
+
+  if (assignedCaseIds.length) {
+    caseSnap.forEach((docItem) => {
+      if (assignedCaseIds.includes(docItem.id)) {
+        const data = docItem.data();
+        if (data && data.coordinator_id !== userId) {
+          cases.push({ id: docItem.id, ...data });
+        }
+      }
+    });
+  }
+
+  return cases;
+}
+
+export async function getCasesForVolunteer(volunteerId) {
+  if (!volunteerId) {
+    throw new Error("Volunteer ID is required.");
+  }
+
+  const assignmentSnap = await getDocs(query(collection(db, "assignments"), where("user_id", "==", volunteerId)));
+
+  if (assignmentSnap.empty) {
+    return [];
+  }
+
+  const caseIds = assignmentSnap.docs
+    .map((docItem) => docItem.data())
+    .filter((data) => data?.case_id)
+    .map((data) => data.case_id);
+
+  if (!caseIds.length) {
+    return [];
+  }
+
+  const casesSnap = await getDocs(collection(db, "cases"));
+  const cases = [];
+
+  casesSnap.forEach((docItem) => {
+    if (caseIds.includes(docItem.id)) {
+      cases.push({ id: docItem.id, ...docItem.data() });
     }
   });
 
@@ -143,9 +235,9 @@ export async function getCasesForCoordinator(coordinator_phone) {
 /**
  * Update case status
  */
-const ALLOWED_STATUSES = ["open", "in_progress", "closed"];
+const ALLOWED_STATUSES = ["open", "in_progress", "assigned", "closed"];
 
-export async function updateCaseStatus(caseId, newStatus) {
+export async function updateCaseStatus(caseId, newStatus, extra = {}) {
   // ✅ VALIDATE STATUS
   if (!ALLOWED_STATUSES.includes(newStatus)) {
     throw new Error("Invalid status");
@@ -155,6 +247,7 @@ export async function updateCaseStatus(caseId, newStatus) {
 
   const updateData = {
     status: newStatus,
+    ...extra,
   };
 
   if (newStatus === "closed") {
@@ -166,4 +259,17 @@ export async function updateCaseStatus(caseId, newStatus) {
   }
 
   await updateDoc(ref, updateData);
+}
+
+const ALLOWED_COMPLEXITIES = ["simple", "complex", "very_complex"];
+
+export async function updateCaseComplexity(caseId, newComplexity) {
+  if (!ALLOWED_COMPLEXITIES.includes(newComplexity)) {
+    throw new Error("Invalid case complexity");
+  }
+
+  const ref = doc(db, "cases", caseId);
+  await updateDoc(ref, {
+    case_complexity: newComplexity,
+  });
 }
