@@ -70,6 +70,10 @@ function Navbar() {
           My Cases
         </NavLink>
 
+        <NavLink to="/profile" style={activeLink}>
+          Profile
+        </NavLink>
+
         <button onClick={handleLogout} style={styles.logoutButton}>
           Logout
         </button>

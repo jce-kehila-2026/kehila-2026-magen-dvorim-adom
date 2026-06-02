@@ -14,6 +14,7 @@ export const EXPERIENCE_LEVELS = {
   EXPERIENCED: "experienced",
 };
 
+
 // Default user profile structure in Firestore
 export const DEFAULT_USER_PROFILE = {
   full_name: "",

@@ -28,8 +28,20 @@ export const CaseSchema = z.object({
 ]).nullable().optional(),
 
   coordinator_id: z.string(),
+  status: z.enum(["open", "assigned", "closed"]).default("open"),
+  result_status: z.enum(["in_progress", "evacuated_by_volunteer", "sent_to_chofesh_farm", "remains_in_place_without_treatment", "cancelled"]).default("in_progress"),
+  result_notes: z.string().nullable().optional(),
 
   case_complexity: z
     .enum(["simple", "complex", "very_complex"])
     .default("simple"),
+
+  // ✅ Timestamps
+  opened_at: z.any().optional(), // Firestore Timestamp - set when case is created
+  closed_at: z.any().nullable().optional(), // Firestore Timestamp - set when case is closed, null when reopened
+  closed_by: z.object({
+    user_id: z.string(),
+    full_name: z.string(),
+    role: z.string(),
+  }).nullable().optional(), // ✅ Track who closed the case (volunteer or coordinator)
 });

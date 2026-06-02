@@ -2,11 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import VolunteerDashboard from "./pages/VolunteerDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import SubmitCase from "./pages/SubmitCase";
 import CoordinatorCases from "./pages/CoordinatorCases";
 import CoordinatorSendForm from "./pages/CoordinatorSendForm";
 import MyCases from "./pages/MyCases";
+import Profile from "./pages/Profile";
 
 import { useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -33,7 +35,11 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              {userProfile?.role === USER_ROLES.VOLUNTEER ? (
+                <VolunteerDashboard />
+              ) : (
+                <Dashboard />
+              )}
             </ProtectedRoute>
           }
         />
@@ -60,7 +66,7 @@ function App() {
           path="/volunteer-dashboard"
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.VOLUNTEER]}>
-              <Dashboard />
+              <VolunteerDashboard />
             </ProtectedRoute>
           }
         />
@@ -88,6 +94,15 @@ function App() {
           element={
             <ProtectedRoute>
               <MyCases />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />
