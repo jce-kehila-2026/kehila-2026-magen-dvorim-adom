@@ -1,3 +1,4 @@
+import { recommendVolunteersForCase } from "../services/recommendationService";
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../contexts/AuthContext";
@@ -31,6 +32,7 @@ function CoordinatorCases() {
   const [modalState, setModalState] = useState({ open: false, caseId: null, userId: "", selected: [], other: "", notes: "" });
   const [userSearch, setUserSearch] = useState("");
   const [editingComplexity, setEditingComplexity] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
 
   const currentUserId = userProfile?.uid || null;
   const currentUserRole = userProfile?.role || "";
@@ -360,6 +362,15 @@ function CoordinatorCases() {
       setAssigning(false);
     }
   };
+  const handleGetRecommendations = (caseItem) => {
+  const result = recommendVolunteersForCase({
+    caseItem,
+    users,
+    assignedUserIds,
+  });
+
+  setRecommendations(result);
+};
 
   const handleRemoveAssignment = async (assignmentId, caseId) => {
     setError("");
@@ -607,7 +618,10 @@ function CoordinatorCases() {
 
             <div style={{ marginTop: "12px", marginBottom: "10px" }}>
               <button
-                onClick={() => setModalState((s) => ({ ...s, open: true, caseId: c.id }))}
+               onClick={() => {
+                 setRecommendations([]);
+                 setModalState((s) => ({ ...s, open: true, caseId: c.id }));
+                }}
                 style={{ padding: "10px 20px", background: "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.95em", boxShadow: "0 4px 10px rgba(76, 175, 80, 0.3)", transition: "all 0.2s" }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}
                 onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
@@ -941,26 +955,65 @@ function CoordinatorCases() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: "14px", padding: "10px", background: "#ffecb3", borderRadius: 8, border: "2px solid #ffd54f" }}>
-                <div style={{ fontSize: "0.9em", fontWeight: 600, marginBottom: "6px", color: "#e65100" }}>🎯 Recommendation System (Coming Soon)</div>
-                <button
-                  disabled
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: 6,
-                    background: "#ccc",
-                    border: "none",
-                    cursor: "not-allowed",
-                    color: "#666",
-                    fontSize: "0.85em",
-                  }}
-                >
-                  Get Recommendations
-                </button>
-                <div style={{ fontSize: "0.75em", color: "#555", marginTop: "4px" }}>
-                  Soon you'll get AI-recommended volunteers for this case.
-                </div>
-              </div>
+              <div style={{ marginBottom: "14px", padding: "10px", background: "#e8f5e9", borderRadius: 8, border: "2px solid #81c784" }}>
+  <div style={{ fontSize: "0.9em", fontWeight: 600, marginBottom: "6px", color: "#2e7d32" }}>
+    🎯 Recommendation System
+  </div>
+
+  <button
+    onClick={() => {
+      const currentCase = cases.find((c) => c.id === modalState.caseId);
+      handleGetRecommendations(currentCase);
+    }}
+    style={{
+      padding: "6px 12px",
+      borderRadius: 6,
+      background: "#43a047",
+      border: "none",
+      cursor: "pointer",
+      color: "white",
+      fontSize: "0.85em",
+      fontWeight: 600,
+    }}
+  >
+    Get Recommendations
+  </button>
+
+  <div style={{ fontSize: "0.75em", color: "#555", marginTop: "4px" }}>
+    Recommended volunteers are ranked by distance, experience, training, height license, and previous rescues.
+  </div>
+
+  {recommendations.length > 0 && (
+    <div style={{ marginTop: "10px" }}>
+      {recommendations.slice(0, 3).map((volunteer) => (
+        <div
+          key={volunteer.id}
+          onClick={() => setModalState((s) => ({ ...s, userId: volunteer.id }))}
+          style={{
+            padding: "8px",
+            marginBottom: "6px",
+            borderRadius: 6,
+            background: modalState.userId === volunteer.id ? "#c8e6c9" : "#ffffff",
+            border: "1px solid #c8e6c9",
+            cursor: "pointer",
+          }}
+        >
+          <div style={{ fontWeight: 600, color: "#2e7d32" }}>
+            {volunteer.full_name || volunteer.email} — Score: {volunteer.recommendationScore}
+          </div>
+
+          <div style={{ fontSize: "0.75em", color: "#555" }}>
+            Distance: {volunteer.recommendationDetails.distanceScore} •
+            Experience: {volunteer.recommendationDetails.experienceScore} •
+            Training: {volunteer.recommendationDetails.trainingScore} •
+            Height: {volunteer.recommendationDetails.heightLicenseScore} •
+            Previous: {volunteer.recommendationDetails.previousCaseScore}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
               <div style={{ marginBottom: "12px" }}>
                 <label style={{ display: "block", marginBottom: "6px", fontWeight: 600, color: "#e65100" }}>Required equipment</label>
@@ -1008,6 +1061,7 @@ function CoordinatorCases() {
                   onClick={() => {
                     setModalState({ open: false, caseId: null, userId: "", selected: [], other: "", notes: "" });
                     setUserSearch("");
+                    setRecommendations([]);
                   }}
                   style={{ padding: "10px 18px", borderRadius: 8, background: "#e0e0e0", border: "none", cursor: "pointer", fontWeight: 600, color: "#333" }}
                 >
