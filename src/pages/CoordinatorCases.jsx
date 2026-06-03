@@ -32,7 +32,7 @@ function CoordinatorCases() {
   const [modalState, setModalState] = useState({ open: false, caseId: null, userId: "", selected: [], other: "", notes: "" });
   const [userSearch, setUserSearch] = useState("");
   const [editingComplexity, setEditingComplexity] = useState(null);
-  const [recommendations, setRecommendations] = useState([]);
+  const [recommendations, setRecommendations] = useState(null);
 
   const currentUserId = userProfile?.uid || null;
   const currentUserRole = userProfile?.role || "";
@@ -619,7 +619,7 @@ function CoordinatorCases() {
             <div style={{ marginTop: "12px", marginBottom: "10px" }}>
               <button
                onClick={() => {
-                 setRecommendations([]);
+                 setRecommendations(null);
                  setModalState((s) => ({ ...s, open: true, caseId: c.id }));
                 }}
                 style={{ padding: "10px 20px", background: "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.95em", boxShadow: "0 4px 10px rgba(76, 175, 80, 0.3)", transition: "all 0.2s" }}
@@ -983,7 +983,7 @@ function CoordinatorCases() {
     Recommended volunteers are ranked by distance, experience, training, height license, and previous rescues.
   </div>
 
-  {recommendations.length > 0 && (
+  {recommendations && recommendations.length > 0 && (
     <div style={{ marginTop: "10px" }}>
       {recommendations.slice(0, 3).map((volunteer) => (
         <div
@@ -1013,6 +1013,21 @@ function CoordinatorCases() {
       ))}
     </div>
   )}
+  {recommendations && recommendations.length === 0 && (
+   <div
+      style={{
+        marginTop: "10px",
+        padding: "8px",
+        borderRadius: 6,
+        background: "#fff3cd",
+        color: "#856404",
+        border: "1px solid #ffeeba",
+        fontSize: "0.85em",
+      }}
+  >
+    No available volunteers found.
+  </div>
+    )}
 </div>
 
               <div style={{ marginBottom: "12px" }}>
@@ -1061,7 +1076,7 @@ function CoordinatorCases() {
                   onClick={() => {
                     setModalState({ open: false, caseId: null, userId: "", selected: [], other: "", notes: "" });
                     setUserSearch("");
-                    setRecommendations([]);
+                    setRecommendations(null);
                   }}
                   style={{ padding: "10px 18px", borderRadius: 8, background: "#e0e0e0", border: "none", cursor: "pointer", fontWeight: 600, color: "#333" }}
                 >
