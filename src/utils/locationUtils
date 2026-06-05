@@ -1,0 +1,46 @@
+export const cityCoordinates = {
+  Jerusalem: [31.7683, 35.2137],
+  Haifa: [32.794, 34.9896],
+  "Tel Aviv": [32.0853, 34.7818],
+  Beersheba: [31.252973, 34.791462],
+  Nazareth: [32.6996, 35.3035],
+};
+
+export const formatCityName = (city) =>
+  city
+    ? city
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    : "";
+
+export const getCityCoordinates = (city) => {
+  return cityCoordinates[formatCityName(city)] || null;
+};
+
+export const calculateDistanceKm = (cityA, cityB) => {
+  const coordA = getCityCoordinates(cityA);
+  const coordB = getCityCoordinates(cityB);
+
+  if (!coordA || !coordB) return null;
+
+  const [lat1, lon1] = coordA;
+  const [lat2, lon2] = coordB;
+
+  const toRad = (value) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return Math.round(earthRadiusKm * c);
+};
