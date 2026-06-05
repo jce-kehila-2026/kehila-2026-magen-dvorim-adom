@@ -10,6 +10,7 @@ import { getUsersByRole } from "../services/userService";
 import { USER_ROLES } from "../services/userSchema";
 import { useAuth } from "../contexts/AuthContext";
 
+
 function Dashboard() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
@@ -62,6 +63,19 @@ function Dashboard() {
       setError("Logout failed. Please try again.");
     }
   };
+
+  const handleBackfillLocations = async () => {
+  try {
+    const result = await backfillMissingCaseLocations();
+
+    alert(
+      `Done!\nUpdated: ${result.updatedCount}\nSkipped: ${result.skippedCount}`
+    );
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update old case locations.");
+  }
+};
 
   const getDashboardTitle = () => {
     switch (userProfile?.role) {
@@ -167,7 +181,7 @@ function Dashboard() {
               >
                 {userProfile?.role === USER_ROLES.ADMIN
                   ? "Cases Map"
-                  : "My Cases Map"}
+                  : "My Cases Map"}   
               </h2>
                 <AssignedCasesMap
                   cases={allCases}
