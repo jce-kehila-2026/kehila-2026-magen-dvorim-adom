@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-
 import Navbar from "../components/Navbar";
 import { useAuth } from "../contexts/AuthContext";
 import { registerUser } from "../services/authService";
@@ -34,6 +33,28 @@ const ISRAELI_CITIES = [
   "Beitar Illit", "Ariel", "Maale Adumim",
 ];
 
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(" ");
+  return parts.length >= 2
+    ? (parts[0][0] + parts[1][0]).toUpperCase()
+    : name[0].toUpperCase();
+}
+
+function getRoleBadge(role) {
+  if (role === USER_ROLES.ADMIN)
+    return { bg: "#FAEEDA", color: "#854F0B", label: "Admin" };
+  if (role === USER_ROLES.COORDINATOR)
+    return { bg: "#E6F1FB", color: "#0C447C", label: "Coordinator" };
+  return { bg: "#E1F5EE", color: "#085041", label: "Volunteer" };
+}
+
+function getAvatarStyle(role) {
+  if (role === USER_ROLES.ADMIN) return { bg: "#FAEEDA", color: "#854F0B" };
+  if (role === USER_ROLES.COORDINATOR) return { bg: "#E6F1FB", color: "#0C447C" };
+  return { bg: "#E1F5EE", color: "#085041" };
+}
+
 function AdminUsers() {
   const { userProfile } = useAuth();
   const [users, setUsers] = useState([]);
@@ -46,6 +67,7 @@ function AdminUsers() {
   const [deletedUsers, setDeletedUsers] = useState([]);
   const [formMode, setFormMode] = useState("create");
   const [selectedUser, setSelectedUser] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
 
@@ -62,9 +84,7 @@ function AdminUsers() {
     height_work: false,
   });
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  useEffect(() => { loadUsers(); }, []);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -72,32 +92,22 @@ function AdminUsers() {
     try {
       const result = await getAllUsers(100);
       const all = result.users || [];
-      setUsers(all.filter((user) => user.is_active !== false));
-      setDeletedUsers(all.filter((user) => user.is_active === false));
+      setUsers(all.filter((u) => u.is_active !== false));
+      setDeletedUsers(all.filter((u) => u.is_active === false));
     } catch (err) {
-      console.error("Failed to load users:", err);
       setError(err.message || "Unable to load users.");
     } finally {
       setLoading(false);
     }
   };
 
-  const [modalOpen, setModalOpen] = useState(false);
-
   const resetForm = () => {
     setSelectedUser(null);
     setFormMode("create");
     setFormData({
-      full_name: "",
-      email: "",
-      phone: "",
-      occupation: "",
-      city: "",
-      role: USER_ROLES.VOLUNTEER,
-      is_available: true,
-      password: "",
-      experience_level: "beginner",
-      height_work: false,
+      full_name: "", email: "", phone: "", occupation: "", city: "",
+      role: USER_ROLES.VOLUNTEER, is_available: true, password: "",
+      experience_level: "beginner", height_work: false,
     });
     setCitySearch("");
     setShowCityDropdown(false);
@@ -126,21 +136,11 @@ function AdminUsers() {
     setModalOpen(true);
   };
 
-  const closeModal = () => {
-    setModalOpen(false);
-    resetForm();
-  };
+  const closeModal = () => { setModalOpen(false); resetForm(); };
 
-  const handleSelectUser = (user) => {
-    openUserModal("edit", user);
-  };
-
-  const handleChange = (event) => {
-    const { name, value, type, checked } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
   const isFormValid = () => {
@@ -152,8 +152,8 @@ function AdminUsers() {
     return true;
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setError("");
     setMessage("");
 
@@ -176,14 +176,9 @@ function AdminUsers() {
     }
 
     setSaving(true);
-
     try {
       if (formMode === "create") {
-        if (!formData.password) {
-          setError("Password is required when creating a new user.");
-          return;
-        }
-
+        if (!formData.password) { setError("Password is required."); return; }
         await registerUser(formData.email, formData.password, profilePayload);
         setMessage("New user created successfully.");
       } else if (selectedUser) {
@@ -199,34 +194,24 @@ function AdminUsers() {
         });
         setMessage("User updated successfully.");
       }
-
       resetForm();
       await loadUsers();
     } catch (err) {
-      console.error("User save failed:", err);
-      setError(err.message || "Failed to save user. Please try again.");
+      setError(err.message || "Failed to save user.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (user) => {
-    if (!window.confirm(`Delete ${user.full_name || user.email}?`)) {
-      return;
-    }
-
-    setError("");
+    if (!window.confirm(`Delete ${user.full_name || user.email}?`)) return;
     setSaving(true);
-
     try {
       await deleteUserProfile(user.uid);
-      setMessage("User deactivated successfully.");
-      if (selectedUser?.uid === user.uid) {
-        resetForm();
-      }
+      setMessage("User deactivated.");
+      if (selectedUser?.uid === user.uid) resetForm();
       await loadUsers();
     } catch (err) {
-      console.error("Failed to delete user:", err);
       setError(err.message || "Could not delete user.");
     } finally {
       setSaving(false);
@@ -234,15 +219,12 @@ function AdminUsers() {
   };
 
   const handleRestore = async (user) => {
-    setError("");
     setSaving(true);
-
     try {
       await activateUser(user.uid);
-      setMessage("User restored successfully.");
+      setMessage("User restored.");
       await loadUsers();
     } catch (err) {
-      console.error("Failed to restore user:", err);
       setError(err.message || "Could not restore user.");
     } finally {
       setSaving(false);
@@ -256,623 +238,659 @@ function AdminUsers() {
 
   const filteredUsers = useMemo(() => {
     const list = viewMode === "deleted" ? deletedUsers : sortedUsers;
-    const normalized = searchQuery.trim().toLowerCase();
-    if (!normalized) return list;
-    return list.filter((user) => {
-      const name = (user.full_name || "").toLowerCase();
-      const phone = (user.phone || "").toLowerCase();
-      const email = (user.email || "").toLowerCase();
-      return (
-        name.includes(normalized) ||
-        phone.includes(normalized) ||
-        email.includes(normalized)
-      );
-    });
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((u) =>
+      (u.full_name || "").toLowerCase().includes(q) ||
+      (u.phone || "").toLowerCase().includes(q) ||
+      (u.email || "").toLowerCase().includes(q)
+    );
   }, [searchQuery, sortedUsers, deletedUsers, viewMode]);
 
-  const formatDate = (timestamp) => {
-    if (!timestamp) return "—";
-    if (timestamp.toDate) return timestamp.toDate().toLocaleString();
-    if (timestamp.seconds) return new Date(timestamp.seconds * 1000).toLocaleString();
-    return String(timestamp);
+  const volunteerCount = users.filter((u) => u.role === USER_ROLES.VOLUNTEER).length;
+  const coordinatorCount = users.filter((u) => u.role === USER_ROLES.COORDINATOR).length;
+  const availableCount = users.filter((u) => u.is_available).length;
+
+  const formatDate = (ts) => {
+    if (!ts) return "—";
+    if (ts.toDate) return ts.toDate().toLocaleDateString();
+    if (ts.seconds) return new Date(ts.seconds * 1000).toLocaleDateString();
+    return String(ts);
   };
 
   return (
-    <div>
+    <div style={{ background: "#fffdf5", minHeight: "100vh" }}>
       <Navbar />
-      <main style={styles.page}>
-        <section style={styles.panel}>
-          <div style={styles.header}>
-            <div>
-              <h1 style={styles.title}>User Directory</h1>
-              <p style={styles.subtitle}>
-                Search users by name or phone, update roles, and manage profile details.
-              </p>
-            </div>
-            <div style={styles.meta}>
-              <span>Signed in as {userProfile?.full_name}</span>
-              <strong>{userProfile?.role}</strong>
-            </div>
+      <main style={s.page}>
+
+        {/* Header */}
+        <div style={s.topbar}>
+          <div>
+            <h1 style={s.pageTitle}>🐝 User Directory</h1>
+            <p style={s.pageSub}>Manage volunteers, coordinators, and admins</p>
           </div>
-
-          <div style={styles.topBar}>
-            <div>
-              <h2>{viewMode === "deleted" ? "Deleted users" : "User list"}</h2>
-              <p style={styles.helperText}>
-                {viewMode === "deleted"
-                  ? "Review deleted users and restore accounts."
-                  : "Search users by name, phone number, or email."}
-              </p>
-            </div>
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
-              <button
-                type="button"
-                onClick={() => setViewMode("active")}
-                style={{ ...styles.addButton, background: viewMode === "active" ? "#1f7a5c" : "#ccc" }}
-              >
-                Active users
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              onClick={() => setViewMode("active")}
+              style={{ ...s.tabBtn, ...(viewMode === "active" ? s.tabBtnActive : {}) }}
+            >
+              Active users
+            </button>
+            <button
+              onClick={() => setViewMode("deleted")}
+              style={{ ...s.tabBtn, ...(viewMode === "deleted" ? s.tabBtnActive : {}) }}
+            >
+              Deleted users
+            </button>
+            {viewMode === "active" && (
+              <button onClick={() => openUserModal("create")} style={s.primaryBtn}>
+                + Add User
               </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("deleted")}
-                style={{ ...styles.addButton, background: viewMode === "deleted" ? "#1f7a5c" : "#ccc" }}
-              >
-                Deleted users
-              </button>
-              {viewMode === "active" && (
-                <button type="button" onClick={() => openUserModal("create")} style={styles.addButton}>
-                  + Add User
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div style={styles.listCard}>
-            <div style={styles.searchRow}>
-              <input
-                placeholder="Search name, phone, or email"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={styles.searchInput}
-              />
-              <span>{filteredUsers.length} users</span>
-            </div>
-
-            {loading ? (
-              <div style={styles.loading}>Loading users…</div>
-            ) : (
-              <div style={styles.tableWrapper}>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Phone</th>
-                      <th>Role</th>
-                      <th>Availability</th>
-                      <th>Created</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.map((user) => (
-                      <tr key={user.uid}>
-                        <td>{user.full_name || "—"}</td>
-                        <td>{user.email || "—"}</td>
-                        <td>{user.phone || "—"}</td>
-                        <td>{user.role}</td>
-                        <td>{user.is_available ? "Available" : "Unavailable"}</td>
-                        <td>{formatDate(user.created_at)}</td>
-                        <td style={styles.actionsCell}>
-                          <button
-                            type="button"
-                            onClick={() => handleSelectUser(user)}
-                            style={styles.smallButton}
-                          >
-                            Edit
-                          </button>
-                          {viewMode === "active" ? (
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(user)}
-                              style={styles.deleteButton}
-                            >
-                              Delete
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleRestore(user)}
-                              style={{ ...styles.smallButton, background: "#2e7d32" }}
-                            >
-                              Restore
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
             )}
           </div>
+        </div>
 
-          {modalOpen && (
-            <div style={styles.modalOverlay}>
-              <div style={styles.modal}>
-                <div style={styles.modalHeader}>
-                  <div>
-                    <h2>{formMode === "create" ? "Create New User" : "Edit User"}</h2>
-                    <p style={styles.helperText}>
-                      {formMode === "create"
-                        ? "Fields marked with * are required."
-                        : "Update this user's profile details."}
-                    </p>
+        {/* Stats */}
+        {viewMode === "active" && (
+          <div style={s.statsRow}>
+            {[
+              { val: users.length, lbl: "Total users" },
+              { val: volunteerCount, lbl: "Volunteers" },
+              { val: coordinatorCount, lbl: "Coordinators" },
+              { val: availableCount, lbl: "Available now" },
+            ].map((stat) => (
+              <div key={stat.lbl} style={s.statCard}>
+                <div style={s.statVal}>{stat.val}</div>
+                <div style={s.statLbl}>{stat.lbl}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Messages */}
+        {message && <div style={s.successBox}>{message}</div>}
+        {error && <div style={s.errorBox}>{error}</div>}
+
+        {/* User list card */}
+        <div style={s.card}>
+          <div style={s.searchRow}>
+            <div style={s.searchBox}>
+              <span style={{ fontSize: "16px", color: "#888" }}>🔍</span>
+              <input
+                placeholder="Search by name, phone, or email"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={s.searchInput}
+              />
+            </div>
+            <span style={s.countPill}>{filteredUsers.length} users</span>
+          </div>
+
+          {loading ? (
+            <div style={s.loading}>Loading users…</div>
+          ) : filteredUsers.length === 0 ? (
+            <div style={s.emptyState}>No users found.</div>
+          ) : (
+            filteredUsers.map((user) => {
+              const badge = getRoleBadge(user.role);
+              const avatar = getAvatarStyle(user.role);
+              return (
+                <div key={user.uid} style={s.userRow}>
+                  <div style={{ ...s.avatar, background: avatar.bg, color: avatar.color }}>
+                    {getInitials(user.full_name || user.email)}
                   </div>
-                  <button type="button" onClick={closeModal} style={styles.closeButton}>
-                    ✕
-                  </button>
+                  <div style={s.userInfo}>
+                    <div style={s.userName}>{user.full_name || "—"}</div>
+                    <div style={s.userMeta}>
+                      {user.phone && <span>📞 {user.phone}</span>}
+                      {user.phone && user.city && <span> · </span>}
+                      {user.city && <span>📍 {user.city}</span>}
+                      {user.email && <span style={{ marginLeft: user.phone || user.city ? "6px" : 0 }}>✉️ {user.email}</span>}
+                    </div>
+                    <div style={{ marginTop: "4px", fontSize: "11px", color: "#888" }}>
+                      Joined {formatDate(user.created_at)}
+                      {user.experience_level && <span> · {user.experience_level}</span>}
+                      {user.height_work && <span> · 🪜 Height license</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+                    <span style={{ ...s.badge, background: badge.bg, color: badge.color }}>{badge.label}</span>
+                    <span style={{
+                      ...s.badge,
+                      background: user.is_available ? "#EAF3DE" : "#FCEBEB",
+                      color: user.is_available ? "#27500A" : "#791F1F",
+                    }}>
+                      {user.is_available ? "Available" : "Unavailable"}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: "6px", marginLeft: "8px" }}>
+                    <button
+                      onClick={() => openUserModal("edit", user)}
+                      style={s.iconBtn}
+                      title="Edit"
+                    >
+                      ✏️
+                    </button>
+                    {viewMode === "active" ? (
+                      <button
+                        onClick={() => handleDelete(user)}
+                        style={{ ...s.iconBtn, borderColor: "#F09595", color: "#A32D2D" }}
+                        title="Delete"
+                      >
+                        🗑️
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleRestore(user)}
+                        style={{ ...s.iconBtn, borderColor: "#9FE1CB", color: "#085041" }}
+                        title="Restore"
+                      >
+                        ↩️
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Modal */}
+        {modalOpen && (
+          <div style={s.modalOverlay}>
+            <div style={s.modal}>
+              <div style={s.modalHeader}>
+                <div>
+                  <h2 style={s.modalTitle}>
+                    {formMode === "create" ? "🐝 Create new user" : "✏️ Edit user"}
+                  </h2>
+                  <p style={s.modalSub}>
+                    {formMode === "create" ? "Fields marked * are required." : "Update this user's profile."}
+                  </p>
+                </div>
+                <button onClick={closeModal} style={s.closeBtn}>✕</button>
+              </div>
+
+              {message && <div style={s.successBox}>{message}</div>}
+              {error && <div style={s.errorBox}>{error}</div>}
+
+              <form onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
+
+                <div style={s.fieldGroup}>
+                  <label style={s.fieldLabel}>Full name <span style={s.required}>*</span></label>
+                  <input
+                    name="full_name"
+                    value={formData.full_name}
+                    onChange={handleChange}
+                    style={{ ...s.input, borderColor: !formData.full_name.trim() ? "#e74c3c" : "#e0d4b8" }}
+                  />
+                  {!formData.full_name.trim() && <span style={s.fieldError}>Required</span>}
                 </div>
 
-                {message && <div style={styles.successBox}>{message}</div>}
-                {error && <div style={styles.errorBox}>{error}</div>}
+                <div style={s.fieldGroup}>
+                  <label style={s.fieldLabel}>Email <span style={s.required}>*</span></label>
+                  <input
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    readOnly={formMode === "edit"}
+                    style={{
+                      ...s.input,
+                      borderColor: !formData.email.trim() ? "#e74c3c" : "#e0d4b8",
+                      background: formMode === "edit" ? "#f5f5f5" : "#fffdf8",
+                    }}
+                  />
+                  {!formData.email.trim() && <span style={s.fieldError}>Required</span>}
+                </div>
 
-                <form onSubmit={handleSubmit} style={styles.form}>
-
-                  {/* Full Name */}
-                  <label style={styles.label}>
-                    Full name <span style={{ color: "red" }}>*</span>
+                {formMode === "create" && (
+                  <div style={s.fieldGroup}>
+                    <label style={s.fieldLabel}>Password <span style={s.required}>*</span></label>
                     <input
-                      name="full_name"
-                      value={formData.full_name}
+                      name="password"
+                      type="password"
+                      value={formData.password}
                       onChange={handleChange}
-                      style={{
-                        ...styles.input,
-                        border: !formData.full_name.trim() ? "1.5px solid #e74c3c" : "1px solid #cfd8cc",
-                      }}
+                      style={{ ...s.input, borderColor: !formData.password ? "#e74c3c" : "#e0d4b8" }}
                     />
-                    {!formData.full_name.trim() && (
-                      <span style={{ color: "#e74c3c", fontSize: "12px" }}>Required</span>
-                    )}
-                  </label>
-
-                  {/* Email */}
-                  <label style={styles.label}>
-                    Email <span style={{ color: "red" }}>*</span>
-                    <input
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      style={{
-                        ...styles.input,
-                        border: !formData.email.trim() ? "1.5px solid #e74c3c" : "1px solid #cfd8cc",
-                      }}
-                      readOnly={formMode === "edit"}
-                    />
-                    {!formData.email.trim() && (
-                      <span style={{ color: "#e74c3c", fontSize: "12px" }}>Required</span>
-                    )}
-                  </label>
-
-                  {/* Password (create only) */}
-                  {formMode === "create" && (
-                    <label style={styles.label}>
-                      Password <span style={{ color: "red" }}>*</span>
-                      <input
-                        name="password"
-                        type="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        style={{
-                          ...styles.input,
-                          border: !formData.password ? "1.5px solid #e74c3c" : "1px solid #cfd8cc",
-                        }}
-                      />
-                      {!formData.password && (
-                        <span style={{ color: "#e74c3c", fontSize: "12px" }}>Required</span>
-                      )}
-                    </label>
-                  )}
-
-                  {/* Role */}
-                  <label style={styles.label}>
-                    Role <span style={{ color: "red" }}>*</span>
-                    <select
-                      name="role"
-                      value={formData.role}
-                      onChange={handleChange}
-                      style={styles.input}
-                    >
-                      <option value={USER_ROLES.ADMIN}>Admin</option>
-                      <option value={USER_ROLES.COORDINATOR}>Coordinator</option>
-                      <option value={USER_ROLES.VOLUNTEER}>Volunteer</option>
-                    </select>
-                  </label>
-
-                  {/* Phone */}
-                  <label style={styles.label}>
-                    Phone number <span style={{ color: "red" }}>*</span>
-                    <input
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      style={{
-                        ...styles.input,
-                        border: !formData.phone.trim() ? "1.5px solid #e74c3c" : "1px solid #cfd8cc",
-                      }}
-                    />
-                    {!formData.phone.trim() && (
-                      <span style={{ color: "#e74c3c", fontSize: "12px" }}>Required</span>
-                    )}
-                  </label>
-
-                  {/* Occupation - optional */}
-                  <label style={styles.label}>
-                    Occupation{" "}
-                    <span style={{ color: "#888", fontSize: "12px", fontWeight: 400 }}>(optional)</span>
-                    <input
-                      name="occupation"
-                      value={formData.occupation}
-                      onChange={handleChange}
-                      style={styles.input}
-                    />
-                  </label>
-
-                  {/* City - searchable */}
-                  <label style={styles.label}>
-                    City <span style={{ color: "red" }}>*</span>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        value={citySearch || formData.city}
-                        onChange={(e) => {
-                          setCitySearch(e.target.value);
-                          setShowCityDropdown(true);
-                        }}
-                        onFocus={() => setShowCityDropdown(true)}
-                        onBlur={() => setTimeout(() => setShowCityDropdown(false), 150)}
-                        placeholder="Search city..."
-                        style={{
-                          ...styles.input,
-                          border: !formData.city ? "1.5px solid #e74c3c" : "1px solid #cfd8cc",
-                          color: "#2d4a3a",
-                        }}
-                      />
-                      {showCityDropdown && (
-                        <div style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: 0,
-                          right: 0,
-                          background: "white",
-                          border: "1px solid #cfd8cc",
-                          borderRadius: "12px",
-                          maxHeight: "180px",
-                          overflowY: "auto",
-                          zIndex: 200,
-                          boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
-                        }}>
-                          {ISRAELI_CITIES
-                            .filter((city) =>
-                              city.toLowerCase().includes((citySearch || "").toLowerCase())
-                            )
-                            .map((city) => (
-                              <div
-                                key={city}
-                                onMouseDown={() => {
-                                  setFormData((prev) => ({ ...prev, city }));
-                                  setCitySearch("");
-                                  setShowCityDropdown(false);
-                                }}
-                                style={{
-                                  padding: "10px 14px",
-                                  cursor: "pointer",
-                                  color: "#2d4a3a",
-                                  fontSize: "14px",
-                                  borderBottom: "1px solid #f0f0f0",
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = "#f0faf5"}
-                                onMouseLeave={(e) => e.currentTarget.style.background = "white"}
-                              >
-                                {city}
-                              </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                    {!formData.city && (
-                      <span style={{ color: "#e74c3c", fontSize: "12px" }}>Required</span>
-                    )}
-                    {formData.city && (
-                      <span style={{ color: "#6a7f73", fontSize: "12px" }}>
-                        Selected: <strong>{formData.city}</strong>
-                      </span>
-                    )}
-                  </label>
-
-                  {/* Experience Level */}
-                  <label style={styles.label}>
-                    Experience Level
-                    <select
-                      name="experience_level"
-                      value={formData.experience_level}
-                      onChange={handleChange}
-                      style={styles.input}
-                    >
-                      <option value="beginner">Beginner</option>
-                      <option value="intermediate">Intermediate</option>
-                      <option value="experienced">Experienced</option>
-                      <option value="expert">Expert</option>
-                    </select>
-                  </label>
-
-                  {/* Height Work License */}
-                  <label style={styles.switchLabel}>
-                    <input
-                      name="height_work"
-                      type="checkbox"
-                      checked={formData.height_work}
-                      onChange={handleChange}
-                    />
-                    Has working from heights license
-                  </label>
-
-                  {/* Availability */}
-                  <label style={styles.switchLabel}>
-                    <input
-                      name="is_available"
-                      type="checkbox"
-                      checked={formData.is_available}
-                      onChange={handleChange}
-                    />
-                    Available for assignments
-                  </label>
-
-                  <div style={styles.actions}>
-                    <button
-                      type="submit"
-                      disabled={saving || !isFormValid()}
-                      style={{
-                        ...styles.saveButton,
-                        opacity: saving || !isFormValid() ? 0.5 : 1,
-                        cursor: saving || !isFormValid() ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      {saving ? "Saving..." : formMode === "create" ? "Create User" : "Save Changes"}
-                    </button>
-                    <button type="button" onClick={closeModal} style={styles.cancelButton}>
-                      Close
-                    </button>
+                    {!formData.password && <span style={s.fieldError}>Required</span>}
                   </div>
-                </form>
-              </div>
+                )}
+
+                <div style={s.fieldGroup}>
+                  <label style={s.fieldLabel}>Role <span style={s.required}>*</span></label>
+                  <select name="role" value={formData.role} onChange={handleChange} style={s.input}>
+                    <option value={USER_ROLES.ADMIN}>Admin</option>
+                    <option value={USER_ROLES.COORDINATOR}>Coordinator</option>
+                    <option value={USER_ROLES.VOLUNTEER}>Volunteer</option>
+                  </select>
+                </div>
+
+                <div style={s.fieldGroup}>
+                  <label style={s.fieldLabel}>Phone number <span style={s.required}>*</span></label>
+                  <input
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    style={{ ...s.input, borderColor: !formData.phone.trim() ? "#e74c3c" : "#e0d4b8" }}
+                  />
+                  {!formData.phone.trim() && <span style={s.fieldError}>Required</span>}
+                </div>
+
+                <div style={s.fieldGroup}>
+                  <label style={s.fieldLabel}>
+                    Occupation <span style={{ color: "#999", fontSize: "12px", fontWeight: 400 }}>(optional)</span>
+                  </label>
+                  <input name="occupation" value={formData.occupation} onChange={handleChange} style={s.input} />
+                </div>
+
+                <div style={s.fieldGroup}>
+                  <label style={s.fieldLabel}>City <span style={s.required}>*</span></label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      value={citySearch || formData.city}
+                      onChange={(e) => { setCitySearch(e.target.value); setShowCityDropdown(true); }}
+                      onFocus={() => setShowCityDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowCityDropdown(false), 150)}
+                      placeholder="Search city..."
+                      style={{ ...s.input, borderColor: !formData.city ? "#e74c3c" : "#e0d4b8" }}
+                    />
+                    {showCityDropdown && (
+                      <div style={s.dropdown}>
+                        {ISRAELI_CITIES.filter((c) =>
+                          c.toLowerCase().includes((citySearch || "").toLowerCase())
+                        ).map((city) => (
+                          <div
+                            key={city}
+                            onMouseDown={() => {
+                              setFormData((prev) => ({ ...prev, city }));
+                              setCitySearch("");
+                              setShowCityDropdown(false);
+                            }}
+                            style={s.dropdownItem}
+                            onMouseEnter={(e) => e.currentTarget.style.background = "#fff8ec"}
+                            onMouseLeave={(e) => e.currentTarget.style.background = "white"}
+                          >
+                            {city}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {!formData.city && <span style={s.fieldError}>Required</span>}
+                  {formData.city && (
+                    <span style={{ fontSize: "12px", color: "#6a7f73" }}>
+                      Selected: <strong>{formData.city}</strong>
+                    </span>
+                  )}
+                </div>
+
+                <div style={s.fieldGroup}>
+                  <label style={s.fieldLabel}>Experience level</label>
+                  <select name="experience_level" value={formData.experience_level} onChange={handleChange} style={s.input}>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="experienced">Experienced</option>
+                    <option value="expert">Expert</option>
+                  </select>
+                </div>
+
+                <label style={s.checkLabel}>
+                  <input
+                    name="height_work"
+                    type="checkbox"
+                    checked={formData.height_work}
+                    onChange={handleChange}
+                    style={{ accentColor: "#BA7517" }}
+                  />
+                  🪜 Has working from heights license
+                </label>
+
+                <label style={s.checkLabel}>
+                  <input
+                    name="is_available"
+                    type="checkbox"
+                    checked={formData.is_available}
+                    onChange={handleChange}
+                    style={{ accentColor: "#BA7517" }}
+                  />
+                  ✅ Available for assignments
+                </label>
+
+                <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
+                  <button
+                    type="submit"
+                    disabled={saving || !isFormValid()}
+                    style={{
+                      ...s.primaryBtn,
+                      opacity: saving || !isFormValid() ? 0.5 : 1,
+                      cursor: saving || !isFormValid() ? "not-allowed" : "pointer",
+                      flex: 1,
+                    }}
+                  >
+                    {saving ? "Saving..." : formMode === "create" ? "Create User" : "Save Changes"}
+                  </button>
+                  <button type="button" onClick={closeModal} style={{ ...s.cancelBtn, flex: 1 }}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
-          )}
-        </section>
+          </div>
+        )}
       </main>
     </div>
   );
 }
 
-const styles = {
+const s = {
   page: {
-    padding: "24px 24px 48px",
-    maxWidth: "1200px",
+    padding: "28px 28px 60px",
+    maxWidth: "1100px",
     margin: "0 auto",
     fontFamily: "Arial, sans-serif",
   },
-  panel: {
-    background: "white",
-    borderRadius: "28px",
-    boxShadow: "0 32px 90px rgba(0,0,0,0.08)",
-    padding: "32px",
-  },
-  header: {
+  topbar: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     flexWrap: "wrap",
-    gap: "18px",
-    marginBottom: "28px",
+    gap: "16px",
+    marginBottom: "24px",
   },
-  title: {
+  pageTitle: {
     margin: 0,
-    fontSize: "32px",
-    color: "#173b2f",
-  },
-  subtitle: {
-    margin: "10px 0 0",
-    maxWidth: "680px",
-    color: "#4f5f58",
-    fontSize: "16px",
-  },
-  meta: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    fontSize: "14px",
-    color: "#5f6f68",
-  },
-  topBar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "18px",
-    marginBottom: "20px",
-  },
-  addButton: {
-    border: "none",
-    borderRadius: "16px",
-    padding: "12px 20px",
-    background: "#1f7a5c",
-    color: "white",
+    fontSize: "28px",
     fontWeight: 700,
+    color: "#2d4a3a",
+  },
+  pageSub: {
+    margin: "4px 0 0",
+    fontSize: "14px",
+    color: "#6a7f73",
+  },
+  tabBtn: {
+    padding: "8px 16px",
+    borderRadius: "12px",
+    border: "1px solid #e0d4b8",
+    background: "white",
+    color: "#6a7f73",
+    fontSize: "13px",
+    cursor: "pointer",
+    fontWeight: 500,
+  },
+  tabBtnActive: {
+    background: "#FAEEDA",
+    borderColor: "#EF9F27",
+    color: "#854F0B",
+  },
+  primaryBtn: {
+    padding: "10px 20px",
+    borderRadius: "12px",
+    border: "none",
+    background: "#BA7517",
+    color: "#FAEEDA",
+    fontWeight: 700,
+    fontSize: "14px",
     cursor: "pointer",
   },
-  helperText: {
-    margin: "6px 0 0",
-    color: "#5f6f68",
+  cancelBtn: {
+    padding: "10px 20px",
+    borderRadius: "12px",
+    border: "1px solid #e0d4b8",
+    background: "white",
+    color: "#4a5e52",
+    fontWeight: 600,
     fontSize: "14px",
+    cursor: "pointer",
   },
-  form: {
+  statsRow: {
     display: "grid",
-    gap: "14px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+    gap: "12px",
+    marginBottom: "20px",
   },
-  label: {
-    display: "grid",
-    gap: "8px",
-    fontSize: "14px",
-    color: "#2a3e35",
+  statCard: {
+    background: "white",
+    border: "1px solid #f0e6cc",
+    borderRadius: "16px",
+    padding: "16px 18px",
+  },
+  statVal: {
+    fontSize: "26px",
+    fontWeight: 700,
+    color: "#2d4a3a",
+  },
+  statLbl: {
+    fontSize: "12px",
+    color: "#6a7f73",
+    marginTop: "2px",
+  },
+  card: {
+    background: "white",
+    borderRadius: "20px",
+    border: "1px solid #f0e6cc",
+    padding: "20px 24px",
   },
   searchRow: {
     display: "flex",
     alignItems: "center",
-    gap: "10px",
+    gap: "12px",
+    marginBottom: "18px",
     flexWrap: "wrap",
   },
-  searchInput: {
-    padding: "12px 14px",
-    borderRadius: "14px",
-    border: "1px solid #cfd8cc",
-    minWidth: "240px",
-    width: "100%",
-    maxWidth: "320px",
-    fontSize: "14px",
-  },
-  input: {
-    width: "100%",
-    padding: "14px 16px",
-    borderRadius: "14px",
-    border: "1px solid #cfd8cc",
-    fontSize: "15px",
-    outline: "none",
-    boxSizing: "border-box",
-  },
-  switchLabel: {
+  searchBox: {
     display: "flex",
     alignItems: "center",
-    gap: "10px",
-    fontSize: "15px",
-    color: "#2a3e35",
+    gap: "8px",
+    padding: "9px 14px",
+    borderRadius: "12px",
+    border: "1px solid #e0d4b8",
+    background: "#fffdf8",
+    flex: 1,
+    minWidth: "200px",
+    maxWidth: "360px",
   },
-  actions: {
-    display: "flex",
-    gap: "12px",
-    flexWrap: "wrap",
-    marginTop: "10px",
-  },
-  saveButton: {
+  searchInput: {
     border: "none",
-    borderRadius: "14px",
-    padding: "14px 22px",
-    background: "#1f7a5c",
-    color: "white",
-    cursor: "pointer",
+    background: "transparent",
+    color: "#2d4a3a",
+    fontSize: "14px",
+    outline: "none",
+    width: "100%",
+  },
+  countPill: {
+    fontSize: "12px",
+    color: "#6a7f73",
+    background: "#f5f0e8",
+    borderRadius: "999px",
+    padding: "5px 12px",
+    border: "1px solid #e0d4b8",
+  },
+  userRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    padding: "14px 0",
+    borderBottom: "1px solid #f5f0e8",
+    flexWrap: "wrap",
+  },
+  avatar: {
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "13px",
     fontWeight: 700,
+    flexShrink: 0,
   },
-  cancelButton: {
-    border: "1px solid #ccc",
-    borderRadius: "14px",
-    padding: "14px 22px",
+  userInfo: {
+    flex: 1,
+    minWidth: "160px",
+  },
+  userName: {
+    fontSize: "15px",
+    fontWeight: 600,
+    color: "#2d4a3a",
+  },
+  userMeta: {
+    fontSize: "12px",
+    color: "#6a7f73",
+    marginTop: "2px",
+  },
+  badge: {
+    display: "inline-block",
+    fontSize: "11px",
+    padding: "3px 10px",
+    borderRadius: "999px",
+    fontWeight: 600,
+  },
+  iconBtn: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "10px",
+    border: "1px solid #e0d4b8",
     background: "white",
-    color: "#173b2f",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     cursor: "pointer",
+    fontSize: "14px",
   },
-  listCard: {
+  loading: {
     padding: "24px",
-    borderRadius: "24px",
-    border: "1px solid #e8f1ec",
-    background: "#fbfdfb",
+    color: "#6a7f73",
+    textAlign: "center",
+  },
+  emptyState: {
+    padding: "32px",
+    textAlign: "center",
+    color: "#6a7f73",
+    fontSize: "15px",
+  },
+  successBox: {
+    background: "#E1F5EE",
+    border: "1px solid #9FE1CB",
+    color: "#085041",
+    borderRadius: "12px",
+    padding: "12px 16px",
+    marginBottom: "14px",
+    fontSize: "14px",
+  },
+  errorBox: {
+    background: "#FCEBEB",
+    border: "1px solid #F09595",
+    color: "#791F1F",
+    borderRadius: "12px",
+    padding: "12px 16px",
+    marginBottom: "14px",
+    fontSize: "14px",
   },
   modalOverlay: {
     position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     background: "rgba(0,0,0,0.35)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     padding: "18px",
-    zIndex: 99,
+    zIndex: 999,
   },
   modal: {
     width: "100%",
-    maxWidth: "540px",
-    maxHeight: "calc(100vh - 80px)",
+    maxWidth: "520px",
+    maxHeight: "calc(100vh - 60px)",
     overflowY: "auto",
-    background: "white",
-    borderRadius: "26px",
-    padding: "24px",
+    background: "#fffdf8",
+    borderRadius: "24px",
+    padding: "28px",
     boxShadow: "0 24px 70px rgba(0,0,0,0.15)",
-    position: "relative",
   },
   modalHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: "16px",
-    marginBottom: "18px",
+    marginBottom: "20px",
+    gap: "12px",
   },
-  closeButton: {
+  modalTitle: {
+    margin: 0,
+    fontSize: "20px",
+    fontWeight: 700,
+    color: "#2d4a3a",
+  },
+  modalSub: {
+    margin: "4px 0 0",
+    fontSize: "13px",
+    color: "#6a7f73",
+  },
+  closeBtn: {
     border: "none",
     background: "transparent",
-    color: "#233d33",
-    fontSize: "22px",
+    fontSize: "20px",
     cursor: "pointer",
-    padding: "6px 10px",
+    color: "#6a7f73",
+    padding: "4px 8px",
     lineHeight: 1,
   },
-  loading: {
-    padding: "24px",
-    color: "#5f6f68",
+  fieldGroup: {
+    display: "grid",
+    gap: "6px",
   },
-  tableWrapper: {
-    overflowX: "auto",
+  fieldLabel: {
+    fontSize: "13px",
+    fontWeight: 600,
+    color: "#2d4a3a",
   },
-  table: {
+  required: {
+    color: "#e74c3c",
+  },
+  fieldError: {
+    fontSize: "11px",
+    color: "#e74c3c",
+  },
+  input: {
     width: "100%",
-    borderCollapse: "collapse",
+    padding: "11px 14px",
+    borderRadius: "12px",
+    border: "1px solid #e0d4b8",
+    fontSize: "14px",
+    outline: "none",
+    background: "#fffdf8",
+    color: "#2d4a3a",
+    boxSizing: "border-box",
   },
-  actionsCell: {
+  checkLabel: {
     display: "flex",
-    justifyContent: "flex-end",
+    alignItems: "center",
     gap: "10px",
-    whiteSpace: "nowrap",
-  },
-  smallButton: {
-    border: "none",
-    borderRadius: "12px",
-    padding: "8px 14px",
-    background: "#173b2f",
-    color: "white",
+    fontSize: "14px",
+    color: "#2d4a3a",
     cursor: "pointer",
   },
-  deleteButton: {
-    border: "none",
+  dropdown: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    background: "white",
+    border: "1px solid #e0d4b8",
     borderRadius: "12px",
-    padding: "8px 14px",
-    background: "#c0392b",
-    color: "white",
+    maxHeight: "180px",
+    overflowY: "auto",
+    zIndex: 300,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+  },
+  dropdownItem: {
+    padding: "10px 14px",
     cursor: "pointer",
-  },
-  successBox: {
-    background: "#e0f2f1",
-    border: "1px solid #a7d7ca",
-    color: "#1b5e20",
-    borderRadius: "14px",
-    padding: "14px 16px",
-    marginBottom: "14px",
-  },
-  errorBox: {
-    background: "#fdecea",
-    border: "1px solid #f5c6cb",
-    color: "#9f3a38",
-    borderRadius: "14px",
-    padding: "14px 16px",
-    marginBottom: "14px",
+    color: "#2d4a3a",
+    fontSize: "14px",
+    borderBottom: "1px solid #f5f0e8",
+    background: "white",
   },
 };
 
