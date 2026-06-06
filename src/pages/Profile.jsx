@@ -3,11 +3,35 @@ import { useAuth } from "../contexts/AuthContext";
 import Navbar from "../components/Navbar";
 import { updateUserProfile } from "../services/userService";
 
+
+
+
+const ISRAELI_CITIES = [
+  "Jerusalem", "Tel Aviv", "Haifa", "Rishon LeZion", "Petah Tikva",
+  "Ashdod", "Netanya", "Beer Sheva", "Bnei Brak", "Holon",
+  "Bat Yam", "Ramat Gan", "Ashkelon", "Rehovot", "Herzliya",
+  "Kfar Saba", "Modi'in", "Hadera", "Nazareth", "Lod",
+  "Ramla", "Ra'anana", "Nahariya", "Givatayim", "Hod HaSharon",
+  "Rosh HaAyin", "Acre", "Afula", "Nes Ziona", "Eilat",
+  "Tiberias", "Safed", "Dimona", "Kiryat Gat", "Kiryat Ata",
+  "Kiryat Bialik", "Kiryat Motzkin", "Kiryat Ono", "Kiryat Yam",
+  "Netivot", "Ofakim", "Or Yehuda", "Yehud", "Azur",
+  "Tayibe", "Umm al-Fahm", "Shfaram", "Sakhnin", "Tamra",
+  "Arraba", "Maghar", "Tira", "Qalansawe", "Kafr Qasim",
+  "Kafr Manda", "Nof HaGalil", "Ma'alot-Tarshiha", "Shlomi",
+  "Tirat Carmel", "Nesher", "Yokneam", "Zichron Yaakov",
+  "Caesarea", "Pardes Hanna", "Binyamina", "Or Akiva",
+  "Migdal HaEmek", "Bet She'an", "Bet Shemesh", "Modi'in Illit",
+  "Beitar Illit", "Ariel", "Maale Adumim",
+];
+
 function Profile() {
   const { userProfile, refreshUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [citySearch, setCitySearch] = useState("");
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     city: "",
@@ -103,13 +127,63 @@ function Profile() {
 
               <div style={styles.formGroup}>
                 <label style={styles.label}>City</label>
-                <input
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  placeholder="Enter your city"
-                  style={styles.input}
-                />
+                <div style={{ position: "relative" }}>
+                  <input
+                    value={citySearch || formData.city}
+                    onChange={(e) => {
+                      setCitySearch(e.target.value);
+                      setShowCityDropdown(true);
+                    }}
+                    onFocus={() => setShowCityDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowCityDropdown(false), 150)}
+                    placeholder="Search your city..."
+                    style={{ ...styles.input, color: "#2d4a3a" }}
+                  />
+                  {showCityDropdown && (
+                    <div style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      background: "white",
+                      border: "1px solid #f0dba8",
+                      borderRadius: "12px",
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                      zIndex: 100,
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+                    }}>
+                      {ISRAELI_CITIES
+                        .filter((city) => city.toLowerCase().includes((citySearch || "").toLowerCase()))
+                        .map((city) => (
+                          <div
+                            key={city}
+                            onMouseDown={() => {
+                              setFormData((prev) => ({ ...prev, city }));
+                              setCitySearch("");
+                              setShowCityDropdown(false);
+                            }}
+                            style={{
+                              padding: "10px 14px",
+                              cursor: "pointer",
+                              color: "#2d4a3a",
+                              fontSize: "14px",
+                              borderBottom: "1px solid #fdf3dc",
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = "#fffaf0"}
+                            onMouseLeave={(e) => e.currentTarget.style.background = "white"}
+                          >
+                            {city}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+                {formData.city && (
+                  <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#6a7f73" }}>
+                    Selected: <strong>{formData.city}</strong>
+                  </p>
+                )}
               </div>
             </div>
 
