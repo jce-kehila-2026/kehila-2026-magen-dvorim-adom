@@ -10,7 +10,7 @@ const CLOSE_STATUS_OPTIONS = [
   { value: "evacuated_by_volunteer", label: "Evacuated by volunteer" },
   { value: "sent_to_chofesh_farm", label: "Sent to Chofesh Farm" },
   { value: "remains_in_place_without_treatment", label: "Remains in place without treatment" },
-  { value: "cancelled", label: "Cancelled" },
+  // { value: "cancelled", label: "Cancelled" },
 ];
 
 function MyCases() {
@@ -42,29 +42,25 @@ function MyCases() {
     try {
       let caseData;
 
-      if (userProfile.role === USER_ROLES.VOLUNTEER) {
-        // For volunteers, get only their assigned cases
-        caseData = await getCasesForUser(userProfile.uid);
+    caseData = await getCasesForUser(userProfile.uid);
 
-        // Load coordinator info for each case
-        const coordMap = {};
-        for (const c of caseData) {
-          if (c.coordinator_id && !coordMap[c.coordinator_id]) {
-            try {
-              const coord = await getUserById(c.coordinator_id);
-              coordMap[c.coordinator_id] = coord;
-            } catch (err) {
-              console.error("Failed to load coordinator info:", err);
-            }
-          }
+    const coordMap = {};
+    for (const c of caseData) {
+      if (c.coordinator_id && !coordMap[c.coordinator_id]) {
+        try {
+          const coord = await getUserById(c.coordinator_id);
+          coordMap[c.coordinator_id] = coord;
+        } catch (err) {
+          console.error("Failed to load coordinator info:", err);
         }
-        setCoordinatorData(coordMap);
-      } else {
-        // For coordinators/admins
-        caseData = await getCasesForUser(userProfile.uid);
-        setUsers(await getAssignableUsers());
-        setAssignments(await getAssignmentsByCaseIds(caseData.map((item) => item.id)));
       }
+    }
+    setCoordinatorData(coordMap);
+
+    if (userProfile.role !== USER_ROLES.VOLUNTEER) {
+      setUsers(await getAssignableUsers());
+      setAssignments(await getAssignmentsByCaseIds(caseData.map((item) => item.id)));
+    }
 
       setCases(caseData);
     } catch (err) {
@@ -142,7 +138,7 @@ function MyCases() {
               <p style={styles.subtitle}>
                 {isVolunteer
                   ? "View your assigned cases and submit results when completed."
-                  : "Here are the cases where you are responsible as a coordinator or assigned as a volunteer."}
+                  : "Here are the cases where you are assigned as a volunteer."}
               </p>
             </div>
             <div style={styles.meta}>
@@ -247,7 +243,7 @@ function MyCases() {
                           </div>
 
                           {/* Coordinator Info (for volunteers) */}
-                          {isVolunteer && coordinator && (
+                          { coordinator && (
                             <div
                               style={{
                                 ...styles.caseSection,
@@ -298,8 +294,8 @@ function MyCases() {
                             </div>
                           )}
 
-                          {/* Close Case Button (for volunteers) */}
-                          {isVolunteer && (
+                          {/* Close Case Button  */}
+                          
                             <div style={styles.actions}>
                               <button
                                 onClick={() => handleCloseCase(c)}
@@ -308,7 +304,7 @@ function MyCases() {
                                 Submit Case Results
                               </button>
                             </div>
-                          )}
+                          
                         </div>
                       );
                     })}
