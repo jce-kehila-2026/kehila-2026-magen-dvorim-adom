@@ -15,6 +15,25 @@ import {
   validateUserProfile,
 } from "../services/userSchema";
 
+const ISRAELI_CITIES = [
+  "Jerusalem", "Tel Aviv", "Haifa", "Rishon LeZion", "Petah Tikva",
+  "Ashdod", "Netanya", "Beer Sheva", "Bnei Brak", "Holon",
+  "Bat Yam", "Ramat Gan", "Ashkelon", "Rehovot", "Herzliya",
+  "Kfar Saba", "Modi'in", "Hadera", "Nazareth", "Lod",
+  "Ramla", "Ra'anana", "Nahariya", "Givatayim", "Hod HaSharon",
+  "Rosh HaAyin", "Acre", "Afula", "Nes Ziona", "Eilat",
+  "Tiberias", "Safed", "Dimona", "Kiryat Gat", "Kiryat Ata",
+  "Kiryat Bialik", "Kiryat Motzkin", "Kiryat Ono", "Kiryat Yam",
+  "Netivot", "Ofakim", "Or Yehuda", "Yehud", "Azur",
+  "Tayibe", "Umm al-Fahm", "Shfaram", "Sakhnin", "Tamra",
+  "Arraba", "Maghar", "Tira", "Qalansawe", "Kafr Qasim",
+  "Kafr Manda", "Nof HaGalil", "Ma'alot-Tarshiha", "Shlomi",
+  "Tirat Carmel", "Nesher", "Yokneam", "Zichron Yaakov",
+  "Caesarea", "Pardes Hanna", "Binyamina", "Or Akiva",
+  "Migdal HaEmek", "Bet She'an", "Bet Shemesh", "Modi'in Illit",
+  "Beitar Illit", "Ariel", "Maale Adumim",
+];
+
 function AdminUsers() {
   const { userProfile } = useAuth();
   const [users, setUsers] = useState([]);
@@ -27,6 +46,9 @@ function AdminUsers() {
   const [deletedUsers, setDeletedUsers] = useState([]);
   const [formMode, setFormMode] = useState("create");
   const [selectedUser, setSelectedUser] = useState(null);
+  const [citySearch, setCitySearch] = useState("");
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -36,6 +58,8 @@ function AdminUsers() {
     role: USER_ROLES.VOLUNTEER,
     is_available: true,
     password: "",
+    experience_level: "beginner",
+    height_work: false,
   });
 
   useEffect(() => {
@@ -72,7 +96,11 @@ function AdminUsers() {
       role: USER_ROLES.VOLUNTEER,
       is_available: true,
       password: "",
+      experience_level: "beginner",
+      height_work: false,
     });
+    setCitySearch("");
+    setShowCityDropdown(false);
     setMessage("");
     setError("");
   };
@@ -91,6 +119,8 @@ function AdminUsers() {
         role: user.role || USER_ROLES.VOLUNTEER,
         is_available: Boolean(user.is_available),
         password: "",
+        experience_level: user.experience_level || "beginner",
+        height_work: Boolean(user.height_work),
       });
     }
     setModalOpen(true);
@@ -113,6 +143,15 @@ function AdminUsers() {
     }));
   };
 
+  const isFormValid = () => {
+    if (!formData.full_name.trim()) return false;
+    if (!formData.email.trim()) return false;
+    if (!formData.phone.trim()) return false;
+    if (!formData.city) return false;
+    if (formMode === "create" && !formData.password) return false;
+    return true;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
@@ -126,6 +165,8 @@ function AdminUsers() {
       city: formData.city,
       role: formData.role,
       is_available: formData.is_available,
+      experience_level: formData.experience_level,
+      height_work: formData.height_work,
     });
 
     const validation = validateUserProfile(profilePayload);
@@ -153,6 +194,8 @@ function AdminUsers() {
           city: profilePayload.city,
           role: profilePayload.role,
           is_available: profilePayload.is_available,
+          experience_level: formData.experience_level,
+          height_work: formData.height_work,
         });
         setMessage("User updated successfully.");
       }
@@ -228,18 +271,9 @@ function AdminUsers() {
   }, [searchQuery, sortedUsers, deletedUsers, viewMode]);
 
   const formatDate = (timestamp) => {
-    if (!timestamp) {
-      return "—";
-    }
-
-    if (timestamp.toDate) {
-      return timestamp.toDate().toLocaleString();
-    }
-
-    if (timestamp.seconds) {
-      return new Date(timestamp.seconds * 1000).toLocaleString();
-    }
-
+    if (!timestamp) return "—";
+    if (timestamp.toDate) return timestamp.toDate().toLocaleString();
+    if (timestamp.seconds) return new Date(timestamp.seconds * 1000).toLocaleString();
     return String(timestamp);
   };
 
@@ -274,20 +308,14 @@ function AdminUsers() {
               <button
                 type="button"
                 onClick={() => setViewMode("active")}
-                style={{
-                  ...styles.addButton,
-                  background: viewMode === "active" ? "#1f7a5c" : "#ccc",
-                }}
+                style={{ ...styles.addButton, background: viewMode === "active" ? "#1f7a5c" : "#ccc" }}
               >
                 Active users
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("deleted")}
-                style={{
-                  ...styles.addButton,
-                  background: viewMode === "deleted" ? "#1f7a5c" : "#ccc",
-                }}
+                style={{ ...styles.addButton, background: viewMode === "deleted" ? "#1f7a5c" : "#ccc" }}
               >
                 Deleted users
               </button>
@@ -377,8 +405,8 @@ function AdminUsers() {
                     <h2>{formMode === "create" ? "Create New User" : "Edit User"}</h2>
                     <p style={styles.helperText}>
                       {formMode === "create"
-                        ? "Add a new user and set their role."
-                        : "Update this user’s profile details."}
+                        ? "Fields marked with * are required."
+                        : "Update this user's profile details."}
                     </p>
                   </div>
                   <button type="button" onClick={closeModal} style={styles.closeButton}>
@@ -390,43 +418,66 @@ function AdminUsers() {
                 {error && <div style={styles.errorBox}>{error}</div>}
 
                 <form onSubmit={handleSubmit} style={styles.form}>
+
+                  {/* Full Name */}
                   <label style={styles.label}>
-                    Full name
+                    Full name <span style={{ color: "red" }}>*</span>
                     <input
                       name="full_name"
                       value={formData.full_name}
                       onChange={handleChange}
-                      style={styles.input}
+                      style={{
+                        ...styles.input,
+                        border: !formData.full_name.trim() ? "1.5px solid #e74c3c" : "1px solid #cfd8cc",
+                      }}
                     />
+                    {!formData.full_name.trim() && (
+                      <span style={{ color: "#e74c3c", fontSize: "12px" }}>Required</span>
+                    )}
                   </label>
 
+                  {/* Email */}
                   <label style={styles.label}>
-                    Email
+                    Email <span style={{ color: "red" }}>*</span>
                     <input
                       name="email"
                       type="email"
                       value={formData.email}
                       onChange={handleChange}
-                      style={styles.input}
+                      style={{
+                        ...styles.input,
+                        border: !formData.email.trim() ? "1.5px solid #e74c3c" : "1px solid #cfd8cc",
+                      }}
                       readOnly={formMode === "edit"}
                     />
+                    {!formData.email.trim() && (
+                      <span style={{ color: "#e74c3c", fontSize: "12px" }}>Required</span>
+                    )}
                   </label>
 
+                  {/* Password (create only) */}
                   {formMode === "create" && (
                     <label style={styles.label}>
-                      Password
+                      Password <span style={{ color: "red" }}>*</span>
                       <input
                         name="password"
                         type="password"
                         value={formData.password}
                         onChange={handleChange}
-                        style={styles.input}
+                        style={{
+                          ...styles.input,
+                          border: !formData.password ? "1.5px solid #e74c3c" : "1px solid #cfd8cc",
+                        }}
                       />
+                      {!formData.password && (
+                        <span style={{ color: "#e74c3c", fontSize: "12px" }}>Required</span>
+                      )}
                     </label>
                   )}
 
+                  {/* Role */}
                   <label style={styles.label}>
-                    Role
+                    Role <span style={{ color: "red" }}>*</span>
                     <select
                       name="role"
                       value={formData.role}
@@ -439,18 +490,27 @@ function AdminUsers() {
                     </select>
                   </label>
 
+                  {/* Phone */}
                   <label style={styles.label}>
-                    Phone number
+                    Phone number <span style={{ color: "red" }}>*</span>
                     <input
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      style={styles.input}
+                      style={{
+                        ...styles.input,
+                        border: !formData.phone.trim() ? "1.5px solid #e74c3c" : "1px solid #cfd8cc",
+                      }}
                     />
+                    {!formData.phone.trim() && (
+                      <span style={{ color: "#e74c3c", fontSize: "12px" }}>Required</span>
+                    )}
                   </label>
 
+                  {/* Occupation - optional */}
                   <label style={styles.label}>
-                    Occupation
+                    Occupation{" "}
+                    <span style={{ color: "#888", fontSize: "12px", fontWeight: 400 }}>(optional)</span>
                     <input
                       name="occupation"
                       value={formData.occupation}
@@ -459,16 +519,105 @@ function AdminUsers() {
                     />
                   </label>
 
+                  {/* City - searchable */}
                   <label style={styles.label}>
-                    City
-                    <input
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      style={styles.input}
-                    />
+                    City <span style={{ color: "red" }}>*</span>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        value={citySearch || formData.city}
+                        onChange={(e) => {
+                          setCitySearch(e.target.value);
+                          setShowCityDropdown(true);
+                        }}
+                        onFocus={() => setShowCityDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowCityDropdown(false), 150)}
+                        placeholder="Search city..."
+                        style={{
+                          ...styles.input,
+                          border: !formData.city ? "1.5px solid #e74c3c" : "1px solid #cfd8cc",
+                          color: "#2d4a3a",
+                        }}
+                      />
+                      {showCityDropdown && (
+                        <div style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          right: 0,
+                          background: "white",
+                          border: "1px solid #cfd8cc",
+                          borderRadius: "12px",
+                          maxHeight: "180px",
+                          overflowY: "auto",
+                          zIndex: 200,
+                          boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+                        }}>
+                          {ISRAELI_CITIES
+                            .filter((city) =>
+                              city.toLowerCase().includes((citySearch || "").toLowerCase())
+                            )
+                            .map((city) => (
+                              <div
+                                key={city}
+                                onMouseDown={() => {
+                                  setFormData((prev) => ({ ...prev, city }));
+                                  setCitySearch("");
+                                  setShowCityDropdown(false);
+                                }}
+                                style={{
+                                  padding: "10px 14px",
+                                  cursor: "pointer",
+                                  color: "#2d4a3a",
+                                  fontSize: "14px",
+                                  borderBottom: "1px solid #f0f0f0",
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = "#f0faf5"}
+                                onMouseLeave={(e) => e.currentTarget.style.background = "white"}
+                              >
+                                {city}
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                    {!formData.city && (
+                      <span style={{ color: "#e74c3c", fontSize: "12px" }}>Required</span>
+                    )}
+                    {formData.city && (
+                      <span style={{ color: "#6a7f73", fontSize: "12px" }}>
+                        Selected: <strong>{formData.city}</strong>
+                      </span>
+                    )}
                   </label>
 
+                  {/* Experience Level */}
+                  <label style={styles.label}>
+                    Experience Level
+                    <select
+                      name="experience_level"
+                      value={formData.experience_level}
+                      onChange={handleChange}
+                      style={styles.input}
+                    >
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="experienced">Experienced</option>
+                      <option value="expert">Expert</option>
+                    </select>
+                  </label>
+
+                  {/* Height Work License */}
+                  <label style={styles.switchLabel}>
+                    <input
+                      name="height_work"
+                      type="checkbox"
+                      checked={formData.height_work}
+                      onChange={handleChange}
+                    />
+                    Has working from heights license
+                  </label>
+
+                  {/* Availability */}
                   <label style={styles.switchLabel}>
                     <input
                       name="is_available"
@@ -480,7 +629,15 @@ function AdminUsers() {
                   </label>
 
                   <div style={styles.actions}>
-                    <button type="submit" disabled={saving} style={styles.saveButton}>
+                    <button
+                      type="submit"
+                      disabled={saving || !isFormValid()}
+                      style={{
+                        ...styles.saveButton,
+                        opacity: saving || !isFormValid() ? 0.5 : 1,
+                        cursor: saving || !isFormValid() ? "not-allowed" : "pointer",
+                      }}
+                    >
                       {saving ? "Saving..." : formMode === "create" ? "Create User" : "Save Changes"}
                     </button>
                     <button type="button" onClick={closeModal} style={styles.cancelButton}>
@@ -558,17 +715,6 @@ const styles = {
     color: "#5f6f68",
     fontSize: "14px",
   },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 420px) 1fr",
-    gap: "28px",
-  },
-  formCard: {
-    padding: "24px",
-    borderRadius: "24px",
-    border: "1px solid #e8f1ec",
-    background: "#fafafa",
-  },
   form: {
     display: "grid",
     gap: "14px",
@@ -601,6 +747,7 @@ const styles = {
     border: "1px solid #cfd8cc",
     fontSize: "15px",
     outline: "none",
+    boxSizing: "border-box",
   },
   switchLabel: {
     display: "flex",
@@ -637,14 +784,6 @@ const styles = {
     borderRadius: "24px",
     border: "1px solid #e8f1ec",
     background: "#fbfdfb",
-  },
-  listHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "12px",
-    alignItems: "center",
-    marginBottom: "14px",
-    flexWrap: "wrap",
   },
   modalOverlay: {
     position: "fixed",
@@ -725,6 +864,7 @@ const styles = {
     color: "#1b5e20",
     borderRadius: "14px",
     padding: "14px 16px",
+    marginBottom: "14px",
   },
   errorBox: {
     background: "#fdecea",
@@ -732,6 +872,7 @@ const styles = {
     color: "#9f3a38",
     borderRadius: "14px",
     padding: "14px 16px",
+    marginBottom: "14px",
   },
 };
 
