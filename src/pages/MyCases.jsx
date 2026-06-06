@@ -57,10 +57,10 @@ function MyCases() {
     }
     setCoordinatorData(coordMap);
 
-    if (userProfile.role !== USER_ROLES.VOLUNTEER) {
-      setUsers(await getAssignableUsers());
-      setAssignments(await getAssignmentsByCaseIds(caseData.map((item) => item.id)));
-    }
+   
+    setUsers(await getAssignableUsers());
+    setAssignments(await getAssignmentsByCaseIds(caseData.map((item) => item.id)));
+  
 
       setCases(caseData);
     } catch (err) {
@@ -265,34 +265,26 @@ function MyCases() {
                           )}
 
                           {/* Assigned Volunteers (for coordinators) */}
-                          {!isVolunteer && (
-                            <div style={styles.caseSection}>
-                              <div style={{ gridColumn: "1 / -1" }}>
-                                <strong>Assigned Volunteers</strong>
-                                {caseAssignments.length === 0 ? (
-                                  <p>None</p>
-                                ) : (
-                                  <ul style={styles.assignmentList}>
-                                    {caseAssignments.map((assignment) => {
-                                      const assignedUser = users.find(
-                                        (u) => u.id === assignment.user_id
-                                      );
-                                      return (
-                                        <li
-                                          key={assignment.id}
-                                          style={styles.assignmentItem}
-                                        >
-                                          {assignedUser?.full_name ||
-                                            assignedUser?.email ||
-                                            assignment.user_id}
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                )}
-                              </div>
+                          <div style={styles.caseSection}>
+                            <div style={{ gridColumn: "1 / -1" }}>
+                              <strong>Assigned Volunteers</strong>
+                              {caseAssignments.length === 0 ? (
+                                <p>None</p>
+                              ) : (
+                                <ul style={styles.assignmentList}>
+                                  {caseAssignments.map((assignment) => {
+                                    const assignedUser = users.find((u) => u.id === assignment.user_id);
+                                    return (
+                                      <li key={assignment.id} style={styles.assignmentItem}>
+                                        <strong>{assignedUser?.full_name || assignedUser?.email || assignment.user_id}</strong>
+                                        {assignedUser?.phone && <span> · 📞 {assignedUser.phone}</span>}
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
                             </div>
-                          )}
+                          </div>
 
                           {/* Close Case Button  */}
                           
