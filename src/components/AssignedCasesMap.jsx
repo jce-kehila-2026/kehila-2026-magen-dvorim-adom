@@ -11,6 +11,15 @@ import "leaflet/dist/leaflet.css";
 const DEFAULT_CENTER = [31.7683, 35.2137]; // Jerusalem
 
 const getCasePosition = (caseItem) => {
+  if (
+    caseItem.location_lat == null ||
+    caseItem.location_lng == null ||
+    caseItem.location_lat === "" ||
+    caseItem.location_lng === ""
+  ) {
+    return null;
+  }
+
   const lat = Number(caseItem.location_lat);
   const lng = Number(caseItem.location_lng);
 

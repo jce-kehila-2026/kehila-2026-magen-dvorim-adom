@@ -1,54 +1,94 @@
-const buildCaseAddress = (caseItem) => {
-  const parts = [
-    caseItem.street,
-    caseItem.house_number,
-    caseItem.city,
-    "Israel",
-  ];
+const buildSearchAttempts = (caseItem) => {
+  return [
+    // Full address
+    [
+      caseItem.street,
+      caseItem.house_number,
+      caseItem.city,
+      "Israel",
+    ],
 
-  return parts
-    .map((part) => String(part || "").trim())
-    .filter(Boolean)
-    .join(", ");
+    // Street + city
+    [
+      caseItem.street,
+      caseItem.city,
+      "Israel",
+    ],
+
+    // Description + city
+    [
+      caseItem.location_description,
+      caseItem.city,
+      "Israel",
+    ],
+
+    // City only
+    [
+      caseItem.city,
+      "Israel",
+    ],
+  ]
+    .map((parts) =>
+      parts
+        .map((part) => String(part || "").trim())
+        .filter(Boolean)
+        .join(", ")
+    )
+    .filter(Boolean);
 };
 
 export const geocodeCaseLocation = async (caseItem) => {
-  const address = buildCaseAddress(caseItem);
+  const attempts = buildSearchAttempts(caseItem);
 
-  console.log("Geocoding address:", address);
+  for (const address of attempts) {
+    console.log("Trying geocoding:", address);
 
-  if (!address) return null;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=il&q=${encodeURIComponent(
+      address
+    )}`;
 
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=il&q=${encodeURIComponent(
-    address
-  )}`;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Accept: "application/json",
+          "Accept-Language": "en",
+        },
+      });
 
-  try {
-    const response = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-        "Accept-Language": "en",
-      },
-    });
+      if (!response.ok) {
+        console.warn(
+          "Geocoding response failed:",
+          response.status
+        );
+        continue;
+      }
 
-    if (!response.ok) {
-      console.warn("Geocoding response failed:", response.status);
-      return null;
+      const data = await response.json();
+
+      console.log(
+        "Geocoding result for",
+        address,
+        data
+      );
+
+      if (!data.length) {
+        continue;
+      }
+
+      return {
+        location_lat: Number(data[0].lat),
+        location_lng: Number(data[0].lon),
+        location_display_name: data[0].display_name,
+        location_source: address,
+      };
+    } catch (err) {
+      console.warn(
+        "Geocoding request failed for:",
+        address,
+        err
+      );
     }
-
-    const data = await response.json();
-
-    console.log("Geocoding result:", data);
-
-    if (!data.length) return null;
-
-    return {
-      location_lat: Number(data[0].lat),
-      location_lng: Number(data[0].lon),
-      location_display_name: data[0].display_name,
-    };
-  } catch (err) {
-    console.warn("Geocoding request failed:", err);
-    return null;
   }
+
+  return null;
 };
