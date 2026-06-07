@@ -52,6 +52,53 @@ async function getActiveUserAssignments(user_id, excludeCaseId = null) {
   });
 }
 
+export async function getVolunteerAssignmentStats(user_id) {
+  if (!user_id) {
+    throw new Error("User ID is required.");
+  }
+
+  const snap = await getDocs(query(collection(db, "assignments"), where("user_id", "==", user_id)));
+
+  if (snap.empty) {
+    return {
+      assignedCases: 0,
+      completedRescues: 0,
+    };
+  }
+
+  const assignments = [];
+  const caseIds = [];
+
+  snap.docs.forEach((docItem) => {
+    const data = docItem.data();
+    if (!data || !data.case_id) return;
+
+    assignments.push({ id: docItem.id, ...data });
+    caseIds.push(data.case_id);
+  });
+
+  const cases = await getCasesByIds(caseIds);
+
+  let assignedCases = 0;
+  let completedRescues = 0;
+
+  assignments.forEach((assignment) => {
+    const caseData = cases[assignment.case_id];
+    if (!caseData) return;
+
+    if (caseData.status === "closed") {
+      completedRescues += 1;
+    } else if (["open", "assigned", "in_progress"].includes(caseData.status)) {
+      assignedCases += 1;
+    }
+  });
+
+  return {
+    assignedCases,
+    completedRescues,
+  };
+}
+
 export async function getAssignableUsers() {
   const snap = await getDocs(collection(db, "users"));
 

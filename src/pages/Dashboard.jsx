@@ -5,10 +5,12 @@ import Navbar from "../components/Navbar";
 import AssignedCasesMap from "../components/AssignedCasesMap";
 import CoordinatorSendForm from "./CoordinatorSendForm";
 import { logoutUser } from "../services/authService";
-import { getAllCases, getCasesForCoordinatorById } from "../services/caseService";
+
 import { getUsersByRole } from "../services/userService";
 import { USER_ROLES } from "../services/userSchema";
 import { useAuth } from "../contexts/AuthContext";
+import { getAllCases, getCasesForCoordinatorById, backfillMissingCaseLocations  } from "../services/caseService";
+import { getVolunteerAssignmentStats } from "../services/assignmentService";
 
 
 function Dashboard() {
@@ -23,36 +25,40 @@ function Dashboard() {
   const [allCases, setAllCases] = useState([]);
   const [sendFormOpen, setSendFormOpen] = useState(false);
 
+
   useEffect(() => {
-  const loadStats = async () => {
-    if (!userProfile?.role) return;
-
-    try {
-      let visibleCases = [];
-
-      if (userProfile.role === USER_ROLES.ADMIN) {
-        visibleCases = await getAllCases();
-      } else if (userProfile.role === USER_ROLES.COORDINATOR) {
-        visibleCases = await getCasesForCoordinatorById(userProfile.uid);
+    if (!userProfile?.uid) return;
+    const loadStats = async () => {
+      try {
+        if (userProfile?.role === USER_ROLES.ADMIN) {
+          const [cases, volunteerUsers] = await Promise.all([
+            getAllCases(),
+            getUsersByRole(USER_ROLES.VOLUNTEER),
+          ]);
+          setAllCases(cases);
+          setStats({
+            openCases: cases.filter((c) => c.status !== "closed").length,
+            volunteers: volunteerUsers.length,
+            completedRescues: cases.filter((c) => c.status === "closed").length,
+          });
+        } else if (userProfile?.role === USER_ROLES.COORDINATOR) {
+          const [myCases, volunteerStats] = await Promise.all([
+            getCasesForCoordinatorById(userProfile.uid),
+            getVolunteerAssignmentStats(userProfile.uid),
+          ]);
+          setAllCases(myCases);
+          setStats({
+            openCases: myCases.filter((c) => c.status !== "closed").length,
+            volunteers: volunteerStats.assignedCases,
+            completedRescues: myCases.filter((c) => c.status === "closed").length,
+          });
+        }
+      } catch (err) {
+        console.error("Dashboard stats load failed:", err);
       }
-
-      const volunteerUsers = await getUsersByRole(USER_ROLES.VOLUNTEER);
-
-      setAllCases(visibleCases);
-
-      setStats({
-        openCases: visibleCases.filter((c) => c.status === "open").length,
-        volunteers: volunteerUsers.length,
-        completedRescues: visibleCases.filter((c) => c.status === "closed").length,
-      });
-    } catch (err) {
-      console.error("Dashboard stats load failed:", err);
-    }
-  };
-
-  loadStats();
-}, [userProfile]);
-
+    };
+    loadStats();
+  }, [userProfile]);
   const handleLogout = async () => {
     try {
       setError("");
@@ -128,7 +134,7 @@ function Dashboard() {
 
           <div style={styles.card}>
             <span style={styles.icon}>🐝</span>
-            <h3>Volunteers</h3>
+            <h3>{userProfile?.role === USER_ROLES.COORDINATOR ? "Assigned to Me" : "Volunteers"}</h3>
             <p style={styles.number}>{stats.volunteers}</p>
           </div>
 

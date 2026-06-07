@@ -286,6 +286,48 @@ export async function updateCaseComplexity(caseId, newComplexity) {
     case_complexity: newComplexity,
   });
 }
+/**
+ * Close a case and submit result
+ * If one volunteer closes, it closes for everyone assigned
+ */
+export async function closeCase(caseData) {
+  if (!caseData || !caseData.case_id) {
+    throw new Error("case_id is required");
+  }
+
+  const { case_id, closed_by, closed_by_full_name, result_status, result_notes } = caseData;
+
+  if (!closed_by || typeof closed_by !== "string") {
+    throw new Error("closed_by (user id) is required");
+  }
+
+  if (!closed_by_full_name || typeof closed_by_full_name !== "string") {
+    throw new Error("closed_by_full_name is required");
+  }
+
+  if (!result_status || typeof result_status !== "string") {
+    throw new Error("result_status is required");
+  }
+
+  const ref = doc(db, "cases", case_id);
+
+  try {
+    await updateDoc(ref, {
+      status: "closed",
+      closed_by,
+      closed_by_full_name,
+      result_status,
+      result_notes: result_notes || null,
+      closed_at: Timestamp.now(),
+      updated_at: Timestamp.now(),
+    });
+
+    return { success: true, case_id };
+  } catch (error) {
+    console.error("Failed to close case:", error);
+    throw new Error("Failed to close case. Please try again.");
+  }
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -318,13 +360,8 @@ export async function backfillMissingCaseLocations() {
     });
 
     updatedCount++;
-
     await sleep(1200);
   }
 
-  return {
-    updatedCount,
-    skippedCount,
-  };
+  return { updatedCount, skippedCount };
 }
-
