@@ -2,13 +2,16 @@
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
+import AssignedCasesMap from "../components/AssignedCasesMap";
 import CoordinatorSendForm from "./CoordinatorSendForm";
 import { logoutUser } from "../services/authService";
+
 import { getUsersByRole } from "../services/userService";
 import { USER_ROLES } from "../services/userSchema";
 import { useAuth } from "../contexts/AuthContext";
-import { getAllCases, getCasesForCoordinatorById } from "../services/caseService";
+import { getAllCases, getCasesForCoordinatorById, backfillMissingCaseLocations  } from "../services/caseService";
 import { getVolunteerAssignmentStats } from "../services/assignmentService";
+
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -19,44 +22,43 @@ function Dashboard() {
     volunteers: 0,
     completedRescues: 0,
   });
+  const [allCases, setAllCases] = useState([]);
   const [sendFormOpen, setSendFormOpen] = useState(false);
+
 
   useEffect(() => {
     if (!userProfile?.uid) return;
-   const loadStats = async () => {
-  try {
-    if (userProfile?.role === USER_ROLES.ADMIN) {
-      const [allCases, volunteerUsers] = await Promise.all([
-        getAllCases(),
-        getUsersByRole(USER_ROLES.VOLUNTEER),
-      ]);
-
-      setStats({
-        openCases: allCases.filter((c) => c.status !== "closed").length,
-        volunteers: volunteerUsers.length,
-        completedRescues: allCases.filter((c) => c.status === "closed").length,
-      });
-
-    } else if (userProfile?.role === USER_ROLES.COORDINATOR) {
-      const [myCases, volunteerStats] = await Promise.all([
-        getCasesForCoordinatorById(userProfile.uid),
-        getVolunteerAssignmentStats(userProfile.uid),
-      ]);
-
-      setStats({
-        openCases: myCases.filter((c) => c.status !== "closed").length,
-        volunteers: volunteerStats.assignedCases, // cases assigned to me as volunteer
-        completedRescues: myCases.filter((c) => c.status === "closed").length,
-      });
-    }
-  } catch (err) {
-    console.error("Dashboard stats load failed:", err);
-  }
-};
-
+    const loadStats = async () => {
+      try {
+        if (userProfile?.role === USER_ROLES.ADMIN) {
+          const [cases, volunteerUsers] = await Promise.all([
+            getAllCases(),
+            getUsersByRole(USER_ROLES.VOLUNTEER),
+          ]);
+          setAllCases(cases);
+          setStats({
+            openCases: cases.filter((c) => c.status !== "closed").length,
+            volunteers: volunteerUsers.length,
+            completedRescues: cases.filter((c) => c.status === "closed").length,
+          });
+        } else if (userProfile?.role === USER_ROLES.COORDINATOR) {
+          const [myCases, volunteerStats] = await Promise.all([
+            getCasesForCoordinatorById(userProfile.uid),
+            getVolunteerAssignmentStats(userProfile.uid),
+          ]);
+          setAllCases(myCases);
+          setStats({
+            openCases: myCases.filter((c) => c.status !== "closed").length,
+            volunteers: volunteerStats.assignedCases,
+            completedRescues: myCases.filter((c) => c.status === "closed").length,
+          });
+        }
+      } catch (err) {
+        console.error("Dashboard stats load failed:", err);
+      }
+    };
     loadStats();
   }, [userProfile]);
-
   const handleLogout = async () => {
     try {
       setError("");
@@ -67,6 +69,19 @@ function Dashboard() {
       setError("Logout failed. Please try again.");
     }
   };
+
+  const handleBackfillLocations = async () => {
+  try {
+    const result = await backfillMissingCaseLocations();
+
+    alert(
+      `Done!\nUpdated: ${result.updatedCount}\nSkipped: ${result.skippedCount}`
+    );
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update old case locations.");
+  }
+};
 
   const getDashboardTitle = () => {
     switch (userProfile?.role) {
@@ -162,9 +177,25 @@ function Dashboard() {
                 </div>
               </div>
             )}
+            <div style={{ marginTop: "30px" }}>
+             <h2
+                style={{
+                  textAlign: "center",
+                  color: "#173b2f",
+                  marginBottom: "20px",
+                }}
+              >
+                {userProfile?.role === USER_ROLES.ADMIN
+                  ? "Cases Map"
+                  : "My Cases Map"}   
+              </h2>
+                <AssignedCasesMap
+                  cases={allCases}
+                  defaultFilter={userProfile?.role === USER_ROLES.ADMIN ? "assigned" : "all"}
+                />
+              </div>
           </section>
         )}
-
       </main>
     </div>
   );

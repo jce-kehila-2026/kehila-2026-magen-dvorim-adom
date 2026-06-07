@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { CaseSchema } from "./caseSchema";
+import { geocodeCaseLocation } from "./geocodingService";
 
 function normalizePhone(phone) {
   return phone.replace(/\D/g, "");
@@ -87,16 +88,28 @@ export async function createCase(rawData) {
 
   const data = parsed.data;
 
-  // ✅ save
-  const docRef = await addDoc(collection(db, "cases"), {
-    ...data,
-    status: "open",
-    result: null,
-    opened_at: Timestamp.now(),
-    closed_at: null,
-  });
+let geoLocation = null;
 
-  return docRef.id;
+try {
+  geoLocation = await geocodeCaseLocation(data);
+} catch (err) {
+  console.warn(
+    "Geocoding failed, case will be saved without coordinates:",
+    err
+  );
+}
+
+// ✅ save
+const docRef = await addDoc(collection(db, "cases"), {
+  ...data,
+  ...(geoLocation || {}),
+  status: "open",
+  result: null,
+  opened_at: Timestamp.now(),
+  closed_at: null,
+});
+
+return docRef.id;
 }
 
 
@@ -273,13 +286,11 @@ export async function updateCaseComplexity(caseId, newComplexity) {
     case_complexity: newComplexity,
   });
 }
-
 /**
  * Close a case and submit result
  * If one volunteer closes, it closes for everyone assigned
  */
 export async function closeCase(caseData) {
-  // Basic validation
   if (!caseData || !caseData.case_id) {
     throw new Error("case_id is required");
   }
@@ -316,4 +327,41 @@ export async function closeCase(caseData) {
     console.error("Failed to close case:", error);
     throw new Error("Failed to close case. Please try again.");
   }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function backfillMissingCaseLocations() {
+  const casesSnap = await getDocs(collection(db, "cases"));
+
+  let updatedCount = 0;
+  let skippedCount = 0;
+
+  for (const docItem of casesSnap.docs) {
+    const caseItem = { id: docItem.id, ...docItem.data() };
+
+    if (caseItem.location_lat && caseItem.location_lng) {
+      skippedCount++;
+      continue;
+    }
+
+    const geoLocation = await geocodeCaseLocation(caseItem);
+
+    if (!geoLocation) {
+      skippedCount++;
+      continue;
+    }
+
+    await updateDoc(doc(db, "cases", docItem.id), {
+      ...geoLocation,
+      updated_at: Timestamp.now(),
+    });
+
+    updatedCount++;
+    await sleep(1200);
+  }
+
+  return { updatedCount, skippedCount };
 }

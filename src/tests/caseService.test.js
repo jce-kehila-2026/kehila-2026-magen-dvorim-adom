@@ -1,5 +1,15 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
+// Mock geocoding service to avoid real API calls during unit tests
+vi.mock("../services/geocodingService", () => ({
+  geocodeCaseLocation: vi.fn().mockResolvedValue({
+    location_lat: 31.78,
+    location_lng: 35.20,
+    location_display_name: "Jerusalem",
+    location_source: "Jerusalem, Israel",
+  }),
+}));
+
 /* ============================================================
    🔧 FIRESTORE MOCK LAYER
    - We mock Firebase so no real DB is used
