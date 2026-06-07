@@ -2,12 +2,14 @@
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
+import AssignedCasesMap from "../components/AssignedCasesMap";
 import CoordinatorSendForm from "./CoordinatorSendForm";
 import { logoutUser } from "../services/authService";
-import { getAllCases } from "../services/caseService";
+import { getAllCases, getCasesForCoordinatorById } from "../services/caseService";
 import { getUsersByRole } from "../services/userService";
 import { USER_ROLES } from "../services/userSchema";
 import { useAuth } from "../contexts/AuthContext";
+
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -18,28 +20,38 @@ function Dashboard() {
     volunteers: 0,
     completedRescues: 0,
   });
+  const [allCases, setAllCases] = useState([]);
   const [sendFormOpen, setSendFormOpen] = useState(false);
 
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const [allCases, volunteerUsers] = await Promise.all([
-          getAllCases(),
-          getUsersByRole(USER_ROLES.VOLUNTEER),
-        ]);
+  const loadStats = async () => {
+    if (!userProfile?.role) return;
 
-        setStats({
-          openCases: allCases.filter((c) => c.status === "open").length,
-          volunteers: volunteerUsers.length,
-          completedRescues: allCases.filter((c) => c.status === "closed").length,
-        });
-      } catch (err) {
-        console.error("Dashboard stats load failed:", err);
+    try {
+      let visibleCases = [];
+
+      if (userProfile.role === USER_ROLES.ADMIN) {
+        visibleCases = await getAllCases();
+      } else if (userProfile.role === USER_ROLES.COORDINATOR) {
+        visibleCases = await getCasesForCoordinatorById(userProfile.uid);
       }
-    };
 
-    loadStats();
-  }, []);
+      const volunteerUsers = await getUsersByRole(USER_ROLES.VOLUNTEER);
+
+      setAllCases(visibleCases);
+
+      setStats({
+        openCases: visibleCases.filter((c) => c.status === "open").length,
+        volunteers: volunteerUsers.length,
+        completedRescues: visibleCases.filter((c) => c.status === "closed").length,
+      });
+    } catch (err) {
+      console.error("Dashboard stats load failed:", err);
+    }
+  };
+
+  loadStats();
+}, [userProfile]);
 
   const handleLogout = async () => {
     try {
@@ -51,6 +63,19 @@ function Dashboard() {
       setError("Logout failed. Please try again.");
     }
   };
+
+  const handleBackfillLocations = async () => {
+  try {
+    const result = await backfillMissingCaseLocations();
+
+    alert(
+      `Done!\nUpdated: ${result.updatedCount}\nSkipped: ${result.skippedCount}`
+    );
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update old case locations.");
+  }
+};
 
   const getDashboardTitle = () => {
     switch (userProfile?.role) {
@@ -146,9 +171,25 @@ function Dashboard() {
                 </div>
               </div>
             )}
+            <div style={{ marginTop: "30px" }}>
+             <h2
+                style={{
+                  textAlign: "center",
+                  color: "#173b2f",
+                  marginBottom: "20px",
+                }}
+              >
+                {userProfile?.role === USER_ROLES.ADMIN
+                  ? "Cases Map"
+                  : "My Cases Map"}   
+              </h2>
+                <AssignedCasesMap
+                  cases={allCases}
+                  defaultFilter={userProfile?.role === USER_ROLES.ADMIN ? "assigned" : "all"}
+                />
+              </div>
           </section>
         )}
-
       </main>
     </div>
   );
