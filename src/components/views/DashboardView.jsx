@@ -1,0 +1,448 @@
+import { useNavigate } from "react-router-dom";
+
+import AssignedCasesMap from "../AssignedCasesMap";
+import CoordinatorSendForm from "../../pages/CoordinatorSendForm";
+import { USER_ROLES } from "../../services/userSchema";
+import logo from "../../assets/עברית-logo.png";
+
+function DashboardView({
+  userProfile,
+  stats,
+  allCases,
+  error,
+  sendFormOpen,
+  setSendFormOpen,
+  onLogout,
+}) {
+  const navigate = useNavigate();
+
+  const urgentCases = allCases.filter((c) => c.urgency === "high").length;
+
+  const dashboardTitle =
+    userProfile?.role === USER_ROLES.ADMIN
+      ? "Admin Dashboard"
+      : userProfile?.role === USER_ROLES.COORDINATOR
+      ? "Coordinator Dashboard"
+      : "Volunteer Dashboard";
+
+  const subtitle =
+    userProfile?.role === USER_ROLES.ADMIN
+      ? "Live overview of all rescue cases, volunteers, and system activity."
+      : userProfile?.role === USER_ROLES.COORDINATOR
+      ? "Live view of active rescue cases and volunteer assignment."
+      : "View your rescue missions and availability.";
+
+  const copyFormLink = () => {
+    const link = `${window.location.origin}/submit-case`;
+    navigator.clipboard.writeText(link);
+    alert("Public request form link copied to clipboard.");
+  };
+
+  return (
+    <div style={styles.page}>
+      <aside style={styles.sidebar}>
+        <div style={styles.brand}>
+          <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
+
+          <div>
+            <h2 style={styles.brandTitle}>Magen Dvorim Adom</h2>
+            <p style={styles.brandSub}>{userProfile?.role || "User"}</p>
+          </div>
+        </div>
+
+        <nav style={styles.nav}>
+          <button style={{ ...styles.navItem, ...styles.navItemActive }}>
+            Dashboard
+          </button>
+
+          {(userProfile?.role === USER_ROLES.ADMIN ||
+            userProfile?.role === USER_ROLES.COORDINATOR) && (
+            <>
+              <button style={styles.navItem} onClick={() => navigate("/cases")}>
+                Cases
+              </button>
+
+              <button style={styles.navItem} onClick={() => navigate("/users")}>
+                Users
+              </button>
+            </>
+          )}
+
+          <button style={styles.navItem} onClick={() => navigate("/my-cases")}>
+            My Cases
+          </button>
+
+          <button style={styles.navItem} onClick={() => navigate("/profile")}>
+            Profile
+          </button>
+        </nav>
+
+        <button style={styles.logoutButton} onClick={onLogout}>
+          Logout
+        </button>
+      </aside>
+
+      <main style={styles.main}>
+        <header style={styles.header}>
+          <div>
+            <h1 style={styles.title}>{dashboardTitle}</h1>
+            <p style={styles.subtitle}>{subtitle}</p>
+          </div>
+
+          {(userProfile?.role === USER_ROLES.ADMIN ||
+            userProfile?.role === USER_ROLES.COORDINATOR) && (
+            <div style={styles.headerActions}>
+              <button
+                style={styles.primaryButton}
+                onClick={() => setSendFormOpen(true)}
+              >
+                + New Request
+              </button>
+
+              <button style={styles.secondaryButton} onClick={copyFormLink}>
+                Copy Link
+              </button>
+            </div>
+          )}
+        </header>
+
+        {error && <div style={styles.errorBox}>{error}</div>}
+
+        <section style={styles.cards}>
+          <StatCard
+            title="Open Cases"
+            value={stats.openCases}
+            description="Need action"
+            color="#f59e0b"
+            bg="#fff7e6"
+          />
+
+          <StatCard
+            title="Urgent Cases"
+            value={urgentCases}
+            description="High priority"
+            color="#dc2626"
+            bg="#fff1f2"
+          />
+
+          <StatCard
+            title={
+              userProfile?.role === USER_ROLES.COORDINATOR
+                ? "Assigned To Me"
+                : "Volunteers"
+            }
+            value={stats.volunteers}
+            description={
+              userProfile?.role === USER_ROLES.COORDINATOR
+                ? "Current assignments"
+                : "Registered volunteers"
+            }
+            color="#16a34a"
+            bg="#ecfdf3"
+          />
+        </section>
+
+        {(userProfile?.role === USER_ROLES.ADMIN ||
+          userProfile?.role === USER_ROLES.COORDINATOR) && (
+          <section style={styles.mapSection}>
+            <div style={styles.sectionHeader}>
+              <h2 style={styles.sectionTitle}>
+                {userProfile?.role === USER_ROLES.ADMIN
+                  ? "Cases Map"
+                  : "My Cases Map"}
+              </h2>
+
+              <div style={styles.legend}>
+                <span>Urgent</span>
+                <span>Open</span>
+                <span>Assigned</span>
+              </div>
+            </div>
+
+            <div style={styles.mapBox}>
+              <AssignedCasesMap
+                cases={allCases}
+                defaultFilter={
+                  userProfile?.role === USER_ROLES.ADMIN ? "assigned" : "all"
+                }
+              />
+            </div>
+          </section>
+        )}
+
+        {sendFormOpen && (
+          <div
+            style={styles.modalOverlay}
+            onClick={() => setSendFormOpen(false)}
+          >
+            <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <CoordinatorSendForm onClose={() => setSendFormOpen(false)} />
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function StatCard({ title, value, description, color, bg }) {
+  return (
+    <div style={styles.statCard}>
+      <div style={{ ...styles.statIcon, background: bg, color }}>●</div>
+
+      <div>
+        <h3 style={styles.statTitle}>{title}</h3>
+        <p style={{ ...styles.statNumber, color }}>{value}</p>
+        <p style={styles.statDescription}>{description}</p>
+      </div>
+    </div>
+  );
+}
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    display: "grid",
+    gridTemplateColumns: "240px 1fr",
+    background: "#fffdf8",
+    fontFamily: "Arial, sans-serif",
+  },
+
+  sidebar: {
+    height: "100vh",
+    position: "sticky",
+    top: 0,
+    padding: "28px 20px",
+    background: "#fff8ef",
+    borderRight: "1px solid #f0e5d8",
+    boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  brand: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "36px",
+  },
+
+  logo: {
+    width: "52px",
+    height: "52px",
+    objectFit: "contain",
+  },
+
+  brandTitle: {
+    margin: 0,
+    color: "#2b160c",
+    fontSize: "16px",
+    fontWeight: "900",
+  },
+
+  brandSub: {
+    margin: "4px 0 0",
+    color: "#e85d04",
+    fontSize: "13px",
+    textTransform: "capitalize",
+  },
+
+  nav: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+
+  navItem: {
+    border: "none",
+    background: "transparent",
+    color: "#3d332b",
+    padding: "13px 16px",
+    borderRadius: "14px",
+    textAlign: "left",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+
+  navItemActive: {
+    background: "#fff1df",
+    color: "#e85d04",
+  },
+
+  logoutButton: {
+    marginTop: "auto",
+    padding: "13px",
+    borderRadius: "14px",
+    border: "none",
+    background: "#ea580c",
+    color: "white",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+
+  main: {
+    padding: "34px",
+    boxSizing: "border-box",
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "20px",
+    marginBottom: "28px",
+  },
+
+  title: {
+    margin: 0,
+    color: "#2b160c",
+    fontSize: "30px",
+    fontWeight: "900",
+  },
+
+  subtitle: {
+    margin: "8px 0 0",
+    color: "#6b625c",
+    fontSize: "15px",
+  },
+
+  headerActions: {
+    display: "flex",
+    gap: "12px",
+  },
+
+  primaryButton: {
+    border: "none",
+    borderRadius: "12px",
+    background: "#ea580c",
+    color: "white",
+    padding: "12px 18px",
+    fontWeight: "900",
+    cursor: "pointer",
+  },
+
+  secondaryButton: {
+    border: "1px solid #f3c49a",
+    borderRadius: "12px",
+    background: "white",
+    color: "#c2410c",
+    padding: "12px 18px",
+    fontWeight: "900",
+    cursor: "pointer",
+  },
+
+  cards: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(180px, 1fr))",
+    gap: "14px",
+    marginBottom: "22px",
+  },
+
+  statCard: {
+    background: "white",
+    border: "1px solid #f0e5d8",
+    borderRadius: "18px",
+    padding: "22px",
+    display: "flex",
+    gap: "16px",
+    alignItems: "center",
+  },
+
+  statIcon: {
+    width: "46px",
+    height: "46px",
+    borderRadius: "14px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "18px",
+  },
+
+  statTitle: {
+    margin: 0,
+    color: "#2b160c",
+    fontSize: "15px",
+    fontWeight: "900",
+  },
+
+  statNumber: {
+    margin: "4px 0",
+    fontSize: "30px",
+    fontWeight: "900",
+  },
+
+  statDescription: {
+    margin: 0,
+    color: "#6b625c",
+    fontSize: "12px",
+  },
+
+  mapSection: {
+  background: "white",
+  border: "1px solid #f0e5d8",
+  borderRadius: "20px",
+  padding: "20px",
+  overflow: "visible",
+},
+
+sectionHeader: {
+  background: "white",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "14px",
+  paddingBottom: "12px",
+},
+  sectionTitle: {
+    margin: 0,
+    color: "#2b160c",
+    fontSize: "20px",
+    fontWeight: "900",
+  },
+
+  legend: {
+    display: "flex",
+    gap: "16px",
+    color: "#4b3b31",
+    fontSize: "13px",
+    fontWeight: "800",
+  },
+
+mapBox: {
+  width: "100%",
+  borderRadius: "16px",
+  overflow: "visible",
+  border: "1px solid #eadfd2",
+},
+
+  errorBox: {
+    padding: "12px",
+    borderRadius: "12px",
+    backgroundColor: "#fde8e8",
+    color: "#b42318",
+    fontSize: "14px",
+    marginBottom: "18px",
+  },
+
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.42)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    padding: "20px",
+  },
+
+  modalContent: {
+    width: "100%",
+    maxWidth: "560px",
+    background: "white",
+    borderRadius: "24px",
+    padding: "24px",
+    boxShadow: "0 24px 80px rgba(0,0,0,0.18)",
+  },
+};
+
+export default DashboardView;

@@ -1,6 +1,7 @@
 import { recommendVolunteersForCase } from "../services/recommendationService";
 import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
+import { useNavigate } from "react-router-dom";
+import logo from "../assets/עברית-logo.png";
 import { useAuth } from "../contexts/AuthContext";
 import {
   getCasesForCoordinatorById,
@@ -19,6 +20,7 @@ import {
 } from "../services/assignmentService";
 
 function CoordinatorCases() {
+  const navigate = useNavigate();
   const { userProfile } = useAuth();
   const [cases, setCases] = useState([]);
   const [users, setUsers] = useState([]);
@@ -41,6 +43,9 @@ function CoordinatorCases() {
   const [historyPhoneSearch, setHistoryPhoneSearch] = useState("");
 
   const PRESET_EQUIPMENT = ["ladder", "net", "bee house"];
+
+  const [detailsCase, setDetailsCase] = useState(null);
+
   const caseCardBase = {
     border: "1px solid rgba(255, 193, 7, 0.35)",
     padding: "10px",
@@ -372,6 +377,24 @@ function CoordinatorCases() {
   setRecommendations(result);
 };
 
+const getStatusStyle = (status) => ({
+  ...styles.badge,
+  ...(status === "assigned"
+    ? styles.assignedBadge
+    : status === "closed"
+    ? styles.closedBadge
+    : styles.openBadge),
+});
+
+const getUrgencyStyle = (urgency) => ({
+  ...styles.badge,
+  ...(urgency === "high"
+    ? styles.highBadge
+    : urgency === "medium"
+    ? styles.mediumBadge
+    : styles.lowBadge),
+});
+
   const handleRemoveAssignment = async (assignmentId, caseId) => {
     setError("");
 
@@ -384,12 +407,32 @@ function CoordinatorCases() {
   };
 
   return (
-    <div>
-      <Navbar />
-      <div style={{ maxWidth: "980px", margin: "40px auto", padding: "32px", background: "linear-gradient(180deg, #fffdf3 0%, #fff7e0 100%)", borderRadius: 28, boxShadow: "0 32px 90px rgba(0,0,0,0.08)" }}>
+  <div style={styles.page}>
+    <aside style={styles.sidebar}>
+      <div style={styles.brand}>
+        <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
+        <div>
+          <h2 style={styles.brandTitle}>Magen Dvorim Adom</h2>
+          <p style={styles.brandSub}>Coordinator</p>
+        </div>
+      </div>
+
+      <nav style={styles.nav}>
+        <button style={styles.navItem} onClick={() => navigate("/coordinator-dashboard")}>Dashboard</button>
+        <button style={{ ...styles.navItem, ...styles.navItemActive }} onClick={() => navigate("/cases")}>Cases</button>
+        <button style={styles.navItem} onClick={() => navigate("/admin-users")}>Users</button>
+        <button style={styles.navItem} onClick={() => navigate("/my-cases")}>My Cases</button>
+        <button style={styles.navItem} onClick={() => navigate("/profile")}>Profile</button>
+      </nav>
+
+      <button style={styles.logoutButton}>Logout</button>
+    </aside>
+
+    <main style={styles.main}>
+      <div style={styles.contentCard}>
       <div style={{ marginBottom: "12px" }}>
         <h1 style={{ margin: "0 0 8px", color: "#f57c00", fontSize: "2.6rem" }}>
-          {currentUserRole === "admin" ? "All Coordinator Cases" : "My Coordinator Cases"}
+          {currentUserRole === "admin" ? "All Coordinator Cases" : "Coordinator Cases"}
         </h1>
         <p style={{ margin: 0, color: "#6b4f00", lineHeight: 1.6 }}>
           {currentUserRole === "admin"
@@ -434,432 +477,165 @@ function CoordinatorCases() {
         <p>All active cases are closed. Expand your closed case history below to review them.</p>
       )}
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "18px", justifyContent: "center", alignItems: "flex-start" }}>
-        {activeCases.map((c) => {
-          const caseAssignments = assignments[c.id] || [];
-          const availableUsers = users.filter((user) => !assignedUserIds.includes(user.id));
-          const input = assignmentInputs[c.id] || {};
-          const assignedCoordinator = users.find((user) => user.id === c.coordinator_id);
+<div style={styles.casesList}>
+  <div style={styles.listHeader}>
+    <span>Requester</span>
+    <span>Phone</span>
+    <span>Location</span>
+    <span>Urgency</span>
+    <span>Status</span>
+    <span>Actions</span>
+  </div>
 
-          return (
-            <div key={c.id} style={caseCardBase}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
-              <h3 style={{ margin: 0, color: "#ff6f00", fontSize: "1.05rem" }}>🐝 Case Details</h3>
-              <span style={{ background: c.status === "closed" ? "#ccc" : c.status === "assigned" ? "#ffd54f" : "#ffe082", padding: "6px 10px", borderRadius: 18, fontWeight: 600, fontSize: "0.78em", color: c.status === "closed" ? "#666" : "#e65100" }}>
-                {c.status.toUpperCase()}
-              </span>
-            </div>
-            <div style={{ marginBottom: "8px", color: "#5d4037", fontSize: "0.9em" }}>
-              Assigned coordinator: <strong>{assignedCoordinator ? assignedCoordinator.full_name || assignedCoordinator.email : c.coordinator_id || "None"}</strong>
-            </div>
-            {currentUserRole === "admin" && (
-              <div style={{ ...compactPanel, marginBottom: "10px" }}>
-                <label style={{ display: "grid", gap: "8px", fontSize: "0.95em", color: "#5d4037" }}>
-                  Responsible coordinator
-                  <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-                    <select
-                      value={coordinatorSelections[c.id] || c.coordinator_id || ""}
-                      onChange={(e) => setCoordinatorSelections((prev) => ({ ...prev, [c.id]: e.target.value }))}
-                      style={{ flex: "1 1 220px", padding: "10px 14px", borderRadius: 10, border: "1px solid #d9b56f", background: "#fff", color: "#333" }}
-                    >
-                      <option value="">Select coordinator</option>
-                      {coordinatorList.map((coord) => (
-                        <option key={coord.uid} value={coord.uid}>
-                          {coord.full_name || coord.email}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => handleCoordinatorChange(c.id, coordinatorSelections[c.id] || c.coordinator_id)}
-                      style={{ padding: "10px 18px", borderRadius: 10, border: "none", background: "#fb8c00", color: "#fff", cursor: "pointer", fontWeight: 700 }}
-                    >
-                      Save
-                    </button>
-                  </div>
-                </label>
-              </div>
-            )}
+  {activeCases.map((c) => (
+    <div key={c.id} style={styles.caseRow}>
+      <span>{c.requester_first_name} {c.requester_last_name}</span>
+      <span>{c.requester_phone}</span>
+      <span>{c.city || "-"}</span>
 
-            <div style={{ ...compactInfoGrid, fontSize: "0.9em", marginBottom: "10px" }}>
-              <div>
-                <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Requester:</strong></p>
-                <p style={{ margin: "0 0 8px 0", color: "#333" }}>{c.requester_first_name} {c.requester_last_name}</p>
-                <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Phone:</strong></p>
-                <p style={{ margin: "0 0 8px 0", color: "#333" }}>{c.requester_phone}</p>
-                <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Opened:</strong></p>
-                <p style={{ margin: "0 0 8px 0", color: "#333", fontSize: "0.9em" }}>{formatDate(c.opened_at)}</p>
-              </div>
-              <div>
-                <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Urgency:</strong></p>
-                <p style={{ margin: "0 0 8px 0", color: "#d84315", fontWeight: 600 }}>
-                  {c.urgency ? c.urgency.toUpperCase() : "Not specified"}
-                </p>
-                <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Complexity:</strong></p>
-                {editingComplexity === c.id ? (
-                  <select
-                    value={c.case_complexity || "simple"}
-                    onChange={(e) => handleComplexityChange(c.id, e.target.value)}
-                    style={{ padding: "6px", borderRadius: 4, border: "2px solid #ff9800", background: "#fff", color: "#333", fontWeight: 600, cursor: "pointer" }}
-                  >
-                    <option value="simple">Simple</option>
-                    <option value="complex">Complex</option>
-                    <option value="very_complex">Very Complex</option>
-                  </select>
-                ) : (
-                  <p
-                    onClick={() => setEditingComplexity(c.id)}
-                    style={{ margin: "0", color: "#333", padding: "4px 8px", background: "#fff9e6", borderRadius: 4, cursor: "pointer", fontWeight: 600 }}
-                  >
-                    {c.case_complexity ? c.case_complexity.charAt(0).toUpperCase() + c.case_complexity.slice(1) : "Not specified"} ✏️
-                  </p>
-                )}
-              </div>
-            </div>
+      <span style={getUrgencyStyle(c.urgency)}>
+        {c.urgency || "low"}
+      </span>
 
-            <div style={{ background: "#fff8e1", padding: "10px", borderRadius: 10, marginBottom: "14px", borderLeft: "4px solid #ffd54f" }}>
-              <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>📍 Location:</strong></p>
-              <p style={{ margin: "4px 0", color: "#333" }}>
-                {c.street} {c.house_number && <span>#{c.house_number}</span>}, {c.city}
-              </p>
-              {c.location_description && (
-                <>
-                  <p style={{ margin: "8px 0 4px 0" }}><strong style={{ color: "#e65100" }}>Description:</strong></p>
-                  <p style={{ margin: "4px 0", color: "#333" }}>{c.location_description}</p>
-                </>
-              )}
-            </div>
+      <span style={getStatusStyle(c.status)}>
+        {c.status || "open"}
+      </span>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "8px", marginBottom: "10px", fontSize: "0.86em", background: "#fff5e6", padding: "10px", borderRadius: 8 }}>
-              <div>
-                <p style={{ margin: "2px 0", color: "#666", fontSize: "0.8em" }}><strong>Height</strong></p>
-                <p style={{ margin: "0", color: "#ff6f00", fontWeight: 600 }}>{c.height_from_ground}m</p>
-              </div>
-              <div>
-                <p style={{ margin: "2px 0", color: "#666", fontSize: "0.8em" }}><strong>Floor</strong></p>
-                <p style={{ margin: "0", color: "#ff6f00", fontWeight: 600 }}>{c.floor}</p>
-              </div>
-              <div>
-                <p style={{ margin: "2px 0", color: "#666", fontSize: "0.8em" }}><strong>First Seen</strong></p>
-                <p style={{ margin: "0", color: "#ff6f00", fontWeight: 600 }}>{c.first_seen ? c.first_seen.replace(/_/g, " ") : "—"}</p>
-              </div>
-            </div>
+      <div style={styles.rowActions}>
+        <button onClick={() => setDetailsCase(c)} style={styles.viewButton}>
+          View
+        </button>
 
-            {c.navigation_link && (
-              <div style={{ marginBottom: "10px", background: "#f5f5f5", padding: "10px", borderRadius: 8, borderLeft: "4px solid #ff9800" }}>
-                <p style={{ margin: "0 0 8px 0", fontWeight: 600, color: "#e65100" }}>🗺 Navigation Link</p>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  {isValidUrl(c.navigation_link) ? (
-                    <a href={c.navigation_link} target="_blank" rel="noopener noreferrer" style={{ color: "#ff6f00", fontWeight: 600, textDecoration: "none", wordBreak: "break-all", flex: 1 }}>
-                      {c.navigation_link}
-                    </a>
-                  ) : (
-                    <div style={{ flex: 1, color: "#b71c1c", fontWeight: 600, wordBreak: "break-all" }}>
-                      {c.navigation_link}
-                      <span style={{ display: "block", marginTop: "4px", color: "#d84315", fontSize: "0.9em" }}>Invalid link format</span>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(c.navigation_link);
-                      alert("Link copied!");
-                    }}
-                    style={{ padding: "6px 12px", background: "#ff9800", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-              </div>
-            )}
+        <button
+          onClick={() => {
+            setRecommendations(null);
+            setModalState((s) => ({ ...s, open: true, caseId: c.id }));
+          }}
+          style={styles.assignButton}
+        >
+          Assign
+        </button>
 
-            <div style={{ marginTop: "12px" }}>
-              <strong>Assigned users</strong>
-              {caseAssignments.length === 0 ? (
-                <p style={{ margin: "8px 0" }}>No users assigned.</p>
-              ) : (
-                <ul>
-                  {caseAssignments.map((assignment) => {
-                    const user = users.find((u) => u.id === assignment.user_id);
+        <button onClick={() => beginCloseCase(c.id)} style={styles.closeButton}>
+          Close
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
 
-                    return (
-                      <li key={assignment.id} style={{ marginBottom: "8px" }}>
-                        <span>
-                          {user?.full_name || assignment.user_id} ({user?.role || "unknown"}) •
-                          {assignment.required_equipment?.length
-                            ? ` ${assignment.required_equipment.join(", ")}`
-                            : " No equipment"}
-                        </span>
-                        <button
-                          style={{
-                            marginLeft: "12px",
-                            padding: "6px 12px",
-                            borderRadius: 999,
-                            border: "1px solid #ffb74d",
-                            background: "#fff8e1",
-                            color: "#bf360c",
-                            cursor: "pointer",
-                            fontWeight: 700,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                          }}
-                          onClick={() => handleRemoveAssignment(assignment.id, c.id)}
-                        >
-                          Remove
-                        </button>
-                        {assignment.notes && (
-                          <div style={{ marginTop: "4px", color: "#555" }}>
-                            <em>Notes:</em> {assignment.notes}
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
+{detailsCase && (
+  <div style={styles.modalOverlay} onClick={() => setDetailsCase(null)}>
+    <div style={styles.detailsModal} onClick={(e) => e.stopPropagation()}>
+      <h2 style={styles.modalTitle}>Case Details</h2>
 
-            <div style={{ marginTop: "12px", marginBottom: "10px" }}>
-              <button
-               onClick={() => {
-                 setRecommendations(null);
-                 setModalState((s) => ({ ...s, open: true, caseId: c.id }));
-                }}
-                style={{ padding: "10px 20px", background: "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.95em", boxShadow: "0 4px 10px rgba(76, 175, 80, 0.3)", transition: "all 0.2s" }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}
-                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-              >
-                ✓ Assign User to Case
-              </button>
-            </div>
-
-            {closingCase.caseId === c.id ? (
-              <div style={{ marginTop: "18px", padding: "16px", background: "#fff3e0", border: "1px solid #ffcc80", borderRadius: 10 }}>
-                <p style={{ margin: "0 0 10px 0", fontWeight: 700, color: "#d84315" }}>Select a finishing result before closing</p>
-                <div style={{ marginBottom: "10px" }}>
-                  <select
-                    value={closingCase.result_status}
-                    onChange={(e) => setClosingCase((prev) => ({ ...prev, result_status: e.target.value }))}
-                    style={{ width: "100%", padding: "10px", borderRadius: 8, border: "2px solid #ff9800", background: "#fff", color: "#000", fontWeight: 600, cursor: "pointer" }}
-                  >
-                    {FINISHING_STATUSES.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div style={{ marginBottom: "14px" }}>
-                  <label style={{ display: "block", marginBottom: "6px", color: "#e65100", fontWeight: 600 }}>Closing notes (optional)</label>
-                  <textarea
-                    rows={3}
-                    value={closingCase.notes}
-                    onChange={(e) => setClosingCase((prev) => ({ ...prev, notes: e.target.value }))}
-                    style={{ width: "100%", padding: "10px", borderRadius: 8, border: "2px solid #ffe082", background: "#fffef5", color: "#000" }}
-                  />
-                </div>
-                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-                  <button
-                    onClick={cancelCloseCase}
-                    style={{ padding: "10px 18px", borderRadius: 8, background: "#e0e0e0", border: "none", cursor: "pointer", fontWeight: 600, color: "#333" }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmCloseCase}
-                    style={{ padding: "10px 18px", borderRadius: 8, background: "linear-gradient(135deg, #f44336 0%, #c62828 100%)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 600 }}
-                  >
-                    ✕ Close Case
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div style={{ marginTop: "18px" }}>
-                <button
-                  onClick={() => beginCloseCase(c.id)}
-                  style={{ padding: "10px 20px", borderRadius: 8, background: "linear-gradient(135deg, #f44336 0%, #c62828 100%)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 600, boxShadow: "0 4px 10px rgba(244, 67, 54, 0.3)", transition: "all 0.2s" }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-                >
-                  ✕ Close Case
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      })}
+      <div style={styles.detailsGrid}>
+        <p><strong>Requester:</strong> {detailsCase.requester_first_name} {detailsCase.requester_last_name}</p>
+        <p><strong>Phone:</strong> {detailsCase.requester_phone}</p>
+        <p><strong>City:</strong> {detailsCase.city || "-"}</p>
+        <p><strong>Street:</strong> {detailsCase.street || "-"} {detailsCase.house_number || ""}</p>
+        <p><strong>Urgency:</strong> {detailsCase.urgency || "low"}</p>
+        <p><strong>Status:</strong> {detailsCase.status || "open"}</p>
+        <p><strong>Complexity:</strong> {detailsCase.case_complexity || "simple"}</p>
+        <p><strong>Opened:</strong> {formatDate(detailsCase.opened_at)}</p>
       </div>
 
-      {closedCases.length > 0 && (
-        <div style={{ marginTop: "30px", padding: "18px", background: "#fff7e5", borderRadius: 12, border: "2px solid #ffd180" }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", marginBottom: "14px" }}>
-            <button
-              onClick={() => setShowClosedHistory((prev) => !prev)}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 8,
-                border: "none",
-                background: "#ffb74d",
-                color: "#5d4037",
-                cursor: "pointer",
-                fontWeight: 700,
-              }}
-            >
-              {showClosedHistory ? "Hide" : "Show"} closed case history ({closedCases.length})
-            </button>
-            <input
-              placeholder="Search history by requester phone"
-              value={historyPhoneSearch}
-              onChange={(e) => setHistoryPhoneSearch(e.target.value)}
-              style={{ flex: "1 1 220px", minWidth: "220px", padding: "12px 14px", borderRadius: 12, border: "2px solid #ffcc80", background: "#fffdf6", color: "#333" }}
-            />
-          </div>
+      <div style={styles.descriptionBox}>
+        <strong>Description</strong>
+        <p>{detailsCase.location_description || "No description provided."}</p>
+      </div>
 
-          {showClosedHistory && filteredClosedCases.length === 0 && (
-            <p style={{ margin: 0, color: "#6d4c41" }}>No closed cases match that requester phone.</p>
-          )}
+      <div style={styles.modalActions}>
+        <button onClick={() => setDetailsCase(null)} style={styles.viewButton}>
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+{closedCases.length > 0 && (
+  <section style={styles.closedHistorySection}>
+    <div style={styles.closedHistoryHeader}>
+      <div>
+        <h2 style={styles.closedHistoryTitle}>
+          Closed Cases History ({closedCases.length})
+        </h2>
+        <p style={styles.closedHistorySubtitle}>
+          Review completed rescue cases and reopening options.
+        </p>
+      </div>
 
-          {showClosedHistory && filteredClosedCases.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "18px", justifyContent: "center" }}>
-              {filteredClosedCases.map((c) => {
-                const caseAssignments = assignments[c.id] || [];
+      <button
+        onClick={() => setShowClosedHistory((prev) => !prev)}
+        style={styles.historyToggleButton}
+      >
+        {showClosedHistory ? "Hide history" : "Show history"}
+      </button>
+    </div>
 
-                return (
-                  <div
-                    key={c.id}
-                    style={{
-                      ...caseCardBase,
-                      border: "2px solid #ffcc80",
-                      background: "#fff8e1",
-                      minWidth: "200px",
-                      maxWidth: "260px",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
-                      <h3 style={{ margin: 0, color: "#ff6f00" }}>🐝 Closed Case</h3>
-                      <span style={{ background: "#ccc", padding: "6px 12px", borderRadius: 20, fontWeight: 600, fontSize: "0.85em", color: "#666" }}>
-                        CLOSED
-                      </span>
-                    </div>
+    {showClosedHistory && (
+      <>
+        <input
+          placeholder="Search by requester phone"
+          value={historyPhoneSearch}
+          onChange={(e) => setHistoryPhoneSearch(e.target.value)}
+          style={styles.historySearch}
+        />
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px", fontSize: "0.92em" }}>
-                      <div>
-                        <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Requester:</strong></p>
-                        <p style={{ margin: "0 0 8px 0", color: "#333" }}>{c.requester_first_name} {c.requester_last_name}</p>
-                        <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Phone:</strong></p>
-                        <p style={{ margin: "0 0 8px 0", color: "#333" }}>{c.requester_phone}</p>
-                        <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Opened:</strong></p>
-                        <p style={{ margin: "0 0 8px 0", color: "#333", fontSize: "0.9em" }}>{formatDate(c.opened_at)}</p>
-                        <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Closed:</strong></p>
-                        <p style={{ margin: "0 0 8px 0", color: "#333", fontSize: "0.9em" }}>{formatDate(c.closed_at)}</p>
-                        {c.closed_by && (
-                          <>
-                            <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Closed by:</strong></p>
-                            <p style={{ margin: "0", color: "#333", fontSize: "0.9em" }}>{c.closed_by.full_name} ({c.closed_by.role})</p>
-                          </>
-                        )}
-                      </div>
-                      <div>
-                        <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Urgency:</strong></p>
-                        <p style={{ margin: "0 0 8px 0", color: "#d84315", fontWeight: 600 }}>
-                          {c.urgency ? c.urgency.toUpperCase() : "Not specified"}
-                        </p>
-                        <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>Complexity:</strong></p>
-                        <p style={{ margin: "0", color: "#333", fontWeight: 600 }}>
-                          {c.case_complexity ? c.case_complexity.charAt(0).toUpperCase() + c.case_complexity.slice(1) : "Not specified"}
-                        </p>
-                        <p style={{ margin: "8px 0 4px 0" }}><strong style={{ color: "#e65100" }}>Result:</strong></p>
-                        <p style={{ margin: "0", color: "#4a148c", fontWeight: 700 }}>
-                          {getResultLabel(c.result_status)}
-                        </p>
-                      </div>
-                    </div>
+        {filteredClosedCases.length === 0 ? (
+          <p style={styles.emptyText}>
+            No closed cases match that requester phone.
+          </p>
+        ) : (
+          <div style={styles.closedList}>
+            {filteredClosedCases.map((c) => {
+              const caseAssignments = assignments[c.id] || [];
 
-                    <div style={{ background: "#fff8e1", padding: "10px", borderRadius: 10, marginBottom: "14px", borderLeft: "4px solid #ffd54f" }}>
-                      <p style={{ margin: "4px 0" }}><strong style={{ color: "#e65100" }}>📍 Location:</strong></p>
-                      <p style={{ margin: "4px 0", color: "#333" }}>
-                        {c.street} {c.house_number && <span>#{c.house_number}</span>}, {c.city}
-                      </p>
-                      {c.location_description && (
-                        <>
-                          <p style={{ margin: "8px 0 4px 0" }}><strong style={{ color: "#e65100" }}>Description:</strong></p>
-                          <p style={{ margin: "4px 0", color: "#333" }}>{c.location_description}</p>
-                        </>
-                      )}
-                    </div>
+              return (
+                <div key={c.id} style={styles.closedItem}>
+                  <div>
+                    <h3 style={styles.closedRequester}>
+                      {c.requester_first_name} {c.requester_last_name}
+                    </h3>
 
-                    <div style={{ marginTop: "12px" }}>
-                      <strong>Assigned users</strong>
-                      {caseAssignments.length === 0 ? (
-                        <p style={{ margin: "8px 0" }}>No users assigned.</p>
-                      ) : (
-                        <ul>
-                          {caseAssignments.map((assignment) => {
-                            const user = users.find((u) => u.id === assignment.user_id);
+                    <p style={styles.closedMeta}>
+                      📍 {c.city || "Unknown location"} · Closed:{" "}
+                      {formatDate(c.closed_at)}
+                    </p>
 
-                            return (
-                              <li key={assignment.id} style={{ marginBottom: "8px" }}>
-                                <span>
-                                  {user?.full_name || assignment.user_id} ({user?.role || "unknown"}) •
-                                  {assignment.required_equipment?.length
-                                    ? ` ${assignment.required_equipment.join(", ")}`
-                                    : " No equipment"}
-                                </span>
-                                <button
-                                  disabled
-                                  style={{
-                                    marginLeft: "12px",
-                                    opacity: 0.5,
-                                    cursor: "not-allowed",
-                                    background: "#eee",
-                                    border: "1px solid #ccc",
-                                    borderRadius: 4,
-                                    padding: "4px 8px",
-                                  }}
-                                >
-                                  Remove
-                                </button>
-                                {assignment.notes && (
-                                  <div style={{ marginTop: "4px", color: "#555" }}>
-                                    <em>Notes:</em> {assignment.notes}
-                                  </div>
-                                )}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </div>
+                    <p style={styles.closedMeta}>
+                      Result: {getResultLabel(c.result_status)}
+                    </p>
 
-                    {c.result_notes && (
-                      <div style={{ marginTop: "16px", padding: "12px", background: "#fff3e0", borderRadius: 8, border: "1px solid #ffd54f" }}>
-                        <p style={{ margin: "0 0 6px 0", fontWeight: 700, color: "#bf360c" }}>Closing notes</p>
-                        <p style={{ margin: 0, color: "#333" }}>{c.result_notes}</p>
-                      </div>
-                    )}
-
-                    <div style={{ marginTop: "18px" }}>
-                      <button
-                        onClick={() => handleReopenCase(c.id)}
-                        style={{
-                          padding: "10px 24px",
-                          borderRadius: 8,
-                          background: "linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)",
-                          color: "#fff",
-                          border: "none",
-                          cursor: "pointer",
-                          fontWeight: 600,
-                          boxShadow: "0 4px 12px rgba(76, 175, 80, 0.3)",
-                          transition: "all 0.2s",
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-                      >
-                        ↺ Reopen Case
-                      </button>
-                    </div>
+                    <p style={styles.closedMeta}>
+                      Assigned users: {caseAssignments.length || 0}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+
+                  <div style={styles.closedActions}>
+                    <button
+                      onClick={() => setDetailsCase(c)}
+                      style={styles.viewButton}
+                    >
+                      View
+                    </button>
+
+                    <button
+                      onClick={() => handleReopenCase(c.id)}
+                      style={styles.reopenButton}
+                    >
+                      Reopen
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </>
+    )}
+  </section>
+)}
 
       {modalState.open && (
         <div
@@ -1101,9 +877,312 @@ function CoordinatorCases() {
             </div>
         </div>
       )}
-    </div>
+          </div>
+    </main>
   </div>
-  );
+);
 }
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    display: "grid",
+    gridTemplateColumns: "240px 1fr",
+    background: "#fffdf8",
+    fontFamily: "Arial, sans-serif",
+  },
+  sidebar: {
+    height: "100vh",
+    position: "sticky",
+    top: 0,
+    padding: "28px 20px",
+    background: "#fff8ef",
+    borderRight: "1px solid #f0e5d8",
+    boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+  },
+  brand: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "36px",
+  },
+  logo: {
+    width: "50px",
+    height: "50px",
+    objectFit: "contain",
+  },
+  brandTitle: {
+    margin: 0,
+    color: "#2b160c",
+    fontSize: "16px",
+    fontWeight: "800",
+  },
+  brandSub: {
+    margin: "4px 0 0",
+    color: "#e85d04",
+    fontSize: "13px",
+  },
+  nav: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+  navItem: {
+    border: "none",
+    background: "transparent",
+    color: "#3d332b",
+    padding: "13px 16px",
+    borderRadius: "14px",
+    textAlign: "left",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+  navItemActive: {
+    background: "#fff1df",
+    color: "#e85d04",
+  },
+  logoutButton: {
+    marginTop: "auto",
+    padding: "13px",
+    borderRadius: "14px",
+    border: "1px solid #ffb077",
+    background: "white",
+    color: "#e85d04",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+  main: {
+    padding: "34px",
+    boxSizing: "border-box",
+  },
+  contentCard: {
+    background: "#ffffff",
+    borderRadius: "26px",
+    padding: "34px",
+    boxShadow: "0 20px 70px rgba(43, 22, 12, 0.06)",
+    border: "1px solid #f2e7dc",
+  },
+
+  casesList: {
+    background: "white",
+    border: "1px solid #eee2d8",
+    borderRadius: "18px",
+    overflow: "hidden",
+    marginTop: "28px",
+  },
+  listHeader: {
+    display: "grid",
+    gridTemplateColumns: "1.2fr 1fr 1fr 0.8fr 0.8fr 1.4fr",
+    gap: "12px",
+    padding: "16px 18px",
+    background: "#fff8ef",
+    color: "#51443a",
+    fontWeight: "800",
+    fontSize: "14px",
+  },
+  caseRow: {
+    display: "grid",
+    gridTemplateColumns: "1.2fr 1fr 1fr 0.8fr 0.8fr 1.4fr",
+    gap: "12px",
+    alignItems: "center",
+    padding: "22px 18px",
+    borderTop: "1px solid #f1ebe5",
+    color: "#1f2933",
+    fontSize: "14px",
+  },
+
+  badge: {
+    width: "fit-content",
+    padding: "6px 12px",
+    borderRadius: "999px",
+    fontWeight: "800",
+    fontSize: "12px",
+    textTransform: "capitalize",
+  },
+  openBadge: { background: "#fff3e6", color: "#d95f00" },
+  assignedBadge: { background: "#eef8ef", color: "#16803d" },
+  closedBadge: { background: "#f3f4f6", color: "#374151" },
+  highBadge: { background: "#fee2e2", color: "#dc2626" },
+  mediumBadge: { background: "#fff3e6", color: "#d95f00" },
+  lowBadge: { background: "#eef8ef", color: "#16803d" },
+
+  rowActions: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+  viewButton: {
+    border: "1px solid #ddd6ce",
+    background: "white",
+    color: "#3d332b",
+    borderRadius: "10px",
+    padding: "8px 13px",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+  assignButton: {
+    border: "1px solid #f3c49a",
+    background: "#fff8ef",
+    color: "#d95f00",
+    borderRadius: "10px",
+    padding: "8px 13px",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+  closeButton: {
+    border: "1px solid #fecaca",
+    background: "white",
+    color: "#dc2626",
+    borderRadius: "10px",
+    padding: "8px 13px",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.35)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+    padding: "20px",
+  },
+  detailsModal: {
+    width: "100%",
+    maxWidth: "560px",
+    background: "white",
+    borderRadius: "18px",
+    padding: "24px",
+    border: "1px solid #f0e5d8",
+  },
+  modalTitle: {
+    margin: "0 0 18px",
+    color: "#2b160c",
+    fontSize: "22px",
+    fontWeight: "900",
+  },
+  detailsGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px 18px",
+    color: "#2b160c",
+    fontSize: "14px",
+  },
+  descriptionBox: {
+    marginTop: "18px",
+    padding: "14px",
+    borderRadius: "14px",
+    background: "#fff8ef",
+    color: "#2b160c",
+  },
+  modalActions: {
+    marginTop: "20px",
+    display: "flex",
+    justifyContent: "flex-end",
+  },
+  closedHistorySection: {
+  marginTop: "28px",
+  padding: "22px",
+  borderRadius: "20px",
+  background: "#ffffff",
+  border: "1px solid #f0e5d8",
+},
+
+closedHistoryHeader: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "16px",
+  marginBottom: "16px",
+},
+
+closedHistoryTitle: {
+  margin: 0,
+  color: "#2b160c",
+  fontSize: "20px",
+  fontWeight: "900",
+},
+
+closedHistorySubtitle: {
+  margin: "6px 0 0",
+  color: "#6b625c",
+  fontSize: "14px",
+},
+
+historyToggleButton: {
+  border: "1px solid #f3c49a",
+  background: "#fff8ef",
+  color: "#d95f00",
+  borderRadius: "12px",
+  padding: "10px 16px",
+  fontWeight: "800",
+  cursor: "pointer",
+},
+
+historySearch: {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "13px 16px",
+  borderRadius: "14px",
+  border: "1px solid #eadfd2",
+  background: "#fffdf8",
+  marginBottom: "16px",
+},
+
+closedList: {
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+},
+
+closedItem: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "16px",
+  padding: "16px",
+  borderRadius: "16px",
+  border: "1px solid #f1ebe5",
+  background: "#fffdf8",
+},
+
+closedRequester: {
+  margin: 0,
+  color: "#1f2937",
+  fontSize: "16px",
+  fontWeight: "900",
+},
+
+closedMeta: {
+  margin: "6px 0 0",
+  color: "#6b625c",
+  fontSize: "13px",
+},
+
+closedActions: {
+  display: "flex",
+  gap: "8px",
+  flexWrap: "wrap",
+},
+
+reopenButton: {
+  border: "1px solid #bbf7d0",
+  background: "#ecfdf3",
+  color: "#16a34a",
+  borderRadius: "10px",
+  padding: "8px 13px",
+  fontWeight: "800",
+  cursor: "pointer",
+},
+
+emptyText: {
+  color: "#6b625c",
+  margin: 0,
+},
+};
 
 export default CoordinatorCases;
