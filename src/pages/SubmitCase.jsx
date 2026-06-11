@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { createCase } from "../services/caseService";
 import {
   getValidIntakeFormForRequester,
   markIntakeFormSubmitted,
 } from "../services/intakeFormService";
-
 
 function normalizePhone(phone) {
   return phone.replace(/\D/g, "");
@@ -30,6 +30,9 @@ const ISRAELI_CITIES = [
 ];
 
 function SubmitCase() {
+  const [searchParams] = useSearchParams();
+  const coordinatorIdFromUrl = searchParams.get("coordinator");
+
   const [formData, setFormData] = useState({
     requester_first_name: "",
     requester_last_name: "",
@@ -67,16 +70,14 @@ function SubmitCase() {
     setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
-
-
-
-
   const isRequired = (field) => {
     const required = [
       "requester_first_name", "requester_last_name", "requester_phone",
       "city", "street", "location_description",
-      "height_from_ground", "floor", "urgency", "coordinator_phone",
+      "height_from_ground", "floor", "urgency",
     ];
+    // coordinator_phone only required if no coordinator in URL
+    if (!coordinatorIdFromUrl) required.push("coordinator_phone");
     return required.includes(field);
   };
 
@@ -91,25 +92,30 @@ function SubmitCase() {
     e.preventDefault();
     setError("");
 
-    // Mark all required fields as touched
     const allRequired = [
       "requester_first_name", "requester_last_name", "requester_phone",
       "city", "street", "location_description",
-      "height_from_ground", "floor", "urgency", "coordinator_phone",
+      "height_from_ground", "floor", "urgency",
     ];
+    if (!coordinatorIdFromUrl) allRequired.push("coordinator_phone");
+
     const newTouched = {};
     allRequired.forEach((f) => (newTouched[f] = true));
     setTouched((prev) => ({ ...prev, ...newTouched }));
 
     const requesterPhone = normalizePhone(formData.requester_phone);
-    const coordinatorPhone = normalizePhone(formData.coordinator_phone);
 
     if (
       !formData.requester_first_name || !formData.requester_last_name ||
       !requesterPhone || !formData.city || !formData.street ||
       !formData.location_description || !formData.height_from_ground ||
-      !formData.floor || !formData.urgency || !coordinatorPhone
+      !formData.floor || !formData.urgency
     ) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    if (!coordinatorIdFromUrl && !formData.coordinator_phone) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -122,9 +128,13 @@ function SubmitCase() {
     setLoading(true);
 
     try {
+      // Use coordinator_id from URL if available, otherwise use phone
       const intakeForm = await getValidIntakeFormForRequester({
         requester_phone: requesterPhone,
-        coordinator_phone: coordinatorPhone,
+        coordinator_id: coordinatorIdFromUrl || undefined,
+        coordinator_phone: coordinatorIdFromUrl
+          ? undefined
+          : normalizePhone(formData.coordinator_phone),
       });
 
       if (!intakeForm) {
@@ -146,15 +156,14 @@ function SubmitCase() {
         navigation_link: formData.navigation_link.trim() || null,
         urgency: formData.urgency,
         first_seen: formData.first_seen || null,
-        coordinator_phone: coordinatorPhone,
+        // pass coordinator_id directly if from URL, otherwise use phone
+        ...(coordinatorIdFromUrl
+          ? { coordinator_id: coordinatorIdFromUrl, coordinator_phone: "" }
+          : { coordinator_phone: normalizePhone(formData.coordinator_phone) }),
       });
-
- 
 
       await markIntakeFormSubmitted(intakeForm.id, caseId);
       setSubmitted(true);
-
-      
     } catch (err) {
       console.error(err);
       setError(err.message || "Something went wrong. Please try again.");
@@ -276,7 +285,6 @@ function SubmitCase() {
                 <h2 style={s.sectionTitle}>Location of the Bees</h2>
               </div>
 
-              {/* City searchable */}
               <div style={s.fieldGroup}>
                 <label style={s.label}>City <span style={s.req}>*</span></label>
                 <div style={{ position: "relative" }}>
@@ -488,36 +496,35 @@ function SubmitCase() {
               </div>
             </div>
 
-            {/* ── Section 4: images ── */}
-            //deleted for now, cuz of pricing pan, will add later if needed
+            {/* ── Section 4: Coordinator (only shown if no URL param) ── */}
+            {!coordinatorIdFromUrl && (
+              <div style={s.section}>
+                <div style={s.sectionHeader}>
+                  <span style={s.sectionIcon}>📞</span>
+                  <h2 style={s.sectionTitle}>Coordinator</h2>
+                </div>
+                <p style={s.hint}>Enter the phone number of the coordinator who sent you this form.</p>
 
-            {/* ── Section 5: Coordinator ── */}
-            <div style={s.section}>
-              <div style={s.sectionHeader}>
-                <span style={s.sectionIcon}>📞</span>
-                <h2 style={s.sectionTitle}>Coordinator</h2>
+                <div style={s.fieldGroup}>
+                  <label style={s.label}>Coordinator phone number <span style={s.req}>*</span></label>
+                  <input
+                    name="coordinator_phone"
+                    value={formData.coordinator_phone}
+                    onChange={handleChange}
+                    onBlur={() => handleBlur("coordinator_phone")}
+                    placeholder="05X-XXX-XXXX"
+                    type="tel"
+                    style={{
+                      ...s.input,
+                      borderColor: fieldError("coordinator_phone") ? "#e74c3c" : "#e0d4b8",
+                    }}
+                  />
+                  {fieldError("coordinator_phone") && (
+                    <span style={s.fieldError}>{fieldError("coordinator_phone")}</span>
+                  )}
+                </div>
               </div>
-              <p style={s.hint}>Enter the phone number of the coordinator who sent you this form.</p>
-
-              <div style={s.fieldGroup}>
-                <label style={s.label}>Coordinator phone number <span style={s.req}>*</span></label>
-                <input
-                  name="coordinator_phone"
-                  value={formData.coordinator_phone}
-                  onChange={handleChange}
-                  onBlur={() => handleBlur("coordinator_phone")}
-                  placeholder="05X-XXX-XXXX"
-                  type="tel"
-                  style={{
-                    ...s.input,
-                    borderColor: fieldError("coordinator_phone") ? "#e74c3c" : "#e0d4b8",
-                  }}
-                />
-                {fieldError("coordinator_phone") && (
-                  <span style={s.fieldError}>{fieldError("coordinator_phone")}</span>
-                )}
-              </div>
-            </div>
+            )}
 
             {/* ── Agreement ── */}
             <label style={s.agreeLabel}>
@@ -573,203 +580,71 @@ const s = {
     padding: "32px 28px 28px",
     textAlign: "center",
   },
-  headerBee: {
-    fontSize: "48px",
-    marginBottom: "8px",
-  },
-  title: {
-    margin: 0,
-    fontSize: "26px",
-    fontWeight: 700,
-    color: "white",
-  },
-  subtitle: {
-    margin: "8px 0 0",
-    fontSize: "15px",
-    color: "rgba(255,255,255,0.88)",
-    lineHeight: 1.5,
-  },
-  form: {
-    padding: "24px 20px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-  },
+  headerBee: { fontSize: "48px", marginBottom: "8px" },
+  title: { margin: 0, fontSize: "26px", fontWeight: 700, color: "white" },
+  subtitle: { margin: "8px 0 0", fontSize: "15px", color: "rgba(255,255,255,0.88)", lineHeight: 1.5 },
+  form: { padding: "24px 20px", display: "flex", flexDirection: "column", gap: "20px" },
   section: {
-    background: "#fffdf8",
-    border: "1px solid #f0e6cc",
-    borderRadius: "16px",
-    padding: "18px 16px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px",
+    background: "#fffdf8", border: "1px solid #f0e6cc", borderRadius: "16px",
+    padding: "18px 16px", display: "flex", flexDirection: "column", gap: "14px",
   },
-  sectionHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    marginBottom: "4px",
-  },
-  sectionIcon: {
-    fontSize: "22px",
-  },
-  sectionTitle: {
-    margin: 0,
-    fontSize: "17px",
-    fontWeight: 700,
-    color: "#2d4a3a",
-  },
-  row: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "12px",
-  },
-  fieldGroup: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "5px",
-  },
-  label: {
-    fontSize: "13px",
-    fontWeight: 600,
-    color: "#2d4a3a",
-  },
-  req: {
-    color: "#e74c3c",
-  },
-  optional: {
-    color: "#999",
-    fontSize: "12px",
-    fontWeight: 400,
-  },
-  hint: {
-    margin: 0,
-    fontSize: "12px",
-    color: "#888",
-    lineHeight: 1.4,
-  },
+  sectionHeader: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" },
+  sectionIcon: { fontSize: "22px" },
+  sectionTitle: { margin: 0, fontSize: "17px", fontWeight: 700, color: "#2d4a3a" },
+  row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" },
+  fieldGroup: { display: "flex", flexDirection: "column", gap: "5px" },
+  label: { fontSize: "13px", fontWeight: 600, color: "#2d4a3a" },
+  req: { color: "#e74c3c" },
+  optional: { color: "#999", fontSize: "12px", fontWeight: 400 },
+  hint: { margin: 0, fontSize: "12px", color: "#888", lineHeight: 1.4 },
   input: {
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    border: "1px solid #e0d4b8",
-    fontSize: "15px",
-    outline: "none",
-    background: "white",
-    color: "#2d4a3a",
-    boxSizing: "border-box",
-    WebkitAppearance: "none",
+    width: "100%", padding: "12px 14px", borderRadius: "12px",
+    border: "1px solid #e0d4b8", fontSize: "15px", outline: "none",
+    background: "white", color: "#2d4a3a", boxSizing: "border-box", WebkitAppearance: "none",
   },
-  fieldError: {
-    fontSize: "11px",
-    color: "#e74c3c",
-  },
-  selectedHint: {
-    fontSize: "12px",
-    color: "#6a7f73",
-  },
+  fieldError: { fontSize: "11px", color: "#e74c3c" },
+  selectedHint: { fontSize: "12px", color: "#6a7f73" },
   dropdown: {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
-    background: "white",
-    border: "1px solid #e0d4b8",
-    borderRadius: "12px",
-    maxHeight: "200px",
-    overflowY: "auto",
-    zIndex: 300,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+    position: "absolute", top: "100%", left: 0, right: 0, background: "white",
+    border: "1px solid #e0d4b8", borderRadius: "12px", maxHeight: "200px",
+    overflowY: "auto", zIndex: 300, boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
   },
   dropdownItem: {
-    padding: "12px 14px",
-    cursor: "pointer",
-    color: "#2d4a3a",
-    fontSize: "14px",
-    borderBottom: "1px solid #f5f0e8",
-    background: "white",
+    padding: "12px 14px", cursor: "pointer", color: "#2d4a3a",
+    fontSize: "14px", borderBottom: "1px solid #f5f0e8", background: "white",
   },
-  urgencyRow: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr 1fr",
-    gap: "10px",
-  },
+  urgencyRow: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" },
   urgencyOption: {
-    padding: "12px 8px",
-    borderRadius: "12px",
-    border: "2px solid #e0d4b8",
-    cursor: "pointer",
-    textAlign: "center",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-    transition: "all 0.15s",
+    padding: "12px 8px", borderRadius: "12px", border: "2px solid #e0d4b8",
+    cursor: "pointer", textAlign: "center", display: "flex",
+    flexDirection: "column", gap: "4px", transition: "all 0.15s",
   },
-
   agreeLabel: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "12px",
-    fontSize: "13px",
-    color: "#4a5e52",
-    lineHeight: 1.5,
-    cursor: "pointer",
+    display: "flex", alignItems: "flex-start", gap: "12px",
+    fontSize: "13px", color: "#4a5e52", lineHeight: 1.5, cursor: "pointer",
   },
   submitBtn: {
-    width: "100%",
-    padding: "16px",
-    borderRadius: "14px",
-    border: "none",
+    width: "100%", padding: "16px", borderRadius: "14px", border: "none",
     background: "linear-gradient(135deg, #BA7517 0%, #EF9F27 100%)",
-    color: "white",
-    fontSize: "17px",
-    fontWeight: 700,
-    cursor: "pointer",
+    color: "white", fontSize: "17px", fontWeight: 700, cursor: "pointer",
     boxShadow: "0 8px 24px rgba(186,117,23,0.3)",
   },
   errorBox: {
-    margin: "0 20px",
-    padding: "14px 16px",
-    borderRadius: "12px",
-    background: "#FCEBEB",
-    border: "1px solid #F09595",
-    color: "#791F1F",
-    fontSize: "14px",
-    marginTop: "16px",
+    margin: "0 20px", padding: "14px 16px", borderRadius: "12px",
+    background: "#FCEBEB", border: "1px solid #F09595",
+    color: "#791F1F", fontSize: "14px", marginTop: "16px",
   },
-  // Thank you screen
   thankYouCard: {
-    maxWidth: "440px",
-    margin: "60px auto 0",
-    background: "white",
-    borderRadius: "24px",
-    padding: "48px 32px",
-    textAlign: "center",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.08)",
-    border: "1px solid #f0e6cc",
+    maxWidth: "440px", margin: "60px auto 0", background: "white",
+    borderRadius: "24px", padding: "48px 32px", textAlign: "center",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.08)", border: "1px solid #f0e6cc",
   },
-  beeIcon: {
-    fontSize: "64px",
-    marginBottom: "16px",
-  },
-  thankYouTitle: {
-    margin: "0 0 12px",
-    fontSize: "28px",
-    fontWeight: 700,
-    color: "#2d4a3a",
-  },
-  thankYouText: {
-    margin: "0 0 20px",
-    fontSize: "16px",
-    color: "#4a5e52",
-    lineHeight: 1.6,
-  },
+  beeIcon: { fontSize: "64px", marginBottom: "16px" },
+  thankYouTitle: { margin: "0 0 12px", fontSize: "28px", fontWeight: 700, color: "#2d4a3a" },
+  thankYouText: { margin: "0 0 20px", fontSize: "16px", color: "#4a5e52", lineHeight: 1.6 },
   thankYouNote: {
-    fontSize: "13px",
-    color: "#999",
-    background: "#f5f0e8",
-    borderRadius: "10px",
-    padding: "10px 16px",
+    fontSize: "13px", color: "#999", background: "#f5f0e8",
+    borderRadius: "10px", padding: "10px 16px",
   },
 };
 

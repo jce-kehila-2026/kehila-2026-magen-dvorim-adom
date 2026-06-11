@@ -60,6 +60,23 @@ async function resolveCoordinator({ coordinator_id, coordinator_phone }) {
   };
 }
 
+
+export async function getIntakeFormsByCoordinator(coordinator_id) {
+  if (!coordinator_id) return [];
+
+  const q = query(
+    collection(db, "intakeForms"),
+    where("coordinator_id", "==", coordinator_id)
+  );
+
+  const snap = await getDocs(q);
+
+  return snap.docs.map((docItem) => ({
+    id: docItem.id,
+    ...docItem.data(),
+  }));
+}
+
 // ✅ requester check
 export async function getValidIntakeFormForRequester({
   requester_phone,
@@ -126,6 +143,18 @@ export async function createIntakeForm({
     throw new Error("An active form already exists.");
   }
 
+  // Check if ANY coordinator already has an active form for this phone
+  const anyActiveQuery = query(
+    collection(db, "intakeForms"),
+    where("requester_phone", "==", requester_phone),
+    where("status", "==", "sent")
+  );
+  const anyActiveSnap = await getDocs(anyActiveQuery);
+  if (!anyActiveSnap.empty) {
+    throw new Error(
+      "This requester already has an active form sent by another coordinator. Please coordinate before sending a new one."
+    );
+  }
   const now = new Date();
   const expires = new Date(now);
   expires.setDate(now.getDate() + 30);

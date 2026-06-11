@@ -58,11 +58,11 @@ async function hasOpenCase(requester_phone) {
 export async function createCase(rawData) {
   // ✅ normalize phones
   const requester_phone = normalizePhone(rawData.requester_phone);
-  const coordinator_phone = normalizePhone(rawData.coordinator_phone);
-
-  // ✅ get coordinator ID
-  const coordinator_id = await getCoordinatorIdByPhone(coordinator_phone);
-
+  let coordinator_id = rawData.coordinator_id;
+  if (!coordinator_id) {
+    const coordinator_phone = normalizePhone(rawData.coordinator_phone || "");
+    coordinator_id = await getCoordinatorIdByPhone(coordinator_phone);
+  }
   // ✅ prevent duplicate
   const open = await hasOpenCase(requester_phone);
   if (open) {
