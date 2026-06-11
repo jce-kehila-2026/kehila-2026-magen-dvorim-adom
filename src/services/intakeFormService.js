@@ -61,6 +61,30 @@ async function resolveCoordinator({ coordinator_id, coordinator_phone }) {
 }
 
 
+async function markExpiredIfNeeded(formDoc) {
+  const data = formDoc.data();
+
+  if (data.status !== "sent") return data;
+
+  const expires = data.expires_at?.toDate
+    ? data.expires_at.toDate()
+    : new Date(data.expires_at);
+
+  if (expires < new Date()) {
+    const ref = doc(db, "intakeForms", formDoc.id);
+
+    await updateDoc(ref, {
+      status: "expired",
+    });
+
+    return {
+      ...data,
+      status: "expired",
+    };
+  }
+
+  return data;
+}
 export async function getIntakeFormsByCoordinator(coordinator_id) {
   if (!coordinator_id) return [];
 
@@ -71,10 +95,36 @@ export async function getIntakeFormsByCoordinator(coordinator_id) {
 
   const snap = await getDocs(q);
 
-  return snap.docs.map((docItem) => ({
-    id: docItem.id,
-    ...docItem.data(),
-  }));
+  const results = await Promise.all(
+    snap.docs.map(async (docItem) => {
+      const updatedData = await markExpiredIfNeeded(docItem);
+
+      return {
+        id: docItem.id,
+        ...updatedData,
+      };
+    })
+  );
+
+  return results;
+}
+
+
+export async function getAllIntakeForms() {
+  const snap = await getDocs(collection(db, "intakeForms"));
+
+  const results = await Promise.all(
+    snap.docs.map(async (docItem) => {
+      const updatedData = await markExpiredIfNeeded(docItem);
+
+      return {
+        id: docItem.id,
+        ...updatedData,
+      };
+    })
+  );
+
+  return results;
 }
 
 // ✅ requester check

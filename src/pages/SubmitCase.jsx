@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { createCase } from "../services/caseService";
 import {
   getValidIntakeFormForRequester,
   markIntakeFormSubmitted,
 } from "../services/intakeFormService";
+import { getUserById } from "../services/userService";
 
 function normalizePhone(phone) {
   return phone.replace(/\D/g, "");
@@ -32,6 +33,25 @@ const ISRAELI_CITIES = [
 function SubmitCase() {
   const [searchParams] = useSearchParams();
   const coordinatorIdFromUrl = searchParams.get("coordinator");
+
+  const [coordinatorName, setCoordinatorName] = useState("");
+
+  useEffect(() => {
+  if (!coordinatorIdFromUrl) return;
+
+  const loadCoordinator = async () => {
+    try {
+      const user = await getUserById(coordinatorIdFromUrl);
+      if (user) {
+        setCoordinatorName(user.full_name || user.email);
+      }
+    } catch (err) {
+      console.error("Failed to load coordinator:", err);
+    }
+  };
+
+  loadCoordinator();
+}, [coordinatorIdFromUrl]);
 
   const [formData, setFormData] = useState({
     requester_first_name: "",
@@ -203,6 +223,21 @@ function SubmitCase() {
             Please fill in the details below so our team can help rescue the bees.
           </p>
         </div>
+        {coordinatorName && (
+          <div style={{
+            background: "#FAEEDA",
+            border: "1px solid #EF9F27",
+            padding: "8px 12px",
+            borderRadius: "10px",
+            fontSize: "13px",
+            color: "#854F0B",
+            marginTop: "10px",
+            textAlign: "center",
+          }}>
+            This form was sent by <strong>{coordinatorName}</strong>
+          </div>
+        )}
+
 
         {error && (
           <div style={s.errorBox}>
