@@ -6,7 +6,8 @@ import {
   query,
   where,
   doc,
-  updateDoc
+  updateDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { CaseSchema } from "./caseSchema";
@@ -366,4 +367,21 @@ export async function backfillMissingCaseLocations() {
   }
 
   return { updatedCount, skippedCount };
+}
+
+
+// FOR FEEDBACK SYSTEM - attach token to case for later validation when feedback is submitted
+export async function attachFeedbackToken(caseId, token) {
+  if (!caseId || !token) {
+    throw new Error("caseId and token are required");
+  }
+
+  const ref = doc(db, "cases", caseId);
+
+  await updateDoc(ref, {
+    feedback_token: token,
+    feedback_submitted: false,
+    feedback_submitted_at: null,
+    feedback_requested_at: Timestamp.now(),
+  });
 }

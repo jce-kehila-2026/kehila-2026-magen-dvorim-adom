@@ -37,6 +37,11 @@ export const CaseSchema = z.object({
     .enum(["simple", "complex", "very_complex"])
     .default("simple"),
 
+  // ✅ Feedback system
+  feedback_token: z.string().nullable().optional(), // unique link token
+  feedback_submitted: z.boolean().default(false),   // prevents multiple submissions
+  feedback_submitted_at: z.any().nullable().optional(),
+
   // ✅ Timestamps
   opened_at: z.any().optional(), // Firestore Timestamp - set when case is created
   closed_at: z.any().nullable().optional(), // Firestore Timestamp - set when case is closed, null when reopened
