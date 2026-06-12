@@ -7,6 +7,7 @@ import {
 } from "../services/intakeFormService";
 import { getUserById } from "../services/userService";
 import logo from "../assets/logo.png";
+import { uploadImage } from "../services/imageService";
 
 
 function normalizePhone(phone) {
@@ -251,6 +252,14 @@ function SubmitCase() {
         setLoading(false);
         return;
       }
+
+
+      const uploadedUrls = [];
+
+      for (const img of images) {
+        const url = await uploadImage(img);
+        uploadedUrls.push(url);
+      }
       const caseId = await createCase({
         requester_first_name: formData.requester_first_name,
         requester_last_name: formData.requester_last_name,
@@ -264,7 +273,7 @@ function SubmitCase() {
         navigation_link: formData.navigation_link.trim() || null,
         urgency: formData.urgency,
         first_seen: formData.first_seen || null,
-        image_urls: [],
+        image_urls: uploadedUrls,
         ...(coordinatorIdFromUrl
           ? { coordinator_id: coordinatorIdFromUrl, coordinator_phone: "" }
           : { coordinator_phone: normalizePhone(formData.coordinator_phone) }),
@@ -281,7 +290,7 @@ function SubmitCase() {
 
   if (submitted) {
     return (
-      <div style={styles.page}>
+      <div style={{  ...styles.page, fontFamily: language === "he" ? "'Arial', sans-serif" : "'Georgia', serif", }}>
         <div style={styles.thankYouCard}>
           <div style={styles.beeIcon}>🐝❤️</div>
           <h1 style={styles.thankYouTitle}>{t.thankYou}</h1>
@@ -672,6 +681,8 @@ const styles = {
     background: "#FCF9F0",
     padding: "20px 16px 40px",
     position: "relative",
+
+
   },
   bgPattern: {
     position: "fixed",
@@ -706,7 +717,7 @@ const styles = {
     alignItems: "center",
     gap: "8px",
     boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-    fontFamily: "'Segoe UI', system-ui, sans-serif",
+
   },
   langMenu: {
     position: "absolute",
@@ -728,7 +739,7 @@ const styles = {
     fontSize: "14px",
     color: "#5A4A2A",
     transition: "background 0.2s",
-    fontFamily: "'Segoe UI', sans-serif",
+
   },
   card: {
     maxWidth: "560px",
@@ -757,14 +768,12 @@ const styles = {
     fontSize: "24px",
     fontWeight: 600,
     color: "#3D1A00",
-    fontFamily: "'Times New Roman', 'Georgia', serif",
     letterSpacing: "-0.3px",
   },
   subtitle: {
     margin: "8px 0 0",
     fontSize: "14px",
     color: "#9B8B6B",
-    fontFamily: "'Segoe UI', system-ui, sans-serif",
   },
   coordinatorNote: {
     background: "#F9F5EA",
@@ -774,7 +783,6 @@ const styles = {
     color: "#6B5B3A",
     margin: "16px 20px 0",
     borderRadius: "16px",
-    fontFamily: "'Segoe UI', sans-serif",
   },
   form: {
     padding: "24px 20px 32px",
@@ -805,7 +813,6 @@ const styles = {
     fontSize: "18px",
     fontWeight: 600,
     color: "#3D1A00",
-    fontFamily: "'Times New Roman', 'Georgia', serif",
   },
   row: {
     display: "grid",
@@ -821,7 +828,6 @@ const styles = {
     fontSize: "13px",
     fontWeight: 600,
     color: "#5A4A2A",
-    fontFamily: "'Segoe UI', sans-serif",
   },
   req: {
     color: "#E85D04",
@@ -843,7 +849,6 @@ const styles = {
     color: "#3D1A00",
     boxSizing: "border-box",
     transition: "all 0.2s",
-    fontFamily: "'Segoe UI', sans-serif",
   },
   fieldError: {
     fontSize: "11px",
@@ -871,7 +876,6 @@ const styles = {
     fontSize: "14px",
     borderBottom: "1px solid #F5F0E8",
     transition: "background 0.15s",
-    fontFamily: "'Segoe UI', sans-serif",
   },
   urgencyRow: {
     display: "grid",
@@ -897,7 +901,6 @@ const styles = {
     color: "#5A4A2A",
     lineHeight: 1.5,
     cursor: "pointer",
-    fontFamily: "'Segoe UI', sans-serif",
   },
   submitBtn: {
     width: "100%",
@@ -911,7 +914,6 @@ const styles = {
     cursor: "pointer",
     transition: "transform 0.2s, box-shadow 0.2s",
     boxShadow: "0 6px 20px rgba(232,93,4,0.25)",
-    fontFamily: "'Segoe UI', sans-serif",
   },
   errorBox: {
     margin: "16px 20px 0",
@@ -921,7 +923,6 @@ const styles = {
     border: "1px solid #E07A7A",
     color: "#C13B3B",
     fontSize: "13px",
-    fontFamily: "'Segoe UI', sans-serif",
   },
   thankYouCard: {
     maxWidth: "440px",
@@ -942,14 +943,12 @@ const styles = {
     fontSize: "28px",
     fontWeight: 600,
     color: "#3D1A00",
-    fontFamily: "'Times New Roman', 'Georgia', serif",
   },
   thankYouText: {
     margin: "0 0 20px",
     fontSize: "15px",
     color: "#6B6B6B",
     lineHeight: 1.6,
-    fontFamily: "'Segoe UI', sans-serif",
   },
   thankYouNote: {
     fontSize: "13px",
@@ -957,7 +956,6 @@ const styles = {
     background: "#F9F6EF",
     borderRadius: "20px",
     padding: "12px 16px",
-    fontFamily: "'Segoe UI', sans-serif",
   },
   imageBox: {
     position: "relative",
@@ -1009,7 +1007,6 @@ const styles = {
     fontSize: "13px",
     color: "#A8B89A",
     textAlign: "left",
-    fontFamily: "'Segoe UI', sans-serif",
   },
   agreementText: {
     fontSize: "11px",
@@ -1020,7 +1017,6 @@ const styles = {
     borderRadius: "20px",
     border: "1px solid #EFE6D0",
     margin: 0,
-    fontFamily: "'Segoe UI', sans-serif",
   },
 };
 

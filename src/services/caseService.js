@@ -103,6 +103,7 @@ try {
 // ✅ save
 const docRef = await addDoc(collection(db, "cases"), {
   ...data,
+  image_urls: data.image_urls || [], // ✅ ensure saved
   ...(geoLocation || {}),
   status: "open",
   result: null,

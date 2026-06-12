@@ -76,7 +76,6 @@ function Dashboard() {
       <Navbar />
 
       <main style={s.main}>
-       
         {error && <div style={s.error}>{error}</div>}
 
         {/* ✅ Stats */}
