@@ -20,8 +20,10 @@ function getStatus(form) {
 function formatDate(ts) {
   if (!ts) return "-";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString();
+  return d.toLocaleDateString('en-GB'); 
+  // en-GB gives DD/MM/YYYY
 }
+
 
 function CoordinatorSendForm() {
   const { userProfile } = useAuth();
@@ -99,7 +101,7 @@ function CoordinatorSendForm() {
             onChange={(e) => setPhone(e.target.value)}
             style={s.input}
           />
-          <button style={s.createBtn}>Create</button>
+          <button style={s.createBtn}>Create form</button>
         </form>
 
         <button onClick={copy} style={s.linkBtn}>

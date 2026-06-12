@@ -76,11 +76,7 @@ function Dashboard() {
       <Navbar />
 
       <main style={s.main}>
-        <h1 style={s.title}>{getTitle()}</h1>
-        <p style={s.subtitle}>
-          Welcome back {userProfile?.full_name || ""}
-        </p>
-
+       
         {error && <div style={s.error}>{error}</div>}
 
         {/* ✅ Stats */}

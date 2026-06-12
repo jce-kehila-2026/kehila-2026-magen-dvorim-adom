@@ -70,11 +70,12 @@ export async function createCase(rawData) {
   }
 
   // ✅ prepare clean object for Zod
-  const dataForValidation = {
-    ...rawData,
-    requester_phone,
-    coordinator_id, // ✅ REQUIRED FIX
-  };
+const dataForValidation = {
+  ...rawData,
+  requester_phone,
+  coordinator_id,
+  image_urls: rawData.image_urls || [], 
+};
 
   delete dataForValidation.coordinator_phone; // ✅ remove invalid field
 

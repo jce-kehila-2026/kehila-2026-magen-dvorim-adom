@@ -18,6 +18,7 @@ export const CaseSchema = z.object({
   floor: z.string().min(1), // ✅ mandatory
 
   navigation_link: z.string().nullable().optional(),
+  image_urls: z.array(z.string()).max(2).optional(),
 
   urgency: z.enum(["low", "medium", "high"]),
   first_seen: z.enum([
