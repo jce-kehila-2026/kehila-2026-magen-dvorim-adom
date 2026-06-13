@@ -2,7 +2,7 @@
 // Displays rescue cases with filtering, assignment, and status actions.
 
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/עברית-logo.png";
+import logo from "../../assets/logo.png";
 import VolunteerRecommendationMap from "./VolunteerRecommendationMap";
 
 function CasesView({

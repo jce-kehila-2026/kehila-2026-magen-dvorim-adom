@@ -2,7 +2,7 @@
 // Allows users to view and update their personal information.
 
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/עברית-logo.png";
+import logo from "../../assets/logo.png";
 
 export default function ProfileView({
   userProfile,

@@ -1,5 +1,5 @@
-import loginImage from "../../assets/creative.png";
-import logo from "../../assets/עברית-logo.png";
+import creativeImage from "../../assets/creative.png";
+import logo from "../../assets/logo.png";
 
 export default function LoginView({
   email,
@@ -101,7 +101,7 @@ export default function LoginView({
 
       <div style={styles.right}>
         <img
-        src={loginImage}
+        src={creativeImage}
         alt="Bee Rescue"
         className="floating-image"
         style={styles.sideImage}
@@ -142,18 +142,21 @@ const styles = {
   objectFit: "cover",
 },
 
-  logoRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "20px",
-    marginBottom: "50px",
-  },
+ logoRow: {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  marginBottom: "28px",
+  overflow: "visible",
+},
 
   logo: {
-    width: "80px",
-    height: "80px",
+    width: "110px",
+    height: "110px",
     objectFit: "contain",
-  },
+    display: "block",
+    flexShrink: 0,
+},
 
   brandTitle: {
     margin: 0,
@@ -167,8 +170,9 @@ const styles = {
     letterSpacing: "3px",
     fontWeight: "700",
   },
+
   languageRow: {
-  marginTop: "30px",
+  marginTop: "18px",
   display: "flex",
   justifyContent: "center",
   gap: "28px",
@@ -189,11 +193,11 @@ langActive: {
   borderBottom: "3px solid #f04f0a",
 },
 
- title: {
+title: {
   fontSize: "48px",
   lineHeight: 1.05,
   color: "#2b160c",
-  margin: "34px 0 14px",
+  margin: "10px 0 14px",
   fontWeight: "900",
 },
 

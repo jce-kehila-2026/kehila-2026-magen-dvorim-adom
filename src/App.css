@@ -576,18 +576,6 @@
     font-size: 36px;
   }
 }
-.login-visual-side {
-  animation: bgFloat 10s ease-in-out infinite;
-}
-
-@keyframes bgFloat {
-  0%, 100% {
-    background-position: center center;
-  }
-  50% {
-    background-position: center 20px;
-  }
-}
 @keyframes floatingImage {
   0%, 100% {
     transform: translateY(0px) scale(1);
@@ -598,7 +586,25 @@
   }
 }
 
-.floating-image {
+/* .floating-image {
   animation: floatingImage 5s ease-in-out infinite !important;
   will-change: transform;
+} */
+.floating-image {
+  animation: beeHero 8s ease-in-out infinite;
+}
+
+
+  @keyframes beeHero {
+  0% {
+    transform: translateY(0px) scale(1);
+  }
+
+  50% {
+    transform: translateY(-6px) scale(1.015);
+  }
+
+  100% {
+    transform: translateY(0px) scale(1);
+  }
 }

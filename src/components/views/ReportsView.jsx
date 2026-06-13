@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/עברית-logo.png";
+import logo from "../../assets/logo.png";
 
 function ReportsView({ userProfile, stats, loading, error }) {
   const navigate = useNavigate();

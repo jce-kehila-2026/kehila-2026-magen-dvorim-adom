@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import AssignedCasesMap from "../AssignedCasesMap";
 import CoordinatorSendForm from "../../pages/CoordinatorSendForm";
 import { USER_ROLES } from "../../services/userSchema";
-import logo from "../../assets/עברית-logo.png";
+import logo from "../../assets/logo.png";
 
 function DashboardView({
   userProfile,
