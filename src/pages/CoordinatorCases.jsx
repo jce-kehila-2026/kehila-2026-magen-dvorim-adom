@@ -8,6 +8,7 @@ import {
   updateCaseStatus,
   updateCaseCoordinator,
   updateCaseComplexity,
+  attachFeedbackToken,
 } from "../services/caseService";
 import { getUsersByRole } from "../services/userService";
 import {
@@ -17,6 +18,7 @@ import {
   removeAssignment,
   reopenCaseAndCleanConflicts,
 } from "../services/assignmentService";
+import { generateToken } from "../utils/generateToken";
 
 function CoordinatorCases() {
   const { userProfile } = useAuth();
@@ -227,6 +229,28 @@ function CoordinatorCases() {
       setError(err.message);
     }
   };
+
+  const handleSendFeedback = async (caseItem) => {
+    try {
+      let token = caseItem.feedback_token;
+
+      //  don't recreate if already exists
+      if (!token) {
+        token = generateToken();
+        await attachFeedbackToken(caseItem.id, token);
+      }
+
+      const link = `${window.location.origin}/feedback?token=${token}`;
+
+      await navigator.clipboard.writeText(link);
+
+      alert("Feedback link copied ");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to generate feedback link");
+    }
+  };
+
 
   const beginCloseCase = (caseId) => {
     setClosingCase({ caseId, result_status: "evacuated_by_volunteer", notes: "" });
@@ -851,6 +875,28 @@ function CoordinatorCases() {
                         onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
                       >
                         ↺ Reopen Case
+                      </button>
+                    </div>
+
+                    <div style={{ marginTop: "10px" }}>
+                      <button
+                        onClick={() => handleSendFeedback(c)}
+                        disabled={c.feedback_submitted}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          border: "none",
+                          cursor: c.feedback_submitted ? "not-allowed" : "pointer",
+                          background: c.feedback_submitted
+                            ? "#ccc"
+                            : "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)",
+                          color: "#fff",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {c.feedback_submitted
+                          ? "✅ Feedback Submitted"
+                          : "📩 Send Feedback"}
                       </button>
                     </div>
                   </div>

@@ -60,6 +60,73 @@ async function resolveCoordinator({ coordinator_id, coordinator_phone }) {
   };
 }
 
+
+async function markExpiredIfNeeded(formDoc) {
+  const data = formDoc.data();
+
+  if (data.status !== "sent") return data;
+
+  const expires = data.expires_at?.toDate
+    ? data.expires_at.toDate()
+    : new Date(data.expires_at);
+
+  if (expires < new Date()) {
+    const ref = doc(db, "intakeForms", formDoc.id);
+
+    await updateDoc(ref, {
+      status: "expired",
+    });
+
+    return {
+      ...data,
+      status: "expired",
+    };
+  }
+
+  return data;
+}
+export async function getIntakeFormsByCoordinator(coordinator_id) {
+  if (!coordinator_id) return [];
+
+  const q = query(
+    collection(db, "intakeForms"),
+    where("coordinator_id", "==", coordinator_id)
+  );
+
+  const snap = await getDocs(q);
+
+  const results = await Promise.all(
+    snap.docs.map(async (docItem) => {
+      const updatedData = await markExpiredIfNeeded(docItem);
+
+      return {
+        id: docItem.id,
+        ...updatedData,
+      };
+    })
+  );
+
+  return results;
+}
+
+
+export async function getAllIntakeForms() {
+  const snap = await getDocs(collection(db, "intakeForms"));
+
+  const results = await Promise.all(
+    snap.docs.map(async (docItem) => {
+      const updatedData = await markExpiredIfNeeded(docItem);
+
+      return {
+        id: docItem.id,
+        ...updatedData,
+      };
+    })
+  );
+
+  return results;
+}
+
 // ✅ requester check
 export async function getValidIntakeFormForRequester({
   requester_phone,
@@ -126,6 +193,18 @@ export async function createIntakeForm({
     throw new Error("An active form already exists.");
   }
 
+  // Check if ANY coordinator already has an active form for this phone
+  const anyActiveQuery = query(
+    collection(db, "intakeForms"),
+    where("requester_phone", "==", requester_phone),
+    where("status", "==", "sent")
+  );
+  const anyActiveSnap = await getDocs(anyActiveQuery);
+  if (!anyActiveSnap.empty) {
+    throw new Error(
+      "This requester already has an active form sent by another coordinator. Please coordinate before sending a new one."
+    );
+  }
   const now = new Date();
   const expires = new Date(now);
   expires.setDate(now.getDate() + 30);

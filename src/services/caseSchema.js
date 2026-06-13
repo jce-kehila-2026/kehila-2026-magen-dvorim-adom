@@ -18,6 +18,7 @@ export const CaseSchema = z.object({
   floor: z.string().min(1), // ✅ mandatory
 
   navigation_link: z.string().nullable().optional(),
+  image_urls: z.array(z.string()).max(2).optional(),
 
   urgency: z.enum(["low", "medium", "high"]),
   first_seen: z.enum([
@@ -35,6 +36,11 @@ export const CaseSchema = z.object({
   case_complexity: z
     .enum(["simple", "complex", "very_complex"])
     .default("simple"),
+
+  // ✅ Feedback system
+  feedback_token: z.string().nullable().optional(), // unique link token
+  feedback_submitted: z.boolean().default(false),   // prevents multiple submissions
+  feedback_submitted_at: z.any().nullable().optional(),
 
   // ✅ Timestamps
   opened_at: z.any().optional(), // Firestore Timestamp - set when case is created
