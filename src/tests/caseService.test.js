@@ -405,6 +405,7 @@ describe("Intake form service", () => {
   test("creates intake form", async () => {
     getDocs
       .mockResolvedValueOnce({ empty: false, docs: [{ id: "coord1" }] })
+      .mockResolvedValueOnce({ empty: true })
       .mockResolvedValueOnce({ empty: true });
 
     await createIntakeForm({
