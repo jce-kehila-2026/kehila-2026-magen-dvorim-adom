@@ -6,7 +6,8 @@ import {
   query,
   where,
   doc,
-  updateDoc
+  updateDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { CaseSchema } from "./caseSchema";
@@ -58,11 +59,11 @@ async function hasOpenCase(requester_phone) {
 export async function createCase(rawData) {
   // ✅ normalize phones
   const requester_phone = normalizePhone(rawData.requester_phone);
-  const coordinator_phone = normalizePhone(rawData.coordinator_phone);
-
-  // ✅ get coordinator ID
-  const coordinator_id = await getCoordinatorIdByPhone(coordinator_phone);
-
+  let coordinator_id = rawData.coordinator_id;
+  if (!coordinator_id) {
+    const coordinator_phone = normalizePhone(rawData.coordinator_phone || "");
+    coordinator_id = await getCoordinatorIdByPhone(coordinator_phone);
+  }
   // ✅ prevent duplicate
   const open = await hasOpenCase(requester_phone);
   if (open) {
@@ -70,11 +71,12 @@ export async function createCase(rawData) {
   }
 
   // ✅ prepare clean object for Zod
-  const dataForValidation = {
-    ...rawData,
-    requester_phone,
-    coordinator_id, // ✅ REQUIRED FIX
-  };
+const dataForValidation = {
+  ...rawData,
+  requester_phone,
+  coordinator_id,
+  image_urls: rawData.image_urls || [], 
+};
 
   delete dataForValidation.coordinator_phone; // ✅ remove invalid field
 
@@ -102,6 +104,7 @@ try {
 // ✅ save
 const docRef = await addDoc(collection(db, "cases"), {
   ...data,
+  image_urls: data.image_urls || [], // ✅ ensure saved
   ...(geoLocation || {}),
   status: "open",
   result: null,
@@ -364,4 +367,21 @@ export async function backfillMissingCaseLocations() {
   }
 
   return { updatedCount, skippedCount };
+}
+
+
+// FOR FEEDBACK SYSTEM - attach token to case for later validation when feedback is submitted
+export async function attachFeedbackToken(caseId, token) {
+  if (!caseId || !token) {
+    throw new Error("caseId and token are required");
+  }
+
+  const ref = doc(db, "cases", caseId);
+
+  await updateDoc(ref, {
+    feedback_token: token,
+    feedback_submitted: false,
+    feedback_submitted_at: null,
+    feedback_requested_at: Timestamp.now(),
+  });
 }

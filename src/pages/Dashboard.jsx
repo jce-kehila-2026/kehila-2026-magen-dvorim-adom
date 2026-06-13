@@ -2,7 +2,6 @@
 import { useNavigate } from "react-router-dom";
 
 import DashboardView from "../components/views/DashboardView";
-
 import { logoutUser } from "../services/authService";
 import { getAllCases, getCasesForCoordinatorById } from "../services/caseService";
 import { getUsersByRole } from "../services/userService";
@@ -10,10 +9,10 @@ import { USER_ROLES } from "../services/userSchema";
 import { useAuth } from "../contexts/AuthContext";
 import { getVolunteerAssignmentStats } from "../services/assignmentService";
 
-
 function Dashboard() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
+
   const [error, setError] = useState("");
   const [stats, setStats] = useState({
     openCases: 0,
@@ -23,62 +22,67 @@ function Dashboard() {
   const [allCases, setAllCases] = useState([]);
   const [sendFormOpen, setSendFormOpen] = useState(false);
 
-const userId = userProfile?.uid;
   useEffect(() => {
-    if (!userProfile) return;
+    if (!userProfile?.uid) return;
+
     const loadStats = async () => {
       try {
-        if (userProfile?.role === USER_ROLES.ADMIN) {
-          const [cases, volunteerUsers] = await Promise.all([
+        if (userProfile.role === USER_ROLES.ADMIN) {
+          const [cases, volunteers] = await Promise.all([
             getAllCases(),
             getUsersByRole(USER_ROLES.VOLUNTEER),
           ]);
+
           setAllCases(cases);
           setStats({
             openCases: cases.filter((c) => c.status !== "closed").length,
-            volunteers: volunteerUsers.length,
+            volunteers: volunteers.length,
             completedRescues: cases.filter((c) => c.status === "closed").length,
           });
-        } else if (userProfile?.role === USER_ROLES.COORDINATOR) {
-          const [myCases, volunteerStats] = await Promise.all([
-           getCasesForCoordinatorById(userId),
-           getVolunteerAssignmentStats(userId),
+        } else if (userProfile.role === USER_ROLES.COORDINATOR) {
+          const [cases, volunteerStats] = await Promise.all([
+            getCasesForCoordinatorById(userProfile.uid),
+            getVolunteerAssignmentStats(userProfile.uid),
           ]);
-          setAllCases(myCases);
+
+          setAllCases(cases);
           setStats({
-            openCases: cases.filter((c) => c.status === "open").length,
+            openCases: cases.filter((c) => c.status !== "closed").length,
             volunteers: volunteerStats.assignedCases,
-            completedRescues: myCases.filter((c) => c.status === "closed").length,
+            completedRescues: cases.filter((c) => c.status === "closed").length,
           });
         }
       } catch (err) {
         console.error("Dashboard stats load failed:", err);
+        setError("Failed to load dashboard data.");
       }
     };
+
     loadStats();
   }, [userProfile]);
+
   const handleLogout = async () => {
     try {
       setError("");
       await logoutUser();
       navigate("/");
-    } catch (error) {
-      console.error("Logout failed:", error);
+    } catch (err) {
+      console.error("Logout failed:", err);
       setError("Logout failed. Please try again.");
     }
   };
 
-return (
-  <DashboardView
-    userProfile={userProfile}
-    stats={stats}
-    allCases={allCases}
-    error={error}
-    sendFormOpen={sendFormOpen}
-    setSendFormOpen={setSendFormOpen}
-    onLogout={handleLogout}
-  />
-);
+  return (
+    <DashboardView
+      userProfile={userProfile}
+      stats={stats}
+      allCases={allCases}
+      error={error}
+      sendFormOpen={sendFormOpen}
+      setSendFormOpen={setSendFormOpen}
+      onLogout={handleLogout}
+    />
+  );
 }
 
 export default Dashboard;

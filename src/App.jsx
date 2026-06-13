@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import VolunteerDashboard from "./pages/VolunteerDashboard";
@@ -9,12 +8,14 @@ import CoordinatorCases from "./pages/CoordinatorCases";
 import CoordinatorSendForm from "./pages/CoordinatorSendForm";
 import MyCases from "./pages/MyCases";
 import Profile from "./pages/Profile";
+
 import Reports from "./pages/Reports";
 
 import { useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { USER_ROLES } from "./services/userSchema";
 import { getDashboardPathByRole } from "./utils/routes";
+import FeedbackPage from "./pages/FeedbackPage";
 
 function App() {
   const { userProfile, loading } = useAuth();
@@ -125,6 +126,8 @@ function App() {
         />
 
         <Route path="/submit-case" element={<SubmitCase />} />
+
+        <Route path="/feedback" element={<FeedbackPage />} />
 
         <Route
           path="*"

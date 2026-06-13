@@ -8,6 +8,7 @@ import {
   getCasesForCoordinatorById,
   getAllCases,
   updateCaseStatus,
+  attachFeedbackToken,
 } from "../services/caseService";
 
 import {
@@ -16,6 +17,7 @@ import {
   assignUserToCase,
   reopenCaseAndCleanConflicts,
 } from "../services/assignmentService";
+import { generateToken } from "../utils/generateToken";
 
 function CoordinatorCases() {
   const { userProfile } = useAuth();
@@ -304,28 +306,49 @@ function CoordinatorCases() {
     const text = `${user.full_name || ""} ${user.email || ""}`.toLowerCase();
     return text.includes(userSearch.toLowerCase());
   });
-    const beginCloseCase = async (caseId) => {
-    const confirmed = window.confirm("Are you sure you want to close this case?");
-    if (!confirmed) return;
+   
+  const beginCloseCase = async (caseId) => {
+  const confirmed = window.confirm("Are you sure you want to close this case?");
+  if (!confirmed) return;
 
-    setError("");
+  setError("");
 
-    try {
-      await updateCaseStatus(caseId, "closed", {
-        result_status: "evacuated_by_volunteer",
-        result_notes: null,
-        closed_by: {
-          user_id: userProfile?.uid || null,
-          full_name: userProfile?.full_name || userProfile?.email || "Unknown",
-          role: userProfile?.role || "coordinator",
-        },
-      });
+  try {
+    await updateCaseStatus(caseId, "closed", {
+      result_status: "evacuated_by_volunteer",
+      result_notes: null,
+      closed_by: {
+        user_id: userProfile?.uid || null,
+        full_name: userProfile?.full_name || userProfile?.email || "Unknown",
+        role: userProfile?.role || "coordinator",
+      },
+    });
 
-      await loadCases();
-    } catch (err) {
-      setError(err.message || "Failed to close case.");
+    await loadCases();
+  } catch (err) {
+    setError(err.message || "Failed to close case.");
+  }
+};
+
+const handleSendFeedback = async (caseItem) => {
+  try {
+    let token = caseItem.feedback_token;
+
+    if (!token) {
+      token = generateToken();
+      await attachFeedbackToken(caseItem.id, token);
     }
-  };
+
+    const link = `${window.location.origin}/feedback?token=${token}`;
+
+    await navigator.clipboard.writeText(link);
+
+    alert("Feedback link copied.");
+  } catch (err) {
+    console.error(err);
+    alert("Failed to generate feedback link.");
+  }
+};
 
   const handleReopenCase = async (caseId) => {
     setError("");
@@ -419,44 +442,46 @@ function CoordinatorCases() {
   const handleLogout = async () => {
   await logoutUser();
 };
-  return (
-    <CasesView
-      currentUserRole={currentUserRole}
-      currentUserName={currentUserName}
-      handleLogout={handleLogout}
-      cases={cases}
-      activeCases={visibleCases}
-      closedCases={closedCases}
-      openCaseCount={openCaseCount}
-      assignedCaseCount={assignedCaseCount}
-      myCasesCount={myCasesCount}
-      activeFilter={activeFilter}
-      setActiveFilter={setActiveFilter}
-      caseSearch={caseSearch}
-      setCaseSearch={setCaseSearch}
-      sortMode={sortMode}
-      setSortMode={setSortMode}
-      error={error}
-      assignments={assignments}
-      detailsCase={detailsCase}
-      setDetailsCase={setDetailsCase}
-      modalState={modalState}
-      setModalState={setModalState}
-      userSearch={userSearch}
-      setUserSearch={setUserSearch}
-      filteredUsersForModal={filteredUsersForModal}
-      recommendations={recommendations}
-      setRecommendations={setRecommendations}
-      assigning={assigning}
-      PRESET_EQUIPMENT={PRESET_EQUIPMENT}
-      beginCloseCase={beginCloseCase}
-      handleAssignFromModal={handleAssignFromModal}
-      handleGetRecommendations={handleGetRecommendations}
-      handleReopenCase={handleReopenCase}
-      formatDate={formatDate}
-      getResultLabel={getResultLabel}
-    />
-  );
+ return (
+  <CasesView
+    currentUserRole={currentUserRole}
+    currentUserName={currentUserName}
+    handleLogout={handleLogout}
+    cases={cases}
+    activeCases={visibleCases}
+    closedCases={closedCases}
+    openCaseCount={openCaseCount}
+    assignedCaseCount={assignedCaseCount}
+    myCasesCount={myCasesCount}
+    activeFilter={activeFilter}
+    setActiveFilter={setActiveFilter}
+    caseSearch={caseSearch}
+    setCaseSearch={setCaseSearch}
+    sortMode={sortMode}
+    setSortMode={setSortMode}
+    error={error}
+    assignments={assignments}
+    detailsCase={detailsCase}
+    setDetailsCase={setDetailsCase}
+    modalState={modalState}
+    setModalState={setModalState}
+    userSearch={userSearch}
+    setUserSearch={setUserSearch}
+    filteredUsersForModal={filteredUsersForModal}
+    recommendations={recommendations}
+    setRecommendations={setRecommendations}
+    assigning={assigning}
+    PRESET_EQUIPMENT={PRESET_EQUIPMENT}
+    beginCloseCase={beginCloseCase}
+    handleAssignFromModal={handleAssignFromModal}
+    handleGetRecommendations={handleGetRecommendations}
+    handleReopenCase={handleReopenCase}
+    handleSendFeedback={handleSendFeedback}
+    formatDate={formatDate}
+    getResultLabel={getResultLabel}
+  />
+);
+   
 }
 
 export default CoordinatorCases;
