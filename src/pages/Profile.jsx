@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ProfileView from "../components/views/ProfileView";
 import { updateUserProfile } from "../services/userService";
+import { logoutUser } from "../services/authService";
 
 const ISRAELI_CITIES = [
   "Jerusalem",
@@ -32,24 +33,54 @@ function Profile() {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
+    full_name: "",
+    phone: "",
     city: "",
     is_available: true,
+    photo_url: "",
   });
 
   useEffect(() => {
     if (!userProfile) return;
 
     setFormData({
+      full_name: userProfile.full_name || "",
+      phone: userProfile.phone || "",
       city: userProfile.city || "",
       is_available:
         typeof userProfile.is_available === "boolean"
           ? userProfile.is_available
           : true,
+      photo_url: userProfile.photo_url || "",
     });
   }, [userProfile]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const currentUserName =
+    userProfile?.full_name ||
+    userProfile?.displayName ||
+    userProfile?.email ||
+    "User";
+
+  const handleLogout = async () => {
+    await logoutUser();
+  };
+
+  const handlePhotoChange = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+
+    setFormData((prev) => ({
+      ...prev,
+      photo_url: previewUrl,
+      photo_file: file,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
     if (!userProfile) return;
 
@@ -59,8 +90,11 @@ function Profile() {
 
     try {
       await updateUserProfile(userProfile.uid, {
+        full_name: formData.full_name,
+        phone: formData.phone,
         city: formData.city,
         is_available: formData.is_available,
+        photo_url: formData.photo_url,
       });
 
       await refreshUserProfile();
@@ -81,6 +115,7 @@ function Profile() {
   return (
     <ProfileView
       userProfile={userProfile}
+      currentUserName={currentUserName}
       formData={formData}
       setFormData={setFormData}
       citySearch={citySearch}
@@ -91,6 +126,8 @@ function Profile() {
       error={error}
       success={success}
       handleSubmit={handleSubmit}
+      handleLogout={handleLogout}
+      handlePhotoChange={handlePhotoChange}
       ISRAELI_CITIES={ISRAELI_CITIES}
     />
   );

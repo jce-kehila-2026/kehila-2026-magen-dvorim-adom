@@ -1,5 +1,7 @@
-import { useNavigate } from "react-router-dom";
+// Main dashboard UI component.
+// Displays role-based statistics, navigation, and dashboard content.
 
+import { useNavigate } from "react-router-dom";
 import AssignedCasesMap from "../AssignedCasesMap";
 import CoordinatorSendForm from "../../pages/CoordinatorSendForm";
 import { USER_ROLES } from "../../services/userSchema";
@@ -46,7 +48,7 @@ function DashboardView({
 
           <div>
             <h2 style={styles.brandTitle}>Magen Dvorim Adom</h2>
-            <p style={styles.brandSub}>{userProfile?.role || "User"}</p>
+            <p style={styles.brandSub}>{userProfile?.full_name || "User"}</p>
           </div>
         </div>
 
@@ -65,14 +67,16 @@ function DashboardView({
               <button style={styles.navItem} onClick={() => navigate("/users")}>
                 Users
               </button>
+
+              {userProfile?.role === USER_ROLES.ADMIN && (
+                <button style={styles.navItem} onClick={() => navigate("/reports")}>
+                  Reports
+                </button>
+              )}
             </>
+            
           )}
-
-          <button style={styles.navItem} onClick={() => navigate("/my-cases")}>
-            My Cases
-          </button>
-
-          <button style={styles.navItem} onClick={() => navigate("/profile")}>
+         <button style={styles.navItem} onClick={() => navigate("/profile")}>
             Profile
           </button>
         </nav>
@@ -112,7 +116,7 @@ function DashboardView({
           <StatCard
             title="Open Cases"
             value={stats.openCases}
-            description="Need action"
+            //description="Need action"
             color="#f59e0b"
             bg="#fff7e6"
           />
@@ -120,7 +124,7 @@ function DashboardView({
           <StatCard
             title="Urgent Cases"
             value={urgentCases}
-            description="High priority"
+           // description="High priority"
             color="#dc2626"
             bg="#fff1f2"
           />
@@ -132,11 +136,11 @@ function DashboardView({
                 : "Volunteers"
             }
             value={stats.volunteers}
-            description={
-              userProfile?.role === USER_ROLES.COORDINATOR
-                ? "Current assignments"
-                : "Registered volunteers"
-            }
+            // description={
+            //   userProfile?.role === USER_ROLES.COORDINATOR
+            //     ? "Current assignments"
+            //     : "Registered volunteers"
+            // }
             color="#16a34a"
             bg="#ecfdf3"
           />
@@ -151,20 +155,12 @@ function DashboardView({
                   ? "Cases Map"
                   : "My Cases Map"}
               </h2>
-
-              <div style={styles.legend}>
-                <span>Urgent</span>
-                <span>Open</span>
-                <span>Assigned</span>
-              </div>
             </div>
 
             <div style={styles.mapBox}>
               <AssignedCasesMap
                 cases={allCases}
-                defaultFilter={
-                  userProfile?.role === USER_ROLES.ADMIN ? "assigned" : "all"
-                }
+                defaultFilter="all"
               />
             </div>
           </section>
@@ -297,6 +293,7 @@ const styles = {
     margin: 0,
     color: "#2b160c",
     fontSize: "30px",
+    textAlign: "center",
     fontWeight: "900",
   },
 
@@ -342,7 +339,7 @@ const styles = {
     background: "white",
     border: "1px solid #f0e5d8",
     borderRadius: "18px",
-    padding: "22px",
+    padding: "10px",
     display: "flex",
     gap: "16px",
     alignItems: "center",
@@ -361,7 +358,7 @@ const styles = {
   statTitle: {
     margin: 0,
     color: "#2b160c",
-    fontSize: "15px",
+    fontSize: "18px",
     fontWeight: "900",
   },
 
@@ -388,7 +385,7 @@ const styles = {
 sectionHeader: {
   background: "white",
   display: "flex",
-  justifyContent: "space-between",
+  justifyContent: "center",
   alignItems: "center",
   marginBottom: "14px",
   paddingBottom: "12px",
@@ -397,6 +394,7 @@ sectionHeader: {
     margin: 0,
     color: "#2b160c",
     fontSize: "20px",
+   textAlign: "center",
     fontWeight: "900",
   },
 

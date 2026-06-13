@@ -23,7 +23,7 @@ function Dashboard() {
   const [allCases, setAllCases] = useState([]);
   const [sendFormOpen, setSendFormOpen] = useState(false);
 
-
+const userId = userProfile?.uid;
   useEffect(() => {
     if (!userProfile) return;
     const loadStats = async () => {
@@ -46,7 +46,7 @@ function Dashboard() {
           ]);
           setAllCases(myCases);
           setStats({
-            openCases: myCases.filter((c) => c.status !== "closed").length,
+            openCases: cases.filter((c) => c.status === "open").length,
             volunteers: volunteerStats.assignedCases,
             completedRescues: myCases.filter((c) => c.status === "closed").length,
           });

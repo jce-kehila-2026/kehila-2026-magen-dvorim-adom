@@ -9,6 +9,7 @@ import CoordinatorCases from "./pages/CoordinatorCases";
 import CoordinatorSendForm from "./pages/CoordinatorSendForm";
 import MyCases from "./pages/MyCases";
 import Profile from "./pages/Profile";
+import Reports from "./pages/Reports";
 
 import { useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -106,7 +107,14 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
+              <Reports />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/coordinator/send-form"
           element={
