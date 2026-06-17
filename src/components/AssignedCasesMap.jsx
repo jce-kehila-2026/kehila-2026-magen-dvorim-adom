@@ -1,4 +1,7 @@
-import { useMemo, useState } from "react";
+// Interactive map component.
+// Displays rescue cases with valid coordinates on a map.
+
+import { useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -31,62 +34,53 @@ const getCasePosition = (caseItem) => {
 };
 
 const getMarkerStyle = (caseItem) => {
-  // Priority first
-  if (caseItem.urgency === "high") {
-    return { color: "#b71c1c", fillColor: "#e53935" };
-  }
-
-  if (caseItem.urgency === "medium") {
-    return { color: "#ef6c00", fillColor: "#ff9800" };
-  }
-
-  if (caseItem.urgency === "low") {
-    return { color: "#1b5e20", fillColor: "#4caf50" };
-  }
-
-  // Fallback to status
   if (caseItem.status === "open") {
-    return { color: "#1565c0", fillColor: "#42a5f5" };
+    return { color: "#d97706", fillColor: "#f59e0b" };
   }
 
   if (caseItem.status === "assigned") {
-    return { color: "#6a1b9a", fillColor: "#ab47bc" };
+    return { color: "#15803d", fillColor: "#22c55e" };
   }
 
-  if (caseItem.status === "closed") {
-    return { color: "#424242", fillColor: "#9e9e9e" };
-  }
+  return { color: "#6b7280", fillColor: "#9ca3af" };
+};
 
-  return { color: "#1976d2", fillColor: "#64b5f6" };
+const getMarkerRadius = (caseItem) => {
+  if (caseItem.urgency === "high") return 16;
+  if (caseItem.urgency === "medium") return 12;
+  if (caseItem.urgency === "low") return 9;
+
+  return 10;
 };
 
 function FitMapToCases({ positions }) {
   const map = useMap();
 
-  useMemo(() => {
-    if (!positions.length) return;
-
-    if (positions.length === 1) {
-      map.setView(positions[0], 13);
+  useEffect(() => {
+    if (!positions.length) {
+      map.setView(DEFAULT_CENTER, 8);
       return;
     }
 
-    map.fitBounds(positions, { padding: [40, 40] });
+    if (positions.length === 1) {
+      map.setView(positions[0], 10);
+      return;
+    }
+
+    map.fitBounds(positions, {
+      padding: [55, 55],
+      maxZoom: 11,
+      animate: true,
+      duration: 0.8,
+    });
   }, [positions, map]);
 
   return null;
 }
-const getMarkerRadius = (caseItem) => {
-  if (caseItem.urgency === "high") return 16;
-  if (caseItem.urgency === "medium") return 12;
-  if (caseItem.urgency === "low") return 8;
-
-  return 10;
-};
 
 function CaseMarker({ caseItem, position }) {
   const map = useMap();
-   
+
   return (
     <CircleMarker
       center={position}
@@ -96,64 +90,99 @@ function CaseMarker({ caseItem, position }) {
         fillOpacity: 0.9,
         weight: 3,
       }}
-      eventHandlers={{
-        click: () => map.flyTo(position, 14, { duration: 1 }),
+     eventHandlers={{
+        click: () => {
+          const popupOffsetPosition = [
+            position[0] + 0.0012,
+            position[1],
+          ];
+
+          map.flyTo(popupOffsetPosition, 14, { duration: 0.9 });
+        },
       }}
     >
       <Popup>
-        <strong>
-          {caseItem.requester_first_name} {caseItem.requester_last_name}
-        </strong>
-        <br />
-       Status: {caseItem.status || "Not specified"}
-        <br />
-        Urgency: {caseItem.urgency || "Not specified"}
-        <br />
-        Complexity: {caseItem.case_complexity || "Not specified"}
-        <br />
-        Address: {caseItem.street || ""} {caseItem.house_number || ""},{" "}
-        {caseItem.city || ""}
-        <br />
-        Phone: {caseItem.requester_phone || "Not specified"}
-        <br />
-        <br />
-        <a
-          href={`https://www.google.com/maps?q=${caseItem.location_lat},${caseItem.location_lng}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          📍 Open in Google Maps
-        </a>
+        <div style={{ minWidth: "210px" }}>
+          <strong>
+            {caseItem.requester_first_name} {caseItem.requester_last_name}
+          </strong>
+
+          <div style={{ marginTop: "8px", lineHeight: "1.7" }}>
+            <div>Status: {caseItem.status || "Not specified"}</div>
+            <div>Urgency: {caseItem.urgency || "Not specified"}</div>
+            <div>
+              Address: {caseItem.street || ""} {caseItem.house_number || ""},{" "}
+              {caseItem.city || ""}
+            </div>
+            <div>Phone: {caseItem.requester_phone || "Not specified"}</div>
+          </div>
+        </div>
       </Popup>
     </CircleMarker>
   );
 }
 
 const statusOptions = [
-  { value: "all", label: "All" },
-  { value: "open", label: "Open" },
-  { value: "assigned", label: "Assigned" },
-  { value: "closed", label: "Closed" },
+  {
+    value: "all",
+    label: "All",
+    activeColor: "#ffffff",
+    inactiveColor: "#1f697a",
+    activeBackground: "#6191a5",
+
+  },
+  {
+    value: "open",
+    label: "Open",
+    activeColor: "#ffffff",
+    activeBackground: "#f59e0b",
+    inactiveColor: "#b45309",
+  },
+  {
+    value: "assigned",
+    label: "Assigned",
+    activeColor: "#ffffff",
+    activeBackground: "#249a4f",
+    inactiveColor: "#15803d",
+  },
 ];
 
 export default function AssignedCasesMap({ cases = [], defaultFilter = "all" }) {
   const [statusFilter, setStatusFilter] = useState(defaultFilter);
 
-  const visibleCases = cases.filter((caseItem) => {
-    if (statusFilter === "all") return true;
-    return caseItem.status === statusFilter;
-  });
-  const highCases = visibleCases.filter((c) => c.urgency === "high").length;
-  const mediumCases = visibleCases.filter((c) => c.urgency === "medium").length;
-  const lowCases = visibleCases.filter((c) => c.urgency === "low").length;
+  const visibleCases = useMemo(() => {
+    return cases.filter((caseItem) => {
+      if (caseItem.status === "closed") return false;
 
-  const mappedCases = visibleCases.filter((caseItem) => getCasePosition(caseItem));
+      if (statusFilter === "all") {
+        return caseItem.status === "open" || caseItem.status === "assigned";
+      }
+
+      return caseItem.status === statusFilter;
+    });
+  }, [cases, statusFilter]);
+
+  const mappedCases = useMemo(() => {
+    return visibleCases.filter((caseItem) => getCasePosition(caseItem));
+  }, [visibleCases]);
+
+  const positions = useMemo(() => {
+    return mappedCases.map((caseItem) => getCasePosition(caseItem));
+  }, [mappedCases]);
+
   const unmappedCount = visibleCases.length - mappedCases.length;
-  const positions = mappedCases.map((caseItem) => getCasePosition(caseItem));
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "10px",
+          flexWrap: "wrap",
+          marginTop: "15px",
+        }}
+      >
         {statusOptions.map((option) => (
           <button
             key={option.value}
@@ -161,11 +190,17 @@ export default function AssignedCasesMap({ cases = [], defaultFilter = "all" }) 
             style={{
               padding: "8px 16px",
               borderRadius: "999px",
-              border: "1px solid #c8e6c9",
-              background: statusFilter === option.value ? "#1f7a5c" : "#fff",
-              color: statusFilter === option.value ? "#fff" : "#1f7a5c",
+              border: "1px solid #e4d8c1",
+              background:
+                statusFilter === option.value
+                  ? option.activeBackground
+                  : "#ffffff",
+              color:
+                statusFilter === option.value
+                  ? option.activeColor
+                  : option.inactiveColor,
               cursor: "pointer",
-              fontWeight: 700,
+              fontWeight: 800,
             }}
           >
             {option.label}
@@ -174,26 +209,12 @@ export default function AssignedCasesMap({ cases = [], defaultFilter = "all" }) 
       </div>
 
       <p style={{ textAlign: "center", color: "#5f6f68" }}>
-        Showing {mappedCases.length} case{mappedCases.length !== 1 ? "s" : ""} on the map.
-        {unmappedCount > 0 && ` ${unmappedCount} case(s) have no location coordinates.`}
+        Showing {mappedCases.length} case{mappedCases.length !== 1 ? "s" : ""}{" "}
+        on the map.
+        {unmappedCount > 0 &&
+          ` ${unmappedCount} cases need location information.`}
       </p>
-       
-      <div
-  style={{
-    display: "flex",
-    justifyContent: "center",
-    gap: "20px",
-    flexWrap: "wrap",
-    margin: "12px 0 18px",
-    fontWeight: "bold",
-    color: "#173b2f",
-  }}
->
-  <span>🔴 High: {highCases}</span>
-  <span>🟠 Medium: {mediumCases}</span>
-  <span>🟢 Low: {lowCases}</span>
-</div>
-  
+
       <div
         style={{
           height: "420px",
@@ -205,8 +226,8 @@ export default function AssignedCasesMap({ cases = [], defaultFilter = "all" }) 
         }}
       >
         <MapContainer
-          center={positions[0] || DEFAULT_CENTER}
-          zoom={positions.length ? 12 : 8}
+          center={DEFAULT_CENTER}
+          zoom={8}
           style={{ height: "100%", width: "100%" }}
         >
           <TileLayer

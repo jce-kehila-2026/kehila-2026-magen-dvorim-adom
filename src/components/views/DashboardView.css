@@ -1,0 +1,58 @@
+.dashboard-main {
+  overflow: hidden;
+}
+
+.dashboard-map-box .leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .dashboard-page {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-sidebar {
+    position: static !important;
+    height: auto !important;
+    padding: 16px !important;
+  }
+
+  .dashboard-main {
+    padding: 16px !important;
+    overflow: visible !important;
+  }
+
+  .dashboard-header {
+    flex-direction: column !important;
+    gap: 14px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .dashboard-map-section {
+    height: calc(100vh - 260px) !important;
+    min-height: 430px !important;
+    padding: 12px !important;
+  }
+
+  .dashboard-map-topbar {
+    align-items: stretch !important;
+  }
+
+  .dashboard-map-filters {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboard-map-section {
+    height: 520px !important;
+    min-height: 520px !important;
+  }
+
+  .dashboard-map-filters {
+    grid-template-columns: 1fr !important;
+  }
+}

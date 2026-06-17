@@ -71,8 +71,8 @@ const cases = [
     status: "closed",
     urgency: "low",
     case_complexity: "very_complex",
-    location_lat:"",
-    location_lng:"",
+    location_lat: "",
+    location_lng: "",
   },
 ];
 
@@ -83,11 +83,8 @@ describe("AssignedCasesMap", () => {
     expect(screen.getByTestId("map")).toBeInTheDocument();
     expect(screen.getAllByTestId("marker")).toHaveLength(2);
 
-    expect(
-      screen.getByText(
-        "Showing 2 cases on the map. 1 case(s) have no location coordinates."
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Showing\s+2\s+cases\s+on the map/i)).toBeInTheDocument();
+  
   });
 
   test("shows requester details inside marker popups", () => {
@@ -96,8 +93,8 @@ describe("AssignedCasesMap", () => {
     expect(screen.getByText("Aya Diab")).toBeInTheDocument();
     expect(screen.getByText("Dana Diab")).toBeInTheDocument();
 
-    expect(screen.getByText(/Status: open/i)).toBeInTheDocument();
-    expect(screen.getByText(/Urgency: high/i)).toBeInTheDocument();
+    expect(screen.getByText(/Status:\s*open/i)).toBeInTheDocument();
+    expect(screen.getByText(/Urgency:\s*high/i)).toBeInTheDocument();
   });
 
   test("filters open cases", () => {
@@ -106,7 +103,7 @@ describe("AssignedCasesMap", () => {
     fireEvent.click(screen.getByText("Open"));
 
     expect(screen.getAllByTestId("marker")).toHaveLength(1);
-    expect(screen.getByText("Showing 1 case on the map.")).toBeInTheDocument();
+    expect(screen.getByText(/Showing\s+1\s+case\s+on the map/i)).toBeInTheDocument();
     expect(screen.getByText("Aya Diab")).toBeInTheDocument();
   });
 
@@ -117,34 +114,16 @@ describe("AssignedCasesMap", () => {
 
     expect(screen.getAllByTestId("marker")).toHaveLength(1);
     expect(screen.getByText("Dana Diab")).toBeInTheDocument();
+    expect(screen.getByText(/Showing\s+1\s+case\s+on the map/i)).toBeInTheDocument();
   });
 
-  test("filters closed cases and counts unmapped closed case", () => {
+  test("does not render a closed filter because map supports only all, open, and assigned", () => {
     render(React.createElement(AssignedCasesMap, { cases }));
 
-    fireEvent.click(screen.getByText("Closed"));
-
-    expect(screen.queryAllByTestId("marker")).toHaveLength(0);
-
-    expect(
-      screen.getByText(
-        "Showing 0 cases on the map. 1 case(s) have no location coordinates."
-      )
-    ).toBeInTheDocument();
-  });
-
-  test("shows urgency counters based on visible cases", () => {
-    render(React.createElement(AssignedCasesMap, { cases }));
-
-    expect(screen.getByText("🔴 High: 1")).toBeInTheDocument();
-    expect(screen.getByText("🟠 Medium: 1")).toBeInTheDocument();
-    expect(screen.getByText("🟢 Low: 1")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Open"));
-
-    expect(screen.getByText("🔴 High: 1")).toBeInTheDocument();
-    expect(screen.getByText("🟠 Medium: 0")).toBeInTheDocument();
-    expect(screen.getByText("🟢 Low: 0")).toBeInTheDocument();
+    expect(screen.getByText("All")).toBeInTheDocument();
+    expect(screen.getByText("Open")).toBeInTheDocument();
+    expect(screen.getByText("Assigned")).toBeInTheDocument();
+    expect(screen.queryByText("Closed")).not.toBeInTheDocument();
   });
 
   test("renders default empty state when no cases are provided", () => {
@@ -152,7 +131,7 @@ describe("AssignedCasesMap", () => {
 
     expect(screen.getByTestId("map")).toBeInTheDocument();
     expect(screen.queryAllByTestId("marker")).toHaveLength(0);
-    expect(screen.getByText("Showing 0 cases on the map.")).toBeInTheDocument();
+    expect(screen.getByText(/Showing\s+0\s+cases\s+on the map/i)).toBeInTheDocument();
   });
 
   test("ignores cases with invalid coordinate values", () => {
@@ -173,11 +152,7 @@ describe("AssignedCasesMap", () => {
     );
 
     expect(screen.queryAllByTestId("marker")).toHaveLength(0);
-
-    expect(
-      screen.getByText(
-        "Showing 0 cases on the map. 1 case(s) have no location coordinates."
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Showing\s+0\s+cases\s+on the map/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 cases need location information/i)).toBeInTheDocument();
   });
 });
