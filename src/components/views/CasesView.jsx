@@ -41,6 +41,7 @@ function CasesView({
   getResultLabel,
   handleLogout,
 }) {
+   // Used to navigate between app pages.
   const navigate = useNavigate();
 
   const title = currentUserRole === "admin" ? "All Cases" : "Coordinator Cases";
@@ -104,7 +105,7 @@ if (activeFilter === "open") {
 
   return (
     <div style={styles.page}>
-      <aside style={styles.sidebar}>
+      <aside style={styles.sidebar}>  {/* Sidebar navigation */}
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
           <div>

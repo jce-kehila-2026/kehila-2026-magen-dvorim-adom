@@ -1,11 +1,14 @@
 // Main dashboard UI component.
 // Displays role-based statistics, navigation, and dashboard content.
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AssignedCasesMap from "../AssignedCasesMap";
 import CoordinatorSendForm from "../../pages/CoordinatorSendForm";
 import { USER_ROLES } from "../../services/userSchema";
 import logo from "../../assets/logo.png";
+
+import "./DashboardView.css";
 
 function DashboardView({
   userProfile,
@@ -39,6 +42,27 @@ function DashboardView({
     navigator.clipboard.writeText(link);
     alert("Public request form link copied to clipboard.");
   };
+
+  const mapCases = allCases.filter((c) => c.status !== "closed");
+
+  const openCasesCount = mapCases.filter((c) => c.status === "open").length;
+  const assignedCasesCount = mapCases.filter((c) => c.status === "assigned").length;
+
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  const filteredMapCases =
+    activeFilter === "all"
+      ? mapCases
+      : mapCases.filter((c) => c.status === activeFilter);
+
+  const getVolunteersInvolved = (cases) => {
+  const ids = cases
+    .flatMap((caseItem) => caseItem.assigned_volunteer_ids || [])
+    .filter(Boolean);
+
+  return new Set(ids).size;
+};
+const volunteersInvolved = getVolunteersInvolved(filteredMapCases);
 
   return (
     <div style={styles.page}>
@@ -112,74 +136,63 @@ function DashboardView({
 
         {error && <div style={styles.errorBox}>{error}</div>}
 
-        <section style={styles.cards}>
-          <StatCard
-            title="Open Cases"
-            value={stats.openCases}
-            //description="Need action"
-            color="#f59e0b"
-            bg="#fff7e6"
-          />
-
-          <StatCard
-            title="Urgent Cases"
-            value={urgentCases}
-           // description="High priority"
-            color="#dc2626"
-            bg="#fff1f2"
-          />
-
-          <StatCard
-            title={
-              userProfile?.role === USER_ROLES.COORDINATOR
-                ? "Assigned To Me"
-                : "Volunteers"
-            }
-            value={stats.volunteers}
-            // description={
-            //   userProfile?.role === USER_ROLES.COORDINATOR
-            //     ? "Current assignments"
-            //     : "Registered volunteers"
-            // }
-            color="#16a34a"
-            bg="#ecfdf3"
-          />
-        </section>
-
         {(userProfile?.role === USER_ROLES.ADMIN ||
-          userProfile?.role === USER_ROLES.COORDINATOR) && (
-          <section style={styles.mapSection}>
-            <div style={styles.sectionHeader}>
-              <h2 style={styles.sectionTitle}>
-                {userProfile?.role === USER_ROLES.ADMIN
-                  ? "Cases Map"
-                  : "My Cases Map"}
-              </h2>
-            </div>
+  userProfile?.role === USER_ROLES.COORDINATOR) && (
+  <section style={styles.mapSection}>
+    <div style={styles.mapTopBar}>
+      <div style={styles.mapFilters}>
+        <button
+          style={{
+            ...styles.filterButton,
+            ...(activeFilter === "all" ? styles.filterButtonActive : {}),
+          }}
+          onClick={() => setActiveFilter("all")}
+        >
+          All {mapCases.length}
+        </button>
 
-            <div style={styles.mapBox}>
-              <AssignedCasesMap
-                cases={allCases}
-                defaultFilter="all"
-              />
-            </div>
-          </section>
-        )}
+        <button
+          style={{
+            ...styles.filterButton,
+            ...(activeFilter === "open" ? styles.filterButtonActive : {}),
+          }}
+          onClick={() => setActiveFilter("open")}
+        >
+          Open {openCasesCount}
+        </button>
 
-        {sendFormOpen && (
-          <div
-            style={styles.modalOverlay}
-            onClick={() => setSendFormOpen(false)}
-          >
-            <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-              <CoordinatorSendForm onClose={() => setSendFormOpen(false)} />
-            </div>
-          </div>
-        )}
-      </main>
+        <button
+          style={{
+            ...styles.filterButton,
+            ...(activeFilter === "assigned" ? styles.filterButtonActive : {}),
+          }}
+          onClick={() => setActiveFilter("assigned")}
+        >
+          Assigned {assignedCasesCount}
+        </button>
+      </div>
+
+      <div style={styles.volunteersPill}>
+        Volunteers involved {volunteersInvolved}
+      </div>
     </div>
-  );
-}
+
+    <div style={styles.mapBox}>
+      <AssignedCasesMap cases={filteredMapCases} defaultFilter="all" />
+    </div>
+  </section>
+)}
+           {sendFormOpen && (
+  <div style={styles.modalOverlay} onClick={() => setSendFormOpen(false)}>
+    <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+      <CoordinatorSendForm onClose={() => setSendFormOpen(false)} />
+    </div>
+  </div>
+)}
+          </main>
+        </div>
+      );
+    }
 
 function StatCard({ title, value, description, color, bg }) {
   return (
@@ -373,15 +386,6 @@ const styles = {
     color: "#6b625c",
     fontSize: "12px",
   },
-
-  mapSection: {
-  background: "white",
-  border: "1px solid #f0e5d8",
-  borderRadius: "20px",
-  padding: "20px",
-  overflow: "visible",
-},
-
 sectionHeader: {
   background: "white",
   display: "flex",
@@ -405,13 +409,6 @@ sectionHeader: {
     fontSize: "13px",
     fontWeight: "800",
   },
-
-mapBox: {
-  width: "100%",
-  borderRadius: "16px",
-  overflow: "visible",
-  border: "1px solid #eadfd2",
-},
 
   errorBox: {
     padding: "12px",
@@ -441,6 +438,65 @@ mapBox: {
     padding: "24px",
     boxShadow: "0 24px 80px rgba(0,0,0,0.18)",
   },
+  mapSection: {
+  background: "white",
+  border: "1px solid #f0e5d8",
+  borderRadius: "20px",
+  padding: "16px",
+  height: "calc(100vh - 150px)",
+  minHeight: "520px",
+  display: "flex",
+  flexDirection: "column",
+},
+
+mapTopBar: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "12px",
+  marginBottom: "12px",
+  flexWrap: "wrap",
+},
+
+mapFilters: {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+},
+
+filterButton: {
+  border: "1px solid #f3c49a",
+  background: "#fffaf4",
+  color: "#2b160c",
+  borderRadius: "999px",
+  padding: "10px 18px",
+  fontWeight: "900",
+  cursor: "pointer",
+},
+
+filterButtonActive: {
+  background: "#ea580c",
+  color: "white",
+  borderColor: "#ea580c",
+},
+
+volunteersPill: {
+  border: "1px solid #d7eadf",
+  background: "#ecfdf3",
+  color: "#15803d",
+  borderRadius: "999px",
+  padding: "10px 18px",
+  fontWeight: "900",
+},
+
+mapBox: {
+  flex: 1,
+  minHeight: 0,
+  width: "100%",
+  borderRadius: "16px",
+  overflow: "hidden",
+  border: "1px solid #eadfd2",
+},
 };
 
 export default DashboardView;

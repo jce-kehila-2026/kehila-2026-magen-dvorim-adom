@@ -4,6 +4,7 @@
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 
+// Returns the visual badge style and label based on the user's role.
 function getRoleBadge(role, USER_ROLES) {
   const labels = {
     [USER_ROLES.ADMIN]: "Admin",
