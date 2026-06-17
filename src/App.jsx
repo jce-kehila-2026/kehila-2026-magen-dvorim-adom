@@ -16,7 +16,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { USER_ROLES } from "./services/userSchema";
 import { getDashboardPathByRole } from "./utils/routes";
 import FeedbackPage from "./pages/FeedbackPage";
-import Reports from "./pages/Reports";
+
 
 function App() {
   const { userProfile, loading } = useAuth();
