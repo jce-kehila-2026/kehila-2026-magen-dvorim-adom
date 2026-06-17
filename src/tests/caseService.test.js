@@ -402,21 +402,21 @@ describe("Intake form service", () => {
   });
 
 
-  test("creates intake form", async () => {
-    getDocs
+ test("creates intake form", async () => {
+  getDocs
     .mockResolvedValueOnce({ empty: false, docs: [{ id: "coord1" }] })
     .mockResolvedValueOnce({ empty: true, docs: [] })
     .mockResolvedValueOnce({ empty: true, docs: [] });
 
-addDoc.mockResolvedValueOnce({ id: "form1" });
+  addDoc.mockResolvedValueOnce({ id: "form1" });
 
-    await createIntakeForm({
-      requester_phone: "050",
-      coordinator_phone: "050",
-    });
-
-    expect(addDoc).toHaveBeenCalled();
+  await createIntakeForm({
+    requester_phone: "050",
+    coordinator_phone: "050",
   });
+
+  expect(addDoc).toHaveBeenCalled();
+});
 
 
   test("blocks duplicate intake form", async () => {
