@@ -1,0 +1,104 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== Helpers =====
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function roleIs(role) {
+      return isSignedIn() && request.auth.token.role == role;
+    }
+
+    function isAdmin() {
+      return roleIs("admin");
+    }
+
+    function isCoordinator() {
+      return roleIs("coordinator");
+    }
+
+    function isVolunteer() {
+      return roleIs("volunteer");
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAssignedVolunteer(resource) {
+      return resource.data.assignedVolunteer == request.auth.uid;
+    }
+
+    // ===== CASES =====
+    match /cases/{caseId} {
+
+      // Read
+      allow get, list: if isAdmin() || isCoordinator() || 
+        (isVolunteer() && isAssignedVolunteer(resource));
+
+      // Create (requester OR coordinator/admin)
+      // Keep simple — allow valid structure only
+      allow create: if request.resource.data.status == "open";
+
+      // Update
+      // Keep SIMPLE to avoid bugs
+      allow update: if isAdmin() 
+        || isCoordinator()
+        || (isVolunteer() && isAssignedVolunteer(resource));
+
+      // Delete
+      allow delete: if isAdmin();
+    }
+
+    // ===== USERS =====
+    match /users/{userId} {
+
+      allow get: if isAdmin() || isCoordinator() || isSelf(userId);
+      allow list: if isAdmin() || isCoordinator();
+
+      allow create: if isAdmin();
+
+      // User can update their own profile (limited risk)
+      allow update: if isAdmin() || isSelf(userId);
+
+      allow delete: if isAdmin();
+    }
+
+    // ===== ASSIGNMENTS =====
+    match /assignments/{assignmentId} {
+
+      allow get, list: if isAdmin() || isCoordinator() ||
+        (isVolunteer() && resource.data.user_id == request.auth.uid);
+
+      allow create: if isAdmin() || isCoordinator();
+
+      allow update, delete: if isAdmin() || isCoordinator();
+    }
+
+    // ===== FEEDBACK =====
+    match /feedback/{feedbackId} {
+
+      // Public submit (no login)
+      allow create: if true;
+
+      // Only staff read
+      allow get, list: if isAdmin() || isCoordinator();
+
+      allow update, delete: if false;
+    }
+
+    // ===== INTAKE FORMS =====
+    match /intakeForms/{formId} {
+
+      allow read, write: if isAdmin() || isCoordinator();
+    }
+
+    // ===== BLOCK EVERYTHING ELSE =====
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
