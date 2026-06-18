@@ -97,19 +97,8 @@ export async function registerUser(email, password, userData = {}) {
   }
 }
 
-async function findUserProfile(uid, email) {
-  const profileById = await getUserById(uid);
-
-  if (profileById) {
-    return profileById;
-  }
-
-  if (!email) {
-    return null;
-  }
-
-  const profileByEmail = await getUserByEmail(email);
-  return profileByEmail;
+async function findUserProfile(uid) {
+  return await getUserById(uid);
 }
 
 // Login existing user
@@ -128,8 +117,8 @@ export async function loginUser(email, password) {
 
     const uid = userCredential.user.uid;
 
-    // Fetch Firestore profile by uid, then fallback to email lookup
-    const profile = await findUserProfile(uid, normalizedEmail);
+    // Fetch Firestore profile by uid, 
+    const profile = await findUserProfile(uid);
 
     if (!profile) {
       await signOut(auth);
@@ -188,7 +177,7 @@ export async function getCurrentUserProfile() {
     // Fetch Firestore profile
     const email = currentUser.email ? normalizeEmail(currentUser.email) : "";
 
-    return await findUserProfile(currentUser.uid, email);
+    return await findUserProfile(currentUser.uid);
   } catch (error) {
     console.error(
       "Fetch current user profile failed:",
