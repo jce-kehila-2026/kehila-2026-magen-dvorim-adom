@@ -67,12 +67,7 @@ service cloud.firestore {
     // ===== CASES =====
    match /cases/{caseId} {
 
-  allow get: if isAdmin()
-    || isCoordinator()
-    || (isVolunteer() && isAssignedVolunteer(resource));
-
-  //  IMPORTANT: allow all staff to list
-  allow list: if isVolunteer();
+  allow read: if isSignedIn();
 
   allow create: if request.resource.data.status == "open";
 
@@ -87,9 +82,11 @@ service cloud.firestore {
     // ===== ASSIGNMENTS =====
     match /assignments/{assignmentId} {
 
+
       allow get, list: if isAdmin()
         || isCoordinator()
-        || (isVolunteer() && resource.data.user_id == request.auth.uid);
+        || (isVolunteer() && request.auth.uid != null);
+
 
       allow create, update, delete: if isAdmin() || isCoordinator();
     }
