@@ -8,84 +8,98 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function roleIs(role) {
-      return isSignedIn() && request.auth.token.role == role;
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
+    function getUserData() {
+      return getUserDoc().data;
+    }
+
+    function getUserRole() {
+      return getUserData().role;
+    }
+
+    // ✅ Hierarchy-aware role checks
     function isAdmin() {
-      return roleIs("admin");
+      return isSignedIn() && getUserRole() == "admin";
     }
 
     function isCoordinator() {
-      return roleIs("coordinator");
+      return isSignedIn() && (
+        getUserRole() == "coordinator" ||
+        getUserRole() == "admin"
+      );
     }
 
     function isVolunteer() {
-      return roleIs("volunteer");
+      return isSignedIn() && (
+        getUserRole() == "volunteer" ||
+        getUserRole() == "coordinator" ||
+        getUserRole() == "admin"
+      );
     }
 
-    function isSelf(uid) {
-      return isSignedIn() && request.auth.uid == uid;
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     function isAssignedVolunteer(resource) {
       return resource.data.assignedVolunteer == request.auth.uid;
     }
 
-    // ===== CASES =====
-    match /cases/{caseId} {
-
-      // Read
-      allow get, list: if isAdmin() || isCoordinator() || 
-        (isVolunteer() && isAssignedVolunteer(resource));
-
-      // Create (requester OR coordinator/admin)
-      // Keep simple — allow valid structure only
-      allow create: if request.resource.data.status == "open";
-
-      // Update
-      // Keep SIMPLE to avoid bugs
-      allow update: if isAdmin() 
-        || isCoordinator()
-        || (isVolunteer() && isAssignedVolunteer(resource));
-
-      // Delete
-      allow delete: if isAdmin();
-    }
-
     // ===== USERS =====
-    match /users/{userId} {
+   match /users/{userId} {
 
-      allow get: if isAdmin() || isCoordinator() || isSelf(userId);
-      allow list: if isAdmin() || isCoordinator();
+    allow get: if isSignedIn();
 
-      allow create: if isAdmin();
+    // allow listing ONLY for staff (avoids query conflicts)
+    allow list: if isCoordinator();
 
-      // User can update their own profile (limited risk)
-      allow update: if isAdmin() || isSelf(userId);
+    allow create: if isAdmin();
 
-      allow delete: if isAdmin();
-    }
+    allow update: if isAdmin() || isSelf(userId);
+
+    allow delete: if isAdmin();
+  }
+
+
+    // ===== CASES =====
+   match /cases/{caseId} {
+
+  allow get: if isAdmin()
+    || isCoordinator()
+    || (isVolunteer() && isAssignedVolunteer(resource));
+
+  //  IMPORTANT: allow all staff to list
+  allow list: if isVolunteer();
+
+  allow create: if request.resource.data.status == "open";
+
+  allow update: if isAdmin()
+    || isCoordinator()
+    || (isVolunteer() && isAssignedVolunteer(resource));
+
+  allow delete: if isAdmin();
+}
+
 
     // ===== ASSIGNMENTS =====
     match /assignments/{assignmentId} {
 
-      allow get, list: if isAdmin() || isCoordinator() ||
-        (isVolunteer() && resource.data.user_id == request.auth.uid);
+      allow get, list: if isAdmin()
+        || isCoordinator()
+        || (isVolunteer() && resource.data.user_id == request.auth.uid);
 
-      allow create: if isAdmin() || isCoordinator();
-
-      allow update, delete: if isAdmin() || isCoordinator();
+      allow create, update, delete: if isAdmin() || isCoordinator();
     }
 
     // ===== FEEDBACK =====
     match /feedback/{feedbackId} {
 
-      // Public submit (no login)
-      allow create: if true;
+      allow create: if true; // public submission
 
-      // Only staff read
-      allow get, list: if isAdmin() || isCoordinator();
+      allow get, list: if isCoordinator(); // includes admin
 
       allow update, delete: if false;
     }
@@ -93,7 +107,7 @@ service cloud.firestore {
     // ===== INTAKE FORMS =====
     match /intakeForms/{formId} {
 
-      allow read, write: if isAdmin() || isCoordinator();
+      allow read, write: if isCoordinator(); // includes admin
     }
 
     // ===== BLOCK EVERYTHING ELSE =====
