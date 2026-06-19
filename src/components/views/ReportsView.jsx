@@ -553,6 +553,9 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "white",
     fontSize: "14px",
+    color: "#2b160c",        
+    caretColor: "#2b160c",   
+
   },
   select: {
     padding: "13px 16px",

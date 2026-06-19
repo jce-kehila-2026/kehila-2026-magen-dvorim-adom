@@ -444,7 +444,7 @@ const goTo = (path) => {
                   Password *
                   <input
                     name="password"
-                    type="password"
+                    type="text"
                     value={formData.password}
                     onChange={handleChange}
                     style={styles.input}
@@ -799,6 +799,10 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     fontSize: "14px",
+    
+    color: "#2b160c",      
+    caretColor: "#2b160c",  
+
   },
 
   selectInput: {
@@ -1001,6 +1005,9 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     boxSizing: "border-box",
+    color: "#2b160c",       
+    caretColor: "#2b160c",  
+
   },
 
   disabledInput: {
