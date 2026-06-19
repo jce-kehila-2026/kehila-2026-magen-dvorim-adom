@@ -127,10 +127,10 @@ export async function getAssignmentsByCaseIds(caseIds = []) {
 
   return grouped;
 }
-
 export async function assignUserToCase({
   case_id,
   user_id,
+  user_name = "",
   assigned_by,
   required_equipment = [],
   notes = null,
@@ -144,6 +144,7 @@ export async function assignUserToCase({
   const assignment = AssignmentSchema.parse({
     case_id,
     user_id,
+    user_name,
     assigned_by,
     required_equipment,
     notes,
@@ -161,6 +162,7 @@ export async function assignUserToCase({
 
   return ref.id;
 }
+ 
 
 export async function removeAssignment(assignmentId, caseId) {
   await deleteDoc(doc(db, "assignments", assignmentId));
@@ -178,21 +180,27 @@ export async function removeAssignment(assignmentId, caseId) {
 }
 
 export async function reopenCaseAndCleanConflicts(caseId) {
-  const assignmentSnap = await getDocs(query(collection(db, "assignments"), where("case_id", "==", caseId)));
+  const assignmentSnap = await getDocs(
+    query(collection(db, "assignments"), where("case_id", "==", caseId))
+  );
+
   const removed = [];
 
   if (!assignmentSnap.empty) {
     for (const docItem of assignmentSnap.docs) {
       const assignment = { id: docItem.id, ...docItem.data() };
-      const activeAssignments = await getActiveUserAssignments(assignment.user_id, caseId);
 
-      if (activeAssignments.length) {
-        await deleteDoc(doc(db, "assignments", assignment.id));
-        removed.push({ user_id: assignment.user_id, assignmentId: assignment.id });
-      }
+      await deleteDoc(doc(db, "assignments", assignment.id));
+
+      removed.push({
+        user_id: assignment.user_id,
+        assignmentId: assignment.id,
+      });
     }
   }
 
   await updateCaseStatus(caseId, "open", {});
+
   return removed;
 }
+  

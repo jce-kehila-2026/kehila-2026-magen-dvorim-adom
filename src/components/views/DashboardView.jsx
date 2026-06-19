@@ -15,33 +15,23 @@ function DashboardView({
   stats,
   allCases,
   error,
-  sendFormOpen,
-  setSendFormOpen,
   onLogout,
 }) {
-  const navigate = useNavigate();
+ const navigate = useNavigate();
+const [menuOpen, setMenuOpen] = useState(false);
 
+const goTo = (path) => {
+  setMenuOpen(false);
+  navigate(path);
+};
   const urgentCases = allCases.filter((c) => c.urgency === "high").length;
 
-  const dashboardTitle =
-    userProfile?.role === USER_ROLES.ADMIN
-      ? "Admin Dashboard"
-      : userProfile?.role === USER_ROLES.COORDINATOR
-      ? "Coordinator Dashboard"
-      : "Volunteer Dashboard";
-
-  const subtitle =
-    userProfile?.role === USER_ROLES.ADMIN
-      ? "Live overview of all rescue cases, volunteers, and system activity."
-      : userProfile?.role === USER_ROLES.COORDINATOR
-      ? "Live view of active rescue cases and volunteer assignment."
-      : "View your rescue missions and availability.";
-
-  const copyFormLink = () => {
-    const link = `${window.location.origin}/submit-case`;
-    navigator.clipboard.writeText(link);
-    alert("Public request form link copied to clipboard.");
-  };
+ const dashboardTitle =
+  userProfile?.role === USER_ROLES.ADMIN
+    ? `Welcome back, ${userProfile?.full_name || "Admin"}`
+    : userProfile?.role === USER_ROLES.COORDINATOR
+    ? `Welcome back, ${userProfile?.full_name || "Coordinator"}`
+    : `Welcome back, ${userProfile?.full_name || "Volunteer"}`;
 
   const mapCases = allCases.filter((c) => c.status !== "closed");
 
@@ -55,18 +45,22 @@ function DashboardView({
       ? mapCases
       : mapCases.filter((c) => c.status === activeFilter);
 
-  const getVolunteersInvolved = (cases) => {
-  const ids = cases
-    .flatMap((caseItem) => caseItem.assigned_volunteer_ids || [])
-    .filter(Boolean);
-
-  return new Set(ids).size;
-};
-const volunteersInvolved = getVolunteersInvolved(filteredMapCases);
 
   return (
-    <div style={styles.page}>
-      <aside style={styles.sidebar}>
+<div
+  className="dashboard-page"
+  style={styles.page}
+>
+  {menuOpen && (
+    <div
+      className="dashboard-overlay"
+      onClick={() => setMenuOpen(false)}
+    />
+  )}
+      <aside
+  className={`dashboard-sidebar ${menuOpen ? "open" : ""}`}
+  style={styles.sidebar}
+>
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
 
@@ -84,23 +78,23 @@ const volunteersInvolved = getVolunteersInvolved(filteredMapCases);
           {(userProfile?.role === USER_ROLES.ADMIN ||
             userProfile?.role === USER_ROLES.COORDINATOR) && (
             <>
-              <button style={styles.navItem} onClick={() => navigate("/cases")}>
+              <button style={styles.navItem} onClick={() => goTo("/cases")}>
                 Cases
               </button>
 
-              <button style={styles.navItem} onClick={() => navigate("/users")}>
+              <button style={styles.navItem} onClick={() => goTo("/users")}>
                 Users
               </button>
 
               {userProfile?.role === USER_ROLES.ADMIN && (
-                <button style={styles.navItem} onClick={() => navigate("/reports")}>
+                <button style={styles.navItem} onClick={() => goTo("/reports")}>
                   Reports
                 </button>
               )}
             </>
             
           )}
-         <button style={styles.navItem} onClick={() => navigate("/profile")}>
+         <button style={styles.navItem} onClick={() => goTo("/profile")}>
             Profile
           </button>
         </nav>
@@ -110,85 +104,95 @@ const volunteersInvolved = getVolunteersInvolved(filteredMapCases);
         </button>
       </aside>
 
-      <main style={styles.main}>
-        <header style={styles.header}>
-          <div>
-            <h1 style={styles.title}>{dashboardTitle}</h1>
-            <p style={styles.subtitle}>{subtitle}</p>
-          </div>
+      <main
+  className="dashboard-main"
+  style={styles.main}
+>
+  <div className="dashboard-mobile-topbar">
+  <button
+    className="dashboard-menu-button"
+    onClick={() => setMenuOpen(true)}
+  >
+    ☰
+  </button>
 
-          {(userProfile?.role === USER_ROLES.ADMIN ||
-            userProfile?.role === USER_ROLES.COORDINATOR) && (
-            <div style={styles.headerActions}>
-              <button
-                style={styles.primaryButton}
-                onClick={() => setSendFormOpen(true)}
-              >
-                + New Request
-              </button>
-
-              <button style={styles.secondaryButton} onClick={copyFormLink}>
-                Copy Link
-              </button>
-            </div>
-          )}
-        </header>
+  <span className="dashboard-mobile-title">
+    Dashboard
+  </span>
+</div>
 
         {error && <div style={styles.errorBox}>{error}</div>}
 
         {(userProfile?.role === USER_ROLES.ADMIN ||
   userProfile?.role === USER_ROLES.COORDINATOR) && (
-  <section style={styles.mapSection}>
-    <div style={styles.mapTopBar}>
-      <div style={styles.mapFilters}>
-        <button
-          style={{
-            ...styles.filterButton,
-            ...(activeFilter === "all" ? styles.filterButtonActive : {}),
-          }}
-          onClick={() => setActiveFilter("all")}
-        >
-          All {mapCases.length}
-        </button>
+  <section
+  className="dashboard-map-section"
+  style={styles.mapSection}
+>
+ <div
+  className="dashboard-map-layout"
+  style={styles.mapLayout}
+>
 
-        <button
-          style={{
-            ...styles.filterButton,
-            ...(activeFilter === "open" ? styles.filterButtonActive : {}),
-          }}
-          onClick={() => setActiveFilter("open")}
-        >
-          Open {openCasesCount}
-        </button>
-
-        <button
-          style={{
-            ...styles.filterButton,
-            ...(activeFilter === "assigned" ? styles.filterButtonActive : {}),
-          }}
-          onClick={() => setActiveFilter("assigned")}
-        >
-          Assigned {assignedCasesCount}
-        </button>
-      </div>
-
-      <div style={styles.volunteersPill}>
-        Volunteers involved {volunteersInvolved}
-      </div>
+    <div
+  className="dashboard-map-box"
+  style={styles.mapBox}
+>
+      <AssignedCasesMap
+        cases={filteredMapCases}
+        defaultFilter="all"
+      />
     </div>
 
-    <div style={styles.mapBox}>
-      <AssignedCasesMap cases={filteredMapCases} defaultFilter="all" />
-    </div>
-  </section>
-)}
-           {sendFormOpen && (
-  <div style={styles.modalOverlay} onClick={() => setSendFormOpen(false)}>
-    <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-      <CoordinatorSendForm onClose={() => setSendFormOpen(false)} />
-    </div>
+  <div
+  className="dashboard-control-panel"
+  style={styles.controlPanel}
+>
+  <button
+    style={{
+      ...styles.filterButton,
+      ...(activeFilter === "all"
+        ? styles.filterButtonActive
+        : {}),
+    }}
+    onClick={() => setActiveFilter("all")}
+  >
+    All {mapCases.length}
+  </button>
+
+  <button
+    style={{
+      ...styles.filterButton,
+      ...(activeFilter === "open"
+        ? styles.filterButtonActive
+        : {}),
+    }}
+    onClick={() => setActiveFilter("open")}
+  >
+    Open {openCasesCount}
+  </button>
+
+  <button
+    style={{
+      ...styles.filterButton,
+      ...(activeFilter === "assigned"
+        ? styles.filterButtonActive
+        : {}),
+    }}
+    onClick={() => setActiveFilter("assigned")}
+  >
+    Assigned {assignedCasesCount}
+  </button>
+
+ <div style={styles.sendFormCard}>
+  <CoordinatorSendForm />
+</div>
+</div>
+
   </div>
+</section>
 )}
+
           </main>
         </div>
       );
@@ -289,10 +293,11 @@ const styles = {
     cursor: "pointer",
   },
 
-  main: {
-    padding: "34px",
-    boxSizing: "border-box",
-  },
+ main: {
+  padding: "18px",
+  boxSizing: "border-box",
+  overflow: "hidden",
+},
 
   header: {
     display: "flex",
@@ -438,15 +443,26 @@ sectionHeader: {
     padding: "24px",
     boxShadow: "0 24px 80px rgba(0,0,0,0.18)",
   },
-  mapSection: {
+ mapSection: {
   background: "white",
   border: "1px solid #f0e5d8",
   borderRadius: "20px",
-  padding: "16px",
-  height: "calc(100vh - 150px)",
-  minHeight: "520px",
+  padding: "12px",
+  height: "calc(100vh - 40px)",
   display: "flex",
   flexDirection: "column",
+  overflow: "hidden",
+},
+mapLayout: {
+  display: "grid",
+  gridTemplateColumns: "1fr 300px",
+  gap: "20px",
+  height: "100%",
+},
+controlPanel: {
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
 },
 
 mapTopBar: {
@@ -480,23 +496,95 @@ filterButtonActive: {
   borderColor: "#ea580c",
 },
 
-volunteersPill: {
-  border: "1px solid #d7eadf",
-  background: "#ecfdf3",
-  color: "#15803d",
-  borderRadius: "999px",
-  padding: "10px 18px",
-  fontWeight: "900",
-},
-
 mapBox: {
   flex: 1,
+  height: "100%",
   minHeight: 0,
   width: "100%",
   borderRadius: "16px",
   overflow: "hidden",
   border: "1px solid #eadfd2",
 },
+sendFormCard: {
+  marginTop: "10px",
+  background: "#fffaf4",
+  border: "1px solid #f0e5d8",
+  borderRadius: "18px",
+  padding: "18px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+},
+
+sendFormTitle: {
+  margin: 0,
+  textAlign: "center",
+  color: "#2b160c",
+  fontSize: "20px",
+  fontWeight: "900",
+},
+
+createFormButton: {
+  border: "none",
+  borderRadius: "12px",
+  background: "#ea580c",
+  color: "white",
+  padding: "12px",
+  fontWeight: "900",
+  cursor: "pointer",
+},
+
+copyLinkButton: {
+  border: "none",
+  borderRadius: "12px",
+  background: "#15803d",
+  color: "white",
+  padding: "12px",
+  fontWeight: "900",
+  cursor: "pointer",
+},
+
+
+phoneInput: {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "10px",
+  borderRadius: "10px",
+  border: "1px solid #d8d2ca",
+  marginTop: "10px",
+},
+
+quickFormActions: {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: "8px",
+  marginTop: "10px",
+},
+searchInput: {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "10px",
+  borderRadius: "10px",
+  border: "1px solid #d8d2ca",
+},
+tabActive: {
+  border: "none",
+  borderRadius: "999px",
+  padding: "6px 10px",
+  background: "#15803d",
+  color: "white",
+  fontWeight: "800",
+},
+
+tabButton: {
+  border: "none",
+  borderRadius: "999px",
+  padding: "6px 10px",
+  background: "#eee",
+  color: "#4b3b31",
+  fontWeight: "800",
+},
+
 };
 
 export default DashboardView;

@@ -7,6 +7,7 @@ import { z } from "zod";
 export const AssignmentSchema = z.object({
   case_id: z.string().min(1, "Case ID is required"),
   user_id: z.string().min(1, "User ID is required"),
+  user_name: z.string().optional(),
   assigned_by: z.string().min(1, "Assigned by is required"),
 
   required_equipment: z.array(z.string()).default([]),

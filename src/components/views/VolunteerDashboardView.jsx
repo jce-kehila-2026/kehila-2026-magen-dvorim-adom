@@ -1,64 +1,114 @@
 // Volunteer dashboard interface.
-// Shows assigned cases, recommendations, and volunteer statistics.
+// Shows assigned cases and volunteer statistics.
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+import "./VolunteerDashboard.css";
 
 function VolunteerDashboardView({
   userProfile,
   stats,
+  recentCases = [],
   loading,
   error,
   handleLogout,
 }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const currentCase = recentCases[0];
+
+  const goTo = (path) => {
+    setMenuOpen(false);
+    navigate(path);
+  };
 
   return (
-    <div style={styles.page}>
-      <aside style={styles.sidebar}>
-        <div style={styles.brand}>
+    <div className="volunteer-page" style={styles.page}>
+      {menuOpen && (
+        <div
+          className="mobile-overlay"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`volunteer-sidebar ${menuOpen ? "open" : ""}`}
+        style={styles.sidebar}
+      >
+        <div className="volunteer-brand" style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
 
           <div>
             <h2 style={styles.brandTitle}>Magen Dvorim Adom</h2>
-            <p style={styles.brandSub}>{userProfile?.full_name || "Volunteer"}</p>
+            <p style={styles.brandSub}>
+              {userProfile?.full_name || "Volunteer"}
+            </p>
           </div>
         </div>
 
-        <nav style={styles.nav}>
-          <button style={{ ...styles.navItem, ...styles.navItemActive }}>
+        <nav className="volunteer-nav" style={styles.nav}>
+          <button
+            style={{ ...styles.navItem, ...styles.navItemActive }}
+            onClick={() => goTo("/dashboard")}
+          >
             Dashboard
           </button>
 
-          <button style={styles.navItem} onClick={() => navigate("/my-cases")}>
+          <button style={styles.navItem} onClick={() => goTo("/my-cases")}>
             My Cases
           </button>
 
-          <button style={styles.navItem} onClick={() => navigate("/profile")}>
+          <button style={styles.navItem} onClick={() => goTo("/profile")}>
             Profile
           </button>
         </nav>
 
-        <button style={styles.logoutButton} onClick={handleLogout}>
+        <button
+          className="logout-button"
+          style={styles.logoutButton}
+          onClick={handleLogout}
+        >
           Logout
         </button>
       </aside>
 
-      <main style={styles.main}>
-        <section style={styles.contentCard}>
+      <main className="volunteer-main" style={styles.main}>
+        <div className="mobile-topbar">
+          <button
+            className="menu-button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+          >
+            ☰
+          </button>
+
+          <img src={logo} alt="Magen Dvorim Adom" className="mobile-logo" />
+
+          <span className="mobile-title">Volunteer</span>
+        </div>
+
+        <section className="content-card" style={styles.contentCard}>
           <header style={styles.header}>
-            <h1 style={styles.title}>Volunteer Dashboard</h1>
-            <p style={styles.subtitle}>
-              View your assigned rescue cases and availability.
-            </p>
+            <h1 className="volunteer-title" style={styles.title}>
+              Welcome back,
+              <span style={styles.userName}>
+                {" "}
+                {userProfile?.full_name || "Volunteer"}
+              </span>
+            </h1>
           </header>
 
           {error && <div style={styles.errorBox}>{error}</div>}
-          {loading && <div style={styles.loading}>Loading your dashboard...</div>}
+
+          {loading && (
+            <div style={styles.loading}>Loading your dashboard...</div>
+          )}
 
           {!loading && !error && (
             <>
-              <div style={styles.statsGrid}>
+              <div className="stats-grid" style={styles.statsGrid}>
                 <StatCard
                   title="Assigned Cases"
                   value={stats.openCases}
@@ -72,46 +122,99 @@ function VolunteerDashboardView({
                 />
 
                 <StatCard
-                  title="Availability"
-                  value={userProfile.is_available ? "Available" : "Unavailable"}
-                  tone={userProfile.is_available ? "green" : "red"}
-                />
-
-                <StatCard
-                  title="Location"
-                  value={userProfile.city || "Not set"}
+                  className="latest-city-card"
+                  title="Latest City"
+                  value={currentCase?.city || "None"}
                   tone="neutral"
                 />
               </div>
 
-              <div style={styles.actionsGrid}>
-                <div style={styles.actionCard}>
-                  <h3 style={styles.actionTitle}>My Assigned Cases</h3>
-                  <p style={styles.actionText}>
-                    Review your current rescue cases and submit results when done.
-                  </p>
+              <div className="dashboard-grid" style={styles.dashboardGrid}>
+                <section style={styles.currentCard}>
+                  <div style={styles.sectionHeader}>
+                    <h3 style={styles.sectionTitle}>Current Assignment</h3>
 
-                  <button
-                    style={styles.secondaryButton}
-                    onClick={() => navigate("/my-cases")}
-                  >
-                    View My Cases
-                  </button>
-                </div>
+                    {currentCase && (
+                      <span style={styles.statusBadge}>
+                        {currentCase.status || "assigned"}
+                      </span>
+                    )}
+                  </div>
 
-                <div style={styles.actionCard}>
-                  <h3 style={styles.actionTitle}>Profile & Availability</h3>
-                  <p style={styles.actionText}>
-                    Update your city, availability, and personal details.
-                  </p>
+                  {!currentCase ? (
+                    <p style={styles.emptyText}>
+                      No active assignments right now.
+                    </p>
+                  ) : (
+                    <>
+                      <div style={styles.caseInfo}>
+                        <p style={styles.caseCity}>
+                          {currentCase.city || "Unknown city"}
+                        </p>
 
-                  <button
-                    style={styles.primaryButton}
-                    onClick={() => navigate("/profile")}
-                  >
-                    Edit Profile
-                  </button>
-                </div>
+                        <p style={styles.caseDescription}>
+                          {currentCase.description ||
+                            "No description provided."}
+                        </p>
+
+                        <div style={styles.caseDetails}>
+                          <span>
+                            Requester:{" "}
+                            <strong>
+                              {currentCase.requester_first_name || ""}{" "}
+                              {currentCase.requester_last_name || ""}
+                            </strong>
+                          </span>
+
+                          <span>
+                            Phone:{" "}
+                            <strong>
+                              {currentCase.requester_phone || "Not provided"}
+                            </strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        style={styles.primaryButton}
+                        onClick={() => navigate("/my-cases")}
+                      >
+                        View case details
+                      </button>
+                    </>
+                  )}
+                </section>
+
+                <section style={styles.recentCard}>
+                  <h3 style={styles.sectionTitle}>Recent Assignments</h3>
+
+                  {recentCases.length === 0 ? (
+                    <p style={styles.emptyText}>
+                      Your recent assignments will appear here.
+                    </p>
+                  ) : (
+                    <div style={styles.recentList}>
+                      {recentCases.slice(0, 4).map((caseItem) => (
+                        <div key={caseItem.id} style={styles.recentItem}>
+                          <div>
+                            <strong style={styles.recentCity}>
+                              {caseItem.city || "Unknown city"}
+                            </strong>
+
+                            <p style={styles.recentName}>
+                              {caseItem.requester_first_name}{" "}
+                              {caseItem.requester_last_name}
+                            </p>
+                          </div>
+
+                          <span style={styles.recentStatus}>
+                            {caseItem.status || "assigned"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
               </div>
             </>
           )}
@@ -121,19 +224,17 @@ function VolunteerDashboardView({
   );
 }
 
-function StatCard({ title, value, tone }) {
+function StatCard({ title, value, tone, className = "" }) {
   const toneStyle =
     tone === "orange"
       ? styles.orangeTone
       : tone === "green"
       ? styles.greenTone
-      : tone === "red"
-      ? styles.redTone
       : styles.neutralTone;
 
   return (
-    <div style={styles.statCard}>
-      <div style={{ ...styles.statDot, ...toneStyle }}>●</div>
+    <div className={className} style={styles.statCard}>
+      <span style={{ ...styles.statIndicator, background: toneStyle.color }} />
 
       <div>
         <h3 style={styles.statTitle}>{title}</h3>
@@ -186,7 +287,7 @@ const styles = {
 
   brandSub: {
     margin: "4px 0 0",
-    color: "#e85d04",
+    color: "#ff6f0f",
     fontSize: "13px",
   },
 
@@ -209,13 +310,13 @@ const styles = {
 
   navItemActive: {
     background: "#fff1df",
-    color: "#e85d04",
+    color: "#ff6f0f",
   },
 
   logoutButton: {
     marginTop: "auto",
     border: "none",
-    background: "#f97316",
+    background: "#ff6f0f",
     color: "white",
     borderRadius: "14px",
     padding: "14px",
@@ -233,36 +334,29 @@ const styles = {
     borderRadius: "22px",
     padding: "28px",
     border: "1px solid #f2e7dc",
-    boxShadow: "0 16px 50px rgba(43, 22, 12, 0.06)",
+    boxShadow: "0 16px 50px rgba(43, 22, 12, 0.05)",
   },
 
   header: {
-    textAlign: "center",
     marginBottom: "24px",
   },
 
   title: {
     margin: 0,
-    color: "#f57c00",
-    fontSize: "32px",
+    color: "#2b160c",
+    fontSize: "30px",
     fontWeight: "900",
-  },
-
-  subtitle: {
-    margin: "6px 0 0",
-    color: "#6b4f00",
-    fontSize: "14px",
   },
 
   statsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(160px, 1fr))",
+    gridTemplateColumns: "repeat(3, minmax(180px, 1fr))",
     gap: "14px",
     marginBottom: "22px",
   },
 
   statCard: {
-    background: "white",
+    background: "#fffdf8",
     border: "1px solid #f0e5d8",
     borderRadius: "18px",
     padding: "18px",
@@ -271,94 +365,163 @@ const styles = {
     gap: "14px",
   },
 
-  statDot: {
-    width: "42px",
-    height: "42px",
-    borderRadius: "14px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "16px",
+  statIndicator: {
+    width: "10px",
+    height: "38px",
+    borderRadius: "999px",
+    display: "inline-block",
   },
 
   statTitle: {
     margin: 0,
-    color: "#2b160c",
-    fontSize: "14px",
-    fontWeight: "900",
+    color: "#6b625c",
+    fontSize: "13px",
+    fontWeight: "800",
   },
 
   statValue: {
-    margin: "4px 0 0",
-    fontSize: "26px",
-    fontWeight: "900",
+    margin: "5px 0 0",
+    fontSize: "24px",
+    fontWeight: "800",
   },
 
   orangeTone: {
-    background: "#fff7e6",
-    color: "#f59e0b",
+    color: "#d97706",
   },
 
   greenTone: {
-    background: "#ecfdf3",
-    color: "#16a34a",
-  },
-
-  redTone: {
-    background: "#fff1f2",
-    color: "#dc2626",
+    color: "#15803d",
   },
 
   neutralTone: {
-    background: "#f3f4f6",
-    color: "#374151",
+    color: "#6598ad",
   },
 
-  actionsGrid: {
+  userName: {
+    color: "#ff6f0f",
+  },
+
+  dashboardGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(220px, 1fr))",
-    gap: "16px",
+    gridTemplateColumns: "1.4fr 1fr",
+    gap: "18px",
   },
 
-  actionCard: {
+  currentCard: {
     background: "#fffdf8",
     border: "1px solid #f0e5d8",
-    borderRadius: "18px",
-    padding: "22px",
+    borderRadius: "20px",
+    padding: "24px",
   },
 
-  actionTitle: {
-    margin: "0 0 8px",
+  recentCard: {
+    background: "#fffdf8",
+    border: "1px solid #f0e5d8",
+    borderRadius: "20px",
+    padding: "24px",
+  },
+
+  sectionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "18px",
+  },
+
+  sectionTitle: {
+    margin: 0,
     color: "#2b160c",
     fontSize: "18px",
     fontWeight: "900",
   },
 
-  actionText: {
-    margin: "0 0 16px",
+  statusBadge: {
+    background: "#fff1df",
+    color: "#ff6f0f",
+    borderRadius: "999px",
+    padding: "6px 12px",
+    fontSize: "12px",
+    fontWeight: "800",
+    textTransform: "capitalize",
+  },
+
+  caseInfo: {
+    marginBottom: "22px",
+  },
+
+  caseCity: {
+    margin: "0 0 8px",
+    color: "#2b160c",
+    fontSize: "24px",
+    fontWeight: "900",
+  },
+
+  caseDescription: {
+    margin: "0 0 18px",
     color: "#6b625c",
     fontSize: "14px",
-    lineHeight: 1.5,
+    lineHeight: 1.6,
+  },
+
+  caseDetails: {
+    display: "grid",
+    gap: "8px",
+    color: "#3d332b",
+    fontSize: "14px",
   },
 
   primaryButton: {
     border: "none",
-    background: "#f97316",
+    background: "#ff6f0f",
     color: "white",
     borderRadius: "12px",
-    padding: "10px 14px",
+    padding: "11px 16px",
     fontWeight: "900",
     cursor: "pointer",
   },
 
-  secondaryButton: {
-    border: "1px solid #f3c49a",
-    background: "white",
-    color: "#c2410c",
-    borderRadius: "12px",
-    padding: "10px 14px",
-    fontWeight: "900",
-    cursor: "pointer",
+  recentList: {
+    display: "grid",
+    gap: "10px",
+  },
+
+  recentItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    padding: "12px 0",
+    borderTop: "1px solid #f1ebe5",
+  },
+
+  recentCity: {
+    color: "#2b160c",
+    fontSize: "14px",
+  },
+
+  recentName: {
+    margin: "4px 0 0",
+    color: "#7a6658",
+    fontSize: "13px",
+  },
+
+  recentStatus: {
+    background: "#f8efe5",
+    color: "#9a3412",
+    borderRadius: "999px",
+    padding: "5px 10px",
+    fontSize: "12px",
+    fontWeight: "800",
+    textTransform: "capitalize",
+    whiteSpace: "nowrap",
+  },
+
+  emptyText: {
+    margin: 0,
+    color: "#7a6658",
+    fontSize: "14px",
+    lineHeight: 1.6,
   },
 
   loading: {

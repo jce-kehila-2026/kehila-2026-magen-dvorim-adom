@@ -1,6 +1,8 @@
 // User management interface.
 // Allows viewing, creating, editing, deleting, and restoring users.
 
+import { useState } from "react";
+import "./AdminUsersView.css";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 
@@ -56,12 +58,31 @@ function AdminUsersView({
   addMenuOpen,
   setAddMenuOpen,
   canManageUsers,
+  sortField,
+  sortDirection,
+  handleSort,
+  
 }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
+const goTo = (path) => {
+  setMenuOpen(false);
+  navigate(path);
+};
   return (
-    <div style={styles.layout}>
-      <aside style={styles.sidebar}>
+    <div style={styles.layout} className="users-page">
+
+  {menuOpen && (
+    <div
+      className="users-overlay"
+      onClick={() => setMenuOpen(false)}
+    />
+  )}
+    <aside
+  style={styles.sidebar}
+  className={`users-sidebar ${menuOpen ? "open" : ""}`}
+>
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
           <div>
@@ -73,12 +94,12 @@ function AdminUsersView({
         <nav style={styles.nav}>
           <button
             style={styles.navItem}
-            onClick={() => navigate("/dashboard")}
+            onClick={() => goTo("/dashboard")}
           >
             Dashboard
           </button>
 
-        <button style={styles.navItem} onClick={() => navigate("/cases")}>
+        <button style={styles.navItem} onClick={() => goTo("/cases")}>
           Cases
         </button>
 
@@ -89,13 +110,13 @@ function AdminUsersView({
         {canManageUsers && (
           <button
             style={styles.navItem}
-            onClick={() => navigate("/reports")}
+            onClick={() => goTo("/reports")}
           >
             Reports
           </button>
         )}
 
-          <button style={styles.navItem} onClick={() => navigate("/profile")}>
+          <button style={styles.navItem} onClick={() => goTo("/profile")}>
             Profile
           </button>
         </nav>
@@ -105,8 +126,21 @@ function AdminUsersView({
         </button>
       </aside>
 
-      <main style={styles.page}>
-        <section style={styles.contentCard}>
+     <main style={styles.page} className="users-main">
+
+  <div className="users-mobile-topbar">
+    <button
+      className="users-menu-button"
+      onClick={() => setMenuOpen(true)}
+    >
+      ☰
+    </button>
+
+    <span className="users-mobile-title">
+      Users
+    </span>
+  </div>
+        <section style={styles.contentCard} className="users-content-card">
           <header style={styles.header}>
             <h1 style={styles.title}>User Directory</h1>
 
@@ -176,7 +210,7 @@ function AdminUsersView({
           {message && <div style={styles.successBox}>{message}</div>}
           {error && <div style={styles.errorBox}>{error}</div>}
 
-          <div style={styles.toolbar}>
+          <div style={styles.toolbar} className="users-toolbar">
             <input
               placeholder="Search by name, phone, email or city..."
               value={searchQuery}
@@ -204,7 +238,7 @@ function AdminUsersView({
               <option value="oldest">Oldest first</option>
             </select>
           </div>
-
+         <div className="users-table-scroll">
           <div style={styles.usersList}>
             <div
               style={{
@@ -214,12 +248,47 @@ function AdminUsersView({
                   : "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr",
               }}
             >
-              <span>Name</span>
-              <span>Phone</span>
-              <span>City</span>
-              <span>Email</span>
-              <span>Role</span>
-              <span>Status</span>
+             <button
+  style={styles.sortHeader}
+  onClick={() => handleSort("full_name")}
+>
+  Name {sortField === "full_name" && (sortDirection === "asc" ? "▲" : "▼")}
+</button>
+
+<button
+  style={styles.sortHeader}
+  onClick={() => handleSort("phone")}
+>
+  Phone {sortField === "phone" && (sortDirection === "asc" ? "▲" : "▼")}
+</button>
+
+<button
+  style={styles.sortHeader}
+  onClick={() => handleSort("city")}
+>
+  City {sortField === "city" && (sortDirection === "asc" ? "▲" : "▼")}
+</button>
+
+<button
+  style={styles.sortHeader}
+  onClick={() => handleSort("email")}
+>
+  Email {sortField === "email" && (sortDirection === "asc" ? "▲" : "▼")}
+</button>
+
+<button
+  style={styles.sortHeader}
+  onClick={() => handleSort("role")}
+>
+  Role {sortField === "role" && (sortDirection === "asc" ? "▲" : "▼")}
+</button>
+
+<button
+  style={styles.sortHeader}
+  onClick={() => handleSort("is_available")}
+>
+  Status {sortField === "is_available" && (sortDirection === "asc" ? "▲" : "▼")}
+</button>
               {canManageUsers && <span>Delete In</span>}
               <span>Actions</span>
             </div>
@@ -323,6 +392,7 @@ function AdminUsersView({
                 );
               })
             )}
+          </div>
           </div>
         </section>
       </main>
@@ -981,6 +1051,17 @@ const styles = {
     fontWeight: "800",
     cursor: "pointer",
   },
+  sortHeader: {
+  border: "none",
+  background: "transparent",
+  cursor: "pointer",
+  fontWeight: "900",
+  color: "#51443a",
+  textAlign: "left",
+  padding: 0,
+  fontSize: "13px",
+},
+  
 };
 
 export default AdminUsersView;
