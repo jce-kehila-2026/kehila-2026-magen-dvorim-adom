@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import VolunteerDashboardView from "../components/views/VolunteerDashboardView";
 import { getVolunteerAssignmentStats } from "../services/assignmentService";
+import { getCasesForVolunteer } from "../services/caseService";
 import { logoutUser } from "../services/authService";
 
 function VolunteerDashboard() {
@@ -12,6 +13,7 @@ function VolunteerDashboard() {
     completedRescues: 0,
   });
 
+  const [recentCases, setRecentCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -28,13 +30,21 @@ function VolunteerDashboard() {
       const { assignedCases, completedRescues } =
         await getVolunteerAssignmentStats(userProfile.uid);
 
+      const volunteerCases = await getCasesForVolunteer(userProfile.uid);
+
+      const recent = volunteerCases
+        .filter((caseItem) => caseItem.status !== "closed")
+        .slice(0, 3);
+
       setStats({
         openCases: assignedCases,
         completedRescues,
       });
+
+      setRecentCases(recent);
     } catch (err) {
-      console.error("Failed to load stats:", err);
-      setError(err.message || "Unable to load dashboard stats.");
+      console.error("Failed to load dashboard:", err);
+      setError(err.message || "Unable to load dashboard.");
     } finally {
       setLoading(false);
     }
@@ -52,6 +62,7 @@ function VolunteerDashboard() {
     <VolunteerDashboardView
       userProfile={userProfile}
       stats={stats}
+      recentCases={recentCases}
       loading={loading}
       error={error}
       handleLogout={handleLogout}

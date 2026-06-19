@@ -88,233 +88,237 @@ function CoordinatorSendForm() {
     return matchesSearch && getStatus(f) === filter;
   });
 
-  return (
-    <div style={s.wrapper}>
-      {/* LEFT PANEL */}
-      <div style={s.left}>
-        <h3>Send Form</h3>
+ return (
+  <div style={s.wrapper}>
+    <div style={s.quickBox}>
 
-        <form onSubmit={submit} style={s.form}>
-          <input
-            placeholder="Phone..."
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            style={s.input}
-          />
-          <button style={s.createBtn}>Create form</button>
-        </form>
-
-        <button onClick={copy} style={s.linkBtn}>
-          Copy Link
-        </button>
-
-        {msg && <div style={s.msg}>{msg}</div>}
-      </div>
-
-      {/* RIGHT PANEL */}
-      <div style={s.right}>
-        {/* search */}
+      <form onSubmit={submit} style={s.form}>
         <input
-          placeholder="Search phone..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Phone number"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
           style={s.input}
         />
 
-        {/* filters */}
-        <div style={s.filters}>
-          {["all", "waiting", "submitted", "expired"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
+        <div style={s.actions}>
+          <button style={s.createBtn}>Create form</button>
+
+          <button type="button" onClick={copy} style={s.linkBtn}>
+            Copy Link
+          </button>
+        </div>
+      </form>
+
+      {msg && <div style={s.msg}>{msg}</div>}
+    </div>
+
+    <input
+      placeholder="Search phone..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      style={s.input}
+    />
+
+    <div style={s.filters}>
+      {["all", "waiting", "submitted", "expired"].map((f) => (
+        <button
+          key={f}
+          onClick={() => setFilter(f)}
+          style={{
+            ...s.filterBtn,
+            background: filter === f ? "#1f7a5c" : "#eee",
+            color: filter === f ? "white" : "#333",
+          }}
+        >
+          {f} ({counts[f]})
+        </button>
+      ))}
+    </div>
+
+    <div style={s.list}>
+      <div style={s.headerRow}>
+        <div style={s.headerPhone}>Phone</div>
+        <div style={s.headerDates}>Dates</div>
+        <div style={s.headerStatus}>Status</div>
+      </div>
+
+      {list.map((f) => {
+        const status = getStatus(f);
+
+        return (
+          <div key={f.id} style={s.row}>
+            <div style={s.phone}>{f.requester_phone}</div>
+
+            <div style={s.dates}>
+              {formatDate(f.sent_at)} → {formatDate(f.expires_at)}
+            </div>
+
+            <div
               style={{
-                ...s.filterBtn,
-                background: filter === f ? "#1f7a5c" : "#eee",
-                color: filter === f ? "white" : "#333",
+                ...s.status,
+                color:
+                  status === "waiting"
+                    ? "#ff9800"
+                    : status === "submitted"
+                    ? "#1f7a5c"
+                    : "#999",
               }}
             >
-              {f} ({counts[f]})
-            </button>
-          ))}
-        </div>
-
-        {/* table */}
-        <div style={s.list}>
-          {/* headers */}
-          <div style={s.headerRow}>
-            <div style={s.headerPhone}>Phone</div>
-            <div style={s.headerDates}>Dates</div>
-            <div style={s.headerStatus}>Status</div>
-          </div>
-
-          {/* rows */}
-          {list.map((f) => {
-            const status = getStatus(f);
-
-            return (
-              <div
-                key={f.id}
-                style={s.row}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#fafafa")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "white")
-                }
-              >
-                <div style={s.phone}>{f.requester_phone}</div>
-
-                <div style={s.dates}>
-                  {formatDate(f.sent_at)} → {formatDate(f.expires_at)}
-                </div>
-
-                <div
-                  style={{
-                    ...s.status,
-                    color:
-                      status === "waiting"
-                        ? "#ff9800"
-                        : status === "submitted"
-                        ? "#1f7a5c"
-                        : "#999",
-                  }}
-                >
-                  {status}
-                </div>
-              </div>
-            );
-          })}
-
-          {list.length === 0 && (
-            <div style={{ padding: 10, color: "#999", textAlign: "center" }}>
-              No results
+              {status}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        );
+      })}
+
+      {list.length === 0 && (
+        <div style={s.empty}>No results</div>
+      )}
     </div>
-  );
+  </div>
+);
 }
 
 const s = {
-  wrapper: {
-    display: "flex",
-    gap: 20,
-    alignItems: "flex-start",
-  },
+ wrapper: {
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+  width: "100%",
+},
 
-  left: {
-    width: "30%",
-    background: "#fafafa",
-    padding: 15,
-    borderRadius: 10,
-    border: "1px solid #eee",
-  },
-
-  right: {
-    width: "70%",
+ quickBox: {
+  background: "white",
+  padding: 10,
+  borderRadius: 14,
+  border: "1px solid #f0e5d8",
+},
+  title: {
+    margin: "0 0 10px",
+    color: "#2b160c",
+    fontSize: 20,
+    fontWeight: 900,
+    textAlign: "center",
   },
 
   form: {
     display: "flex",
-    gap: 6,
-    marginBottom: 10,
+    flexDirection: "column",
+    gap: 10,
   },
 
   input: {
-    padding: 8,
-    border: "1px solid #ccc",
-    borderRadius: 6,
+    padding: 10,
+    border: "1px solid #ddd0c4",
+    borderRadius: 10,
     fontSize: 13,
     width: "100%",
+    boxSizing: "border-box",
+  },
+
+  actions: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 8,
   },
 
   createBtn: {
-    background: "#ff9800",
-    color: "white",
-    border: "none",
-    padding: "8px 12px",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
+  background: "#ea580c",
+  color: "white",
+  border: "none",
+  padding: "9px 6px",
+  borderRadius: 10,
+  cursor: "pointer",
+  fontWeight: 900,
+  fontSize: 12,
+},
 
-  linkBtn: {
-    background: "#1f7a5c",
-    color: "white",
-    border: "none",
-    padding: "8px 12px",
-    borderRadius: 6,
-    cursor: "pointer",
-    width: "100%",
-  },
+ linkBtn: {
+  background: "#15803d",
+  color: "white",
+  border: "none",
+  padding: "9px 6px",
+  borderRadius: 10,
+  cursor: "pointer",
+  fontWeight: 900,
+  fontSize: 12,
+},
 
   msg: {
     marginTop: 8,
     fontSize: 12,
-    color: "#666",
+    color: "#15803d",
+    textAlign: "center",
+    fontWeight: 700,
   },
 
   filters: {
     display: "flex",
     gap: 6,
-    margin: "10px 0",
     flexWrap: "wrap",
   },
 
   filterBtn: {
-    padding: "4px 10px",
+    padding: "6px 10px",
     border: "none",
-    borderRadius: 6,
+    borderRadius: 999,
     cursor: "pointer",
     fontSize: 12,
+    fontWeight: 800,
   },
 
-  list: {
-    maxHeight: "180px", // ✅ ~5 rows
-    overflowY: "auto",
-    border: "1px solid #eee",
-    borderRadius: 6,
-  },
+list: {
+  maxHeight: "180px",
+  overflowY: "auto",
+  border: "1px solid #eee",
+  borderRadius: 12,
+  background: "white",
+},
 
   headerRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: "6px 10px",
+    display: "grid",
+    gridTemplateColumns: "1fr 1.2fr 0.9fr",
+    padding: "8px 10px",
     fontSize: 12,
-    fontWeight: 600,
+    fontWeight: 800,
     color: "#777",
     borderBottom: "1px solid #ddd",
     background: "#f9f9f9",
   },
 
-  headerPhone: { width: "35%" },
-  headerDates: { width: "40%" },
-  headerStatus: { width: "25%", textAlign: "right" },
-
   row: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: "8px 10px",
+    display: "grid",
+    gridTemplateColumns: "1fr 1.2fr 0.9fr",
+    padding: "9px 10px",
     borderBottom: "1px solid #eee",
-    fontSize: 13,
+    fontSize: 12,
     background: "white",
+    alignItems: "center",
   },
 
+  headerPhone: {},
+  headerDates: {},
+  headerStatus: { textAlign: "right" },
+
   phone: {
-    width: "35%",
-    fontWeight: 600,
+    fontWeight: 800,
   },
 
   dates: {
-    width: "40%",
     color: "#777",
-    fontSize: 12,
+    fontSize: 11,
   },
 
   status: {
-    width: "25%",
     textAlign: "right",
-    fontWeight: "bold",
+    fontWeight: 900,
+    fontSize: 11,
+  },
+
+  empty: {
+    padding: 16,
+    color: "#999",
+    textAlign: "center",
+    fontWeight: 700,
   },
 };
 

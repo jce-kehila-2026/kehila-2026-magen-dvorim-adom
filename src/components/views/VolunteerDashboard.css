@@ -1,0 +1,32 @@
+@media (max-width: 768px) {
+  .volunteer-page {
+    display: block;
+  }
+
+  .volunteer-sidebar {
+    height: auto;
+    position: relative;
+    width: 100%;
+    padding: 16px;
+    border-right: none;
+    border-bottom: 1px solid #f0e5d8;
+  }
+
+  .volunteer-nav {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .volunteer-main {
+    padding: 16px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}

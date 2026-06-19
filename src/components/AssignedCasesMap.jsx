@@ -1,7 +1,6 @@
 // Interactive map component.
 // Displays rescue cases with valid coordinates on a map.
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -129,7 +128,6 @@ const statusOptions = [
     activeColor: "#ffffff",
     inactiveColor: "#1f697a",
     activeBackground: "#6191a5",
-
   },
   {
     value: "open",
@@ -147,20 +145,12 @@ const statusOptions = [
   },
 ];
 
-export default function AssignedCasesMap({ cases = [], defaultFilter = "all" }) {
-  const [statusFilter, setStatusFilter] = useState(defaultFilter);
-
+export default function AssignedCasesMap({ cases = [] }) {
   const visibleCases = useMemo(() => {
     return cases.filter((caseItem) => {
-      if (caseItem.status === "closed") return false;
-
-      if (statusFilter === "all") {
-        return caseItem.status === "open" || caseItem.status === "assigned";
-      }
-
-      return caseItem.status === statusFilter;
+      return caseItem.status === "open" || caseItem.status === "assigned";
     });
-  }, [cases, statusFilter]);
+  }, [cases]);
 
   const mappedCases = useMemo(() => {
     return visibleCases.filter((caseItem) => getCasePosition(caseItem));
@@ -172,80 +162,39 @@ export default function AssignedCasesMap({ cases = [], defaultFilter = "all" }) 
 
   const unmappedCount = visibleCases.length - mappedCases.length;
 
-  return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: "10px",
-          flexWrap: "wrap",
-          marginTop: "15px",
-        }}
+ return (
+  <div style={{ height: "100%", width: "100%" }}>
+    <div
+      style={{
+        height: "100%",
+        width: "100%",
+        borderRadius: "18px",
+        overflow: "hidden",
+        border: "2px solid #ffe082",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+      }}
+    >
+      <MapContainer
+        center={DEFAULT_CENTER}
+        zoom={8}
+        style={{ height: "100%", width: "100%" }}
       >
-        {statusOptions.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => setStatusFilter(option.value)}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "999px",
-              border: "1px solid #e4d8c1",
-              background:
-                statusFilter === option.value
-                  ? option.activeBackground
-                  : "#ffffff",
-              color:
-                statusFilter === option.value
-                  ? option.activeColor
-                  : option.inactiveColor,
-              cursor: "pointer",
-              fontWeight: 800,
-            }}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+        <TileLayer
+          attribution="&copy; OpenStreetMap contributors"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
 
-      <p style={{ textAlign: "center", color: "#5f6f68" }}>
-        Showing {mappedCases.length} case{mappedCases.length !== 1 ? "s" : ""}{" "}
-        on the map.
-        {unmappedCount > 0 &&
-          ` ${unmappedCount} cases need location information.`}
-      </p>
+        <FitMapToCases positions={positions} />
 
-      <div
-        style={{
-          height: "420px",
-          width: "100%",
-          borderRadius: "18px",
-          overflow: "hidden",
-          border: "2px solid #ffe082",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-        }}
-      >
-        <MapContainer
-          center={DEFAULT_CENTER}
-          zoom={8}
-          style={{ height: "100%", width: "100%" }}
-        >
-          <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        {mappedCases.map((caseItem) => (
+          <CaseMarker
+            key={caseItem.id}
+            caseItem={caseItem}
+            position={getCasePosition(caseItem)}
           />
-
-          <FitMapToCases positions={positions} />
-
-          {mappedCases.map((caseItem) => (
-            <CaseMarker
-              key={caseItem.id}
-              caseItem={caseItem}
-              position={getCasePosition(caseItem)}
-            />
-          ))}
-        </MapContainer>
-      </div>
+        ))}
+      </MapContainer>
     </div>
-  );
+  </div>
+);
 }

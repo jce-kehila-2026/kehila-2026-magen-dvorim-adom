@@ -375,57 +375,60 @@ const handleSendFeedback = async (caseItem) => {
   };
 
   const handleAssignFromModal = async () => {
-    if (assigning) return;
+  if (assigning) return;
 
-    setError("");
+  setError("");
 
-    const { caseId, userId, selected, other, notes } = modalState;
+  const { caseId, userId, selected, other, notes } = modalState;
 
-    if (!caseId || !userId) {
-      setError("Please select a valid case and volunteer before assigning.");
-      return;
-    }
+  if (!caseId || !userId) {
+    setError("Please select a valid case and volunteer before assigning.");
+    return;
+  }
 
-    setAssigning(true);
+  setAssigning(true);
 
-    try {
-      const equipment = [
-        ...(selected || []),
-        ...(other
-          ? other
-              .split(",")
-              .map((item) => item.trim())
-              .filter(Boolean)
-          : []),
-      ];
+  try {
+    const selectedUser = users.find((user) => user.id === userId);
 
-      await assignUserToCase({
-        case_id: caseId,
-        user_id: userId,
-        assigned_by: currentUserId,
-        required_equipment: equipment,
-        notes: notes || null,
-      });
+    const equipment = [
+      ...(selected || []),
+      ...(other
+        ? other
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : []),
+    ];
 
-      setModalState({
-        open: false,
-        caseId: null,
-        userId: "",
-        selected: [],
-        other: "",
-        notes: "",
-      });
+    await assignUserToCase({
+      case_id: caseId,
+      user_id: userId,
+      user_name: selectedUser?.full_name || selectedUser?.email || "Volunteer",
+      assigned_by: currentUserId,
+      required_equipment: equipment,
+      notes: notes || null,
+    });
 
-      setUserSearch("");
-      setRecommendations(null);
+    setModalState({
+      open: false,
+      caseId: null,
+      userId: "",
+      selected: [],
+      other: "",
+      notes: "",
+    });
 
-      await refreshData();
-    } catch (err) {
-      setError(err.message || "Failed to assign volunteer.");
-    } finally {
-      setAssigning(false);
-    }
-  };
+    setUserSearch("");
+    setRecommendations(null);
+
+    await refreshData();
+  } catch (err) {
+    setError(err.message || "Failed to assign volunteer.");
+  } finally {
+    setAssigning(false);
+  }
+};
 
   const handleGetRecommendations = (caseItem) => {
     if (!caseItem) return;

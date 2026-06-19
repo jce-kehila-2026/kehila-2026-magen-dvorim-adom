@@ -58,6 +58,9 @@ function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [sortMode, setSortMode] = useState("newest");
 
+  const [sortField, setSortField] = useState("full_name");
+  const [sortDirection, setSortDirection] = useState("asc");
+
   const [formMode, setFormMode] = useState("create");
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -282,6 +285,18 @@ const filterUsersByPermission = (list) => {
   return [];
 };
 
+
+const handleSort = (field) => {
+  if (sortField === field) {
+    setSortDirection((prev) =>
+      prev === "asc" ? "desc" : "asc"
+    );
+  } else {
+    setSortField(field);
+    setSortDirection("asc");
+  }
+};
+
 const visibleUsersByRole = useMemo(() => {
   return filterUsersByPermission(users);
 }, [users, userProfile]);
@@ -313,16 +328,18 @@ const filteredUsers = useMemo(() => {
   });
 
   list = [...list].sort((a, b) => {
-    const getTime = (user) => {
-      if (!user.created_at) return 0;
-      if (user.created_at.toDate) return user.created_at.toDate().getTime();
-      if (user.created_at.seconds) return user.created_at.seconds * 1000;
-      return new Date(user.created_at).getTime();
-    };
+    const valueA = String(a[sortField] || "").toLowerCase();
+    const valueB = String(b[sortField] || "").toLowerCase();
 
-    return sortMode === "oldest"
-      ? getTime(a) - getTime(b)
-      : getTime(b) - getTime(a);
+    if (valueA < valueB) {
+      return sortDirection === "asc" ? -1 : 1;
+    }
+
+    if (valueA > valueB) {
+      return sortDirection === "asc" ? 1 : -1;
+    }
+
+    return 0;
   });
 
   return list;
@@ -332,7 +349,8 @@ const filteredUsers = useMemo(() => {
   visibleDeletedUsersByRole,
   visibleUsersByRole,
   roleFilter,
-  sortMode,
+  sortField,
+  sortDirection,
 ]);
 const getDaysUntilPermanentDelete = (deletedAt) => {
   if (!deletedAt) return 30;
@@ -402,6 +420,9 @@ const getDaysUntilPermanentDelete = (deletedAt) => {
       setAddMenuOpen={setAddMenuOpen}
       getDaysUntilPermanentDelete={getDaysUntilPermanentDelete}
       canManageUsers={canManageUsers}
+      sortField={sortField}
+      sortDirection={sortDirection}
+      handleSort={handleSort}
     />
   );
 }

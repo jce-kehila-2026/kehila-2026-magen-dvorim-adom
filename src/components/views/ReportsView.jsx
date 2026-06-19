@@ -16,6 +16,9 @@ function ReportsView({ userProfile, stats, loading, error }) {
   const cases = stats?.casesList || [];
   const users = stats?.usersList || [];
 
+  const latestFeedbacks = stats?.latestFeedbacks || [];
+  const ratingBreakdown = stats?.ratingBreakdown || [];
+
   console.log("REPORT STATS:", stats);
   console.log("REPORT CASES:", cases);
   
@@ -156,9 +159,6 @@ function ReportsView({ userProfile, stats, loading, error }) {
       <main style={styles.main}>
         <header style={styles.header}>
           <h1 style={styles.title}>Reports & Statistics</h1>
-          <p style={styles.subtitle}>
-            Analyze rescue activity, users, cities, urgency, and yearly trends.
-          </p>
         </header>
 
         {error && <div style={styles.errorBox}>{error}</div>}
@@ -197,34 +197,71 @@ function ReportsView({ userProfile, stats, loading, error }) {
           </select>
         </section>
 
-        <section style={styles.cards}>
-          <StatCard title="Total Cases" value={filteredStats.totalCases} />
-          <StatCard
-            title="Open Cases"
-            value={filteredStats.openCases}
-            color="#f59e0b"
-          />
-          <StatCard
-            title="Assigned Cases"
-            value={filteredStats.assignedCases}
-            color="#16a34a"
-          />
-          <StatCard
-            title="Closed Cases"
-            value={filteredStats.closedCases}
-            color="#374151"
-          />
-          <StatCard
-            title="Urgent Cases"
-            value={filteredStats.urgentCases}
-            color="#dc2626"
-          />
-          <StatCard
-            title="Success Rate"
-            value={`${stats?.successRate || 0}%`}
-            color="#8b5cf6"
-            />
-        </section>
+        <section style={styles.feedbackCards}>
+  <StatCard
+    title="Average Rating"
+    value={`${stats?.averageRating || "0.0"} / 5`}
+    color="#f59e0b"
+  />
+
+  <StatCard
+    title="Total Feedbacks"
+    value={stats?.totalFeedbacks || 0}
+    color="#ea580c"
+  />
+
+  <StatCard
+    title="Positive Feedback"
+    value={`${stats?.positiveRate || 0}%`}
+    color="#16a34a"
+  />
+
+  <StatCard
+    title="Success Rate"
+    value={`${stats?.successRate || 0}%`}
+    color="#8b5cf6"
+  />
+</section>
+<section style={styles.feedbackSection}>
+  <div style={styles.feedbackMainPanel}>
+    <h2 style={styles.panelTitle}>Latest Feedback</h2>
+
+    {!latestFeedbacks.length ? (
+      <p style={styles.emptyText}>No feedback submitted yet.</p>
+    ) : (
+      latestFeedbacks.map((item) => (
+        <div key={item.id} style={styles.feedbackCard}>
+          <div style={styles.feedbackStars}>
+            {"★".repeat(Number(item.rating || 0))}
+            {"☆".repeat(5 - Number(item.rating || 0))}
+          </div>
+
+          <p style={styles.feedbackText}>
+            {item.comment || item.message || "No comment provided."}
+          </p>
+
+          <span style={styles.feedbackMeta}>
+            {item.city || "Unknown city"} · {item.requester_name || "Requester"}
+          </span>
+        </div>
+      ))
+    )}
+  </div>
+
+  <div style={styles.feedbackSidePanel}>
+    <h2 style={styles.panelTitle}>Rating Breakdown</h2>
+
+    {ratingBreakdown.map((item) => (
+      <BarRow
+        key={item.rating}
+        label={`${item.rating} Stars`}
+        value={item.count}
+        total={stats?.totalFeedbacks || 0}
+        color="#f59e0b"
+      />
+    ))}
+  </div>
+</section>
 
         <section style={styles.analyticsGrid}>
           <div style={styles.chartPanel}>
@@ -495,12 +532,6 @@ const styles = {
     fontWeight: "800",
     color: "#3d332b",
   },
-  cards: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(180px, 1fr))",
-    gap: "14px",
-    marginBottom: "22px",
-  },
   statCard: {
     background: "white",
     border: "1px solid #f0e5d8",
@@ -682,6 +713,61 @@ const styles = {
     color: "#3d332b",
     fontSize: "14px",
   },
+  feedbackCards: {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, minmax(160px, 1fr))",
+  gap: "14px",
+  marginBottom: "22px",
+},
+
+feedbackSection: {
+  display: "grid",
+  gridTemplateColumns: "1.4fr 1fr",
+  gap: "18px",
+  marginBottom: "22px",
+},
+
+feedbackMainPanel: {
+  background: "white",
+  border: "1px solid #f0e5d8",
+  borderRadius: "20px",
+  padding: "22px",
+},
+
+feedbackSidePanel: {
+  background: "white",
+  border: "1px solid #f0e5d8",
+  borderRadius: "20px",
+  padding: "22px",
+},
+
+feedbackCard: {
+  border: "1px solid #f1ebe5",
+  borderRadius: "14px",
+  padding: "14px",
+  marginBottom: "12px",
+  background: "#fffdf8",
+},
+
+feedbackStars: {
+  color: "#f59e0b",
+  fontSize: "18px",
+  fontWeight: "900",
+  marginBottom: "6px",
+},
+
+feedbackText: {
+  margin: "0 0 8px",
+  color: "#2b160c",
+  fontSize: "14px",
+  lineHeight: 1.5,
+},
+
+feedbackMeta: {
+  color: "#6b625c",
+  fontSize: "12px",
+  fontWeight: "700",
+},
 };
 
 export default ReportsView;

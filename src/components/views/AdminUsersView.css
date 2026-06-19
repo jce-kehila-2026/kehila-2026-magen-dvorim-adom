@@ -1,0 +1,91 @@
+@media (max-width: 768px) {
+  .users-page {
+    display: flex !important;
+  }
+
+  .users-sidebar {
+    display: flex !important;
+    width: 60px !important;
+    min-width: 60px !important;
+    height: 100vh !important;
+    padding: 12px 5px !important;
+    overflow: hidden !important;
+  }
+
+  .users-sidebar h2,
+  .users-sidebar p {
+    display: none !important;
+  }
+
+  .users-sidebar img {
+    width: 34px !important;
+    height: 34px !important;
+    margin: 0 auto !important;
+  }
+
+  .users-sidebar button {
+    font-size: 9px !important;
+    padding: 8px 3px !important;
+    text-align: center !important;
+  }
+
+  .users-main {
+    flex: 1 !important;
+    min-width: 0 !important;
+    padding: 8px !important;
+    overflow: hidden !important;
+  }
+
+  .users-content-card {
+    padding: 10px !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+
+  .users-content-card header {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .users-content-card h1 {
+    font-size: 20px !important;
+  }
+
+  .users-content-card header > div:last-child {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .users-content-card header button {
+    width: 100%;
+    padding: 7px !important;
+    font-size: 11px !important;
+  }
+
+  .users-toolbar {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .users-toolbar input,
+  .users-toolbar select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 11px !important;
+    padding: 8px !important;
+  }
+
+  .users-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .users-table-scroll > div {
+    min-width: 850px;
+  }
+}
