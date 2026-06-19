@@ -4,7 +4,7 @@ import { db } from "../firebase";
 export async function getReportsStats() {
   const casesSnap = await getDocs(collection(db, "cases"));
   const usersSnap = await getDocs(collection(db, "users"));
-  const feedbackSnap = await getDocs(collection(db, "feedbacks"));
+  const feedbackSnap = await getDocs(collection(db, "feedback"));
 
   const cases = casesSnap.docs.map((doc) => ({
     id: doc.id,
