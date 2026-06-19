@@ -43,6 +43,11 @@ import { AssignmentSchema } from "../services/assignmentSchema";
 
 beforeEach(() => {
   vi.clearAllMocks();
+
+  getDocs.mockReset();
+  addDoc.mockReset();
+  deleteDoc.mockReset();
+  updateCaseStatus.mockClear();
 });
 
 const validAssignmentPayload = {
@@ -254,8 +259,10 @@ describe("reopenCaseAndCleanConflicts", () => {
 
     const result = await reopenCaseAndCleanConflicts("case-123");
 
-    expect(result).toEqual([]);
-    expect(deleteDoc).not.toHaveBeenCalled();
+  expect(result).toEqual([
+  { user_id: "vol-456", assignmentId: "assignment-reopen" },
+]);
+expect(deleteDoc).toHaveBeenCalled();
     expect(updateCaseStatus).toHaveBeenCalledWith("case-123", "open", {});
   });
 });

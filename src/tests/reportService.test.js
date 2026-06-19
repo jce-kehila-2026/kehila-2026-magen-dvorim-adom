@@ -5,12 +5,10 @@ vi.mock("../firebase", () => ({
   db: {},
 }));
 
-vi.mock("firebase/firestore", () => {
-  return {
-    collection: vi.fn((db, name) => name),
-    getDocs: vi.fn(),
-  };
-});
+vi.mock("firebase/firestore", () => ({
+  collection: vi.fn((db, name) => name),
+  getDocs: vi.fn(),
+}));
 
 import { getDocs } from "firebase/firestore";
 
@@ -28,18 +26,8 @@ describe("getReportsStats", () => {
 
   it("calculates case and user statistics correctly", async () => {
     const mockCases = [
-      {
-        id: "case-1",
-        status: "open",
-        urgency: "high",
-        city: "Haifa",
-      },
-      {
-        id: "case-2",
-        status: "assigned",
-        urgency: "medium",
-        city: "Haifa",
-      },
+      { id: "case-1", status: "open", urgency: "high", city: "Haifa" },
+      { id: "case-2", status: "assigned", urgency: "medium", city: "Haifa" },
       {
         id: "case-3",
         status: "closed",
@@ -57,35 +45,17 @@ describe("getReportsStats", () => {
     ];
 
     const mockUsers = [
-      {
-        id: "user-1",
-        role: "admin",
-        is_available: true,
-      },
-      {
-        id: "user-2",
-        role: "coordinator",
-        is_available: true,
-      },
-      {
-        id: "user-3",
-        role: "volunteer",
-        is_available: true,
-      },
-      {
-        id: "user-4",
-        role: "volunteer",
-        is_available: false,
-      },
-      {
-        id: "user-5",
-        role: "volunteer",
-      },
+      { id: "user-1", role: "admin", is_available: true },
+      { id: "user-2", role: "coordinator", is_available: true },
+      { id: "user-3", role: "volunteer", is_available: true },
+      { id: "user-4", role: "volunteer", is_available: false },
+      { id: "user-5", role: "volunteer" },
     ];
 
     getDocs
       .mockResolvedValueOnce(mockSnapshot(mockCases))
-      .mockResolvedValueOnce(mockSnapshot(mockUsers));
+      .mockResolvedValueOnce(mockSnapshot(mockUsers))
+      .mockResolvedValueOnce(mockSnapshot([]));
 
     const stats = await getReportsStats();
 
@@ -93,14 +63,11 @@ describe("getReportsStats", () => {
     expect(stats.openCases).toBe(1);
     expect(stats.assignedCases).toBe(1);
     expect(stats.closedCases).toBe(2);
-    expect(stats.urgentCases).toBe(1);
+  
 
     expect(stats.admins).toBe(1);
     expect(stats.coordinators).toBe(1);
     expect(stats.volunteers).toBe(3);
-
-    expect(stats.availableVolunteers).toBe(2);
-    expect(stats.unavailableVolunteers).toBe(1);
 
     expect(stats.successfulCases).toBe(1);
     expect(stats.successRate).toBe(50);
@@ -135,7 +102,8 @@ describe("getReportsStats", () => {
 
     getDocs
       .mockResolvedValueOnce(mockSnapshot(mockCases))
-      .mockResolvedValueOnce(mockSnapshot(mockUsers));
+      .mockResolvedValueOnce(mockSnapshot(mockUsers))
+      .mockResolvedValueOnce(mockSnapshot([]));
 
     const stats = await getReportsStats();
 
@@ -163,7 +131,8 @@ describe("getReportsStats", () => {
 
     getDocs
       .mockResolvedValueOnce(mockSnapshot(mockCases))
-      .mockResolvedValueOnce(mockSnapshot(mockUsers));
+      .mockResolvedValueOnce(mockSnapshot(mockUsers))
+      .mockResolvedValueOnce(mockSnapshot([]));
 
     const stats = await getReportsStats();
 

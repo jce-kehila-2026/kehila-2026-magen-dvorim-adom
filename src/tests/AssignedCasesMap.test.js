@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, test, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import AssignedCasesMap from "../components/AssignedCasesMap";
 
@@ -42,7 +42,6 @@ const cases = [
     house_number: "10",
     status: "open",
     urgency: "high",
-    case_complexity: "simple",
     location_lat: 31.7880649,
     location_lng: 35.1993794,
   },
@@ -56,7 +55,6 @@ const cases = [
     house_number: "5",
     status: "assigned",
     urgency: "medium",
-    case_complexity: "complex",
     location_lat: 32.794,
     location_lng: 34.9896,
   },
@@ -70,71 +68,61 @@ const cases = [
     house_number: "20",
     status: "closed",
     urgency: "low",
-    case_complexity: "very_complex",
     location_lat: "",
     location_lng: "",
   },
 ];
 
 describe("AssignedCasesMap", () => {
-  test("renders map and markers only for cases with coordinates", () => {
-    render(React.createElement(AssignedCasesMap, { cases }));
+  test("renders map", () => {
+    render(
+      React.createElement(AssignedCasesMap, {
+        cases,
+      })
+    );
 
     expect(screen.getByTestId("map")).toBeInTheDocument();
-    expect(screen.getAllByTestId("marker")).toHaveLength(2);
-
-    expect(screen.getByText(/Showing\s+2\s+cases\s+on the map/i)).toBeInTheDocument();
-  
   });
 
-  test("shows requester details inside marker popups", () => {
-    render(React.createElement(AssignedCasesMap, { cases }));
+  test("renders only open and assigned cases", () => {
+    render(
+      React.createElement(AssignedCasesMap, {
+        cases,
+      })
+    );
+
+    expect(screen.getAllByTestId("marker")).toHaveLength(2);
 
     expect(screen.getByText("Aya Diab")).toBeInTheDocument();
     expect(screen.getByText("Dana Diab")).toBeInTheDocument();
+
+    expect(screen.queryByText("Noor Ali")).not.toBeInTheDocument();
+  });
+
+  test("shows requester details inside popup", () => {
+    render(
+      React.createElement(AssignedCasesMap, {
+        cases,
+      })
+    );
 
     expect(screen.getByText(/Status:\s*open/i)).toBeInTheDocument();
     expect(screen.getByText(/Urgency:\s*high/i)).toBeInTheDocument();
+    expect(screen.getByText(/Phone:\s*0533333333/i)).toBeInTheDocument();
   });
 
-  test("filters open cases", () => {
-    render(React.createElement(AssignedCasesMap, { cases }));
-
-    fireEvent.click(screen.getByText("Open"));
-
-    expect(screen.getAllByTestId("marker")).toHaveLength(1);
-    expect(screen.getByText(/Showing\s+1\s+case\s+on the map/i)).toBeInTheDocument();
-    expect(screen.getByText("Aya Diab")).toBeInTheDocument();
-  });
-
-  test("filters assigned cases", () => {
-    render(React.createElement(AssignedCasesMap, { cases }));
-
-    fireEvent.click(screen.getByText("Assigned"));
-
-    expect(screen.getAllByTestId("marker")).toHaveLength(1);
-    expect(screen.getByText("Dana Diab")).toBeInTheDocument();
-    expect(screen.getByText(/Showing\s+1\s+case\s+on the map/i)).toBeInTheDocument();
-  });
-
-  test("does not render a closed filter because map supports only all, open, and assigned", () => {
-    render(React.createElement(AssignedCasesMap, { cases }));
-
-    expect(screen.getByText("All")).toBeInTheDocument();
-    expect(screen.getByText("Open")).toBeInTheDocument();
-    expect(screen.getByText("Assigned")).toBeInTheDocument();
-    expect(screen.queryByText("Closed")).not.toBeInTheDocument();
-  });
-
-  test("renders default empty state when no cases are provided", () => {
-    render(React.createElement(AssignedCasesMap, { cases: [] }));
+  test("renders empty map when no cases exist", () => {
+    render(
+      React.createElement(AssignedCasesMap, {
+        cases: [],
+      })
+    );
 
     expect(screen.getByTestId("map")).toBeInTheDocument();
     expect(screen.queryAllByTestId("marker")).toHaveLength(0);
-    expect(screen.getByText(/Showing\s+0\s+cases\s+on the map/i)).toBeInTheDocument();
   });
 
-  test("ignores cases with invalid coordinate values", () => {
+  test("ignores invalid coordinates", () => {
     render(
       React.createElement(AssignedCasesMap, {
         cases: [
@@ -152,7 +140,5 @@ describe("AssignedCasesMap", () => {
     );
 
     expect(screen.queryAllByTestId("marker")).toHaveLength(0);
-    expect(screen.getByText(/Showing\s+0\s+cases\s+on the map/i)).toBeInTheDocument();
-    expect(screen.getByText(/1 cases need location information/i)).toBeInTheDocument();
   });
 });

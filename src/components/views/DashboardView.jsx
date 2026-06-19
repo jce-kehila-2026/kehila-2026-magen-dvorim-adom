@@ -17,8 +17,13 @@ function DashboardView({
   error,
   onLogout,
 }) {
-  const navigate = useNavigate();
+ const navigate = useNavigate();
+const [menuOpen, setMenuOpen] = useState(false);
 
+const goTo = (path) => {
+  setMenuOpen(false);
+  navigate(path);
+};
   const urgentCases = allCases.filter((c) => c.urgency === "high").length;
 
  const dashboardTitle =
@@ -42,12 +47,18 @@ function DashboardView({
 
 
   return (
-    <div
+<div
   className="dashboard-page"
   style={styles.page}
 >
+  {menuOpen && (
+    <div
+      className="dashboard-overlay"
+      onClick={() => setMenuOpen(false)}
+    />
+  )}
       <aside
-  className="dashboard-sidebar"
+  className={`dashboard-sidebar ${menuOpen ? "open" : ""}`}
   style={styles.sidebar}
 >
         <div style={styles.brand}>
@@ -67,23 +78,23 @@ function DashboardView({
           {(userProfile?.role === USER_ROLES.ADMIN ||
             userProfile?.role === USER_ROLES.COORDINATOR) && (
             <>
-              <button style={styles.navItem} onClick={() => navigate("/cases")}>
+              <button style={styles.navItem} onClick={() => goTo("/cases")}>
                 Cases
               </button>
 
-              <button style={styles.navItem} onClick={() => navigate("/users")}>
+              <button style={styles.navItem} onClick={() => goTo("/users")}>
                 Users
               </button>
 
               {userProfile?.role === USER_ROLES.ADMIN && (
-                <button style={styles.navItem} onClick={() => navigate("/reports")}>
+                <button style={styles.navItem} onClick={() => goTo("/reports")}>
                   Reports
                 </button>
               )}
             </>
             
           )}
-         <button style={styles.navItem} onClick={() => navigate("/profile")}>
+         <button style={styles.navItem} onClick={() => goTo("/profile")}>
             Profile
           </button>
         </nav>
@@ -97,6 +108,18 @@ function DashboardView({
   className="dashboard-main"
   style={styles.main}
 >
+  <div className="dashboard-mobile-topbar">
+  <button
+    className="dashboard-menu-button"
+    onClick={() => setMenuOpen(true)}
+  >
+    ☰
+  </button>
+
+  <span className="dashboard-mobile-title">
+    Dashboard
+  </span>
+</div>
 
         {error && <div style={styles.errorBox}>{error}</div>}
 

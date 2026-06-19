@@ -1,8 +1,10 @@
 // User profile page.
 // Allows users to view and update their personal information.
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+import "./ProfileView.css";
 
 export default function ProfileView({
   userProfile,
@@ -22,6 +24,12 @@ export default function ProfileView({
   ISRAELI_CITIES,
 }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const goTo = (path) => {
+    setMenuOpen(false);
+    navigate(path);
+  };
 
   if (!userProfile) {
     return <div>Loading...</div>;
@@ -31,8 +39,18 @@ export default function ProfileView({
   const initials = (currentUserName || "U").charAt(0).toUpperCase();
 
   return (
-    <div style={styles.layout}>
-      <aside style={styles.sidebar}>
+    <div className="profile-layout" style={styles.layout}>
+      {menuOpen && (
+        <div
+          className="profile-overlay"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`profile-sidebar ${menuOpen ? "open" : ""}`}
+        style={styles.sidebar}
+      >
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
           <div>
@@ -42,41 +60,45 @@ export default function ProfileView({
         </div>
 
         <nav style={styles.nav}>
-          <button style={styles.navItem} onClick={() => navigate("/dashboard")}>
-             Dashboard
+          <button style={styles.navItem} onClick={() => goTo("/dashboard")}>
+            Dashboard
           </button>
 
-          {(userProfile?.role === "admin" ||
-            userProfile?.role === "coordinator") && (
+          {userProfile?.role === "admin" && (
             <>
-              <button
-                style={styles.navItem}
-                onClick={() => navigate("/cases")}
-              >
+              <button style={styles.navItem} onClick={() => goTo("/cases")}>
                 Cases
               </button>
 
-              <button
-                style={styles.navItem}
-                onClick={() => navigate("/users")}
-              >
+              <button style={styles.navItem} onClick={() => goTo("/users")}>
+                Users
+              </button>
+
+              <button style={styles.navItem} onClick={() => goTo("/reports")}>
+                Reports
+              </button>
+            </>
+          )}
+
+          {userProfile?.role === "coordinator" && (
+            <>
+              <button style={styles.navItem} onClick={() => goTo("/cases")}>
+                Cases
+              </button>
+
+              <button style={styles.navItem} onClick={() => goTo("/users")}>
                 Users
               </button>
             </>
           )}
 
-          {userProfile?.role === "admin" && (
-            <button
-              style={styles.navItem}
-              onClick={() => navigate("/reports")}
-            >
-              Reports
+          {userProfile?.role === "volunteer" && (
+            <button style={styles.navItem} onClick={() => goTo("/my-cases")}>
+              My Cases
             </button>
           )}
 
-          <button
-            style={{ ...styles.navItem, ...styles.activeNav }}
-          >
+          <button style={{ ...styles.navItem, ...styles.navItemActive }}>
             Profile
           </button>
         </nav>
@@ -86,10 +108,22 @@ export default function ProfileView({
         </button>
       </aside>
 
-      <main style={styles.page}>
-        <section style={styles.card}>
+      <main className="profile-main" style={styles.page}>
+        <div className="profile-mobile-topbar">
+          <button
+            className="profile-menu-button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+          >
+            ☰
+          </button>
+
+          <span className="profile-mobile-title">Profile</span>
+        </div>
+
+        <section className="profile-card" style={styles.card}>
           <div style={styles.header}>
-            <h1 style={styles.title}>My Profile</h1>
+            <h1 className="profile-title" style={styles.title}>My Profile</h1>
 
             <div style={styles.profileTop}>
               <div style={styles.avatarContainer}>
@@ -147,7 +181,7 @@ export default function ProfileView({
           <form onSubmit={handleSubmit}>
             <div style={styles.sectionTitle}>Personal Information</div>
 
-            <div style={styles.grid}>
+            <div className="profile-form-grid" style={styles.grid}>
               <div style={styles.field}>
                 <label>Full Name</label>
                 <input
@@ -220,7 +254,7 @@ export default function ProfileView({
               </div>
             </div>
 
-            <div style={styles.availabilityCard}>
+            <div className="profile-availability-card" style={styles.availabilityCard}>
               <div>
                 <strong>Availability</strong>
                 <p style={styles.smallText}>
@@ -333,21 +367,21 @@ const styles = {
     cursor: "pointer",
   },
 
-  activeNav: {
+  navItemActive: {
     background: "#fff1df",
     color: "#e85d04",
   },
 
   logoutButton: {
-  marginTop: "auto",
-  border: "none",
-  background: "#f97316",
-  color: "white",
-  borderRadius: "14px",
-  padding: "14px",
-  fontWeight: "800",
-  cursor: "pointer",
-},
+    marginTop: "auto",
+    border: "none",
+    background: "#f97316",
+    color: "white",
+    borderRadius: "14px",
+    padding: "14px",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
 
   page: {
     minHeight: "100vh",

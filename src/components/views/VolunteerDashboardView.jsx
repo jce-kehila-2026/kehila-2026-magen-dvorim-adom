@@ -1,8 +1,10 @@
 // Volunteer dashboard interface.
 // Shows assigned cases and volunteer statistics.
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+import "./VolunteerDashboard.css";
 
 function VolunteerDashboardView({
   userProfile,
@@ -13,58 +15,100 @@ function VolunteerDashboardView({
   handleLogout,
 }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const currentCase = recentCases[0];
 
+  const goTo = (path) => {
+    setMenuOpen(false);
+    navigate(path);
+  };
+
   return (
-    <div style={styles.page}>
-      <aside style={styles.sidebar}>
-        <div style={styles.brand}>
+    <div className="volunteer-page" style={styles.page}>
+      {menuOpen && (
+        <div
+          className="mobile-overlay"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`volunteer-sidebar ${menuOpen ? "open" : ""}`}
+        style={styles.sidebar}
+      >
+        <div className="volunteer-brand" style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
 
           <div>
             <h2 style={styles.brandTitle}>Magen Dvorim Adom</h2>
-            <p style={styles.brandSub}>{userProfile?.full_name || "Volunteer"}</p>
+            <p style={styles.brandSub}>
+              {userProfile?.full_name || "Volunteer"}
+            </p>
           </div>
         </div>
 
-        <nav style={styles.nav}>
-          <button style={{ ...styles.navItem, ...styles.navItemActive }}>
+        <nav className="volunteer-nav" style={styles.nav}>
+          <button
+            style={{ ...styles.navItem, ...styles.navItemActive }}
+            onClick={() => goTo("/dashboard")}
+          >
             Dashboard
           </button>
 
-          <button style={styles.navItem} onClick={() => navigate("/my-cases")}>
+          <button style={styles.navItem} onClick={() => goTo("/my-cases")}>
             My Cases
           </button>
 
-          <button style={styles.navItem} onClick={() => navigate("/profile")}>
+          <button style={styles.navItem} onClick={() => goTo("/profile")}>
             Profile
           </button>
         </nav>
 
-        <button style={styles.logoutButton} onClick={handleLogout}>
+        <button
+          className="logout-button"
+          style={styles.logoutButton}
+          onClick={handleLogout}
+        >
           Logout
         </button>
       </aside>
 
-      <main style={styles.main}>
-        <section style={styles.contentCard}>
-        <header style={styles.header}>
-          <h1 style={styles.title}>
-  Welcome back,
-  <span style={styles.userName}>
-    {" "}
-    {userProfile?.full_name || "Volunteer"}
-  </span>
-</h1>
-</header>
+      <main className="volunteer-main" style={styles.main}>
+        <div className="mobile-topbar">
+          <button
+            className="menu-button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+          >
+            ☰
+          </button>
+
+          <img src={logo} alt="Magen Dvorim Adom" className="mobile-logo" />
+
+          <span className="mobile-title">Volunteer</span>
+        </div>
+
+        <section className="content-card" style={styles.contentCard}>
+          <header style={styles.header}>
+            <h1 className="volunteer-title" style={styles.title}>
+              Welcome back,
+              <span style={styles.userName}>
+                {" "}
+                {userProfile?.full_name || "Volunteer"}
+              </span>
+            </h1>
+          </header>
 
           {error && <div style={styles.errorBox}>{error}</div>}
-          {loading && <div style={styles.loading}>Loading your dashboard...</div>}
+
+          {loading && (
+            <div style={styles.loading}>Loading your dashboard...</div>
+          )}
 
           {!loading && !error && (
             <>
-              <div style={styles.statsGrid}>
+              <div className="stats-grid" style={styles.statsGrid}>
                 <StatCard
                   title="Assigned Cases"
                   value={stats.openCases}
@@ -78,16 +122,18 @@ function VolunteerDashboardView({
                 />
 
                 <StatCard
+                  className="latest-city-card"
                   title="Latest City"
                   value={currentCase?.city || "None"}
                   tone="neutral"
                 />
               </div>
 
-              <div style={styles.dashboardGrid}>
+              <div className="dashboard-grid" style={styles.dashboardGrid}>
                 <section style={styles.currentCard}>
                   <div style={styles.sectionHeader}>
                     <h3 style={styles.sectionTitle}>Current Assignment</h3>
+
                     {currentCase && (
                       <span style={styles.statusBadge}>
                         {currentCase.status || "assigned"}
@@ -107,7 +153,8 @@ function VolunteerDashboardView({
                         </p>
 
                         <p style={styles.caseDescription}>
-                          {currentCase.description || "No description provided."}
+                          {currentCase.description ||
+                            "No description provided."}
                         </p>
 
                         <div style={styles.caseDetails}>
@@ -177,7 +224,7 @@ function VolunteerDashboardView({
   );
 }
 
-function StatCard({ title, value, tone }) {
+function StatCard({ title, value, tone, className = "" }) {
   const toneStyle =
     tone === "orange"
       ? styles.orangeTone
@@ -186,7 +233,7 @@ function StatCard({ title, value, tone }) {
       : styles.neutralTone;
 
   return (
-    <div style={styles.statCard}>
+    <div className={className} style={styles.statCard}>
       <span style={{ ...styles.statIndicator, background: toneStyle.color }} />
 
       <div>
@@ -240,7 +287,7 @@ const styles = {
 
   brandSub: {
     margin: "4px 0 0",
-    color: "#c05621",
+    color: "#ff6f0f",
     fontSize: "13px",
   },
 
@@ -263,7 +310,7 @@ const styles = {
 
   navItemActive: {
     background: "#fff1df",
-    color: "#c2410c",
+    color: "#ff6f0f",
   },
 
   logoutButton: {
@@ -299,12 +346,6 @@ const styles = {
     color: "#2b160c",
     fontSize: "30px",
     fontWeight: "900",
-  },
-
-  subtitle: {
-    margin: "6px 0 0",
-    color: "#7a6658",
-    fontSize: "14px",
   },
 
   statsGrid: {
@@ -357,8 +398,9 @@ const styles = {
   },
 
   userName: {
-  color: "#ff6f0f",
-},
+    color: "#ff6f0f",
+  },
+
   dashboardGrid: {
     display: "grid",
     gridTemplateColumns: "1.4fr 1fr",
@@ -396,7 +438,7 @@ const styles = {
 
   statusBadge: {
     background: "#fff1df",
-    color: "#c2410c",
+    color: "#ff6f0f",
     borderRadius: "999px",
     padding: "6px 12px",
     fontSize: "12px",
@@ -431,7 +473,7 @@ const styles = {
 
   primaryButton: {
     border: "none",
-    background: "#c2410c",
+    background: "#ff6f0f",
     color: "white",
     borderRadius: "12px",
     padding: "11px 16px",

@@ -1,13 +1,19 @@
 // Reports and analytics dashboard.
 // Displays system statistics, charts, and performance insights.
-
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+import "./ReportsView.css";
 
 function ReportsView({ userProfile, stats, loading, error }) {
   const navigate = useNavigate();
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
+const goTo = (path) => {
+  setMenuOpen(false);
+  navigate(path);
+};
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
@@ -112,18 +118,29 @@ function ReportsView({ userProfile, stats, loading, error }) {
   ];
 
   if (loading) {
-    return (
-      <div style={styles.page}>
-        <main style={styles.main}>
-          <div style={styles.loading}>Loading reports...</div>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div style={styles.page}>
-      <aside style={styles.sidebar}>
+      <main className="reports-main" style={styles.main}>
+        <div style={styles.loading}>
+          Loading reports...
+        </div>
+      </main>
+    </div>
+  );
+}
+
+  return (
+    <div className="reports-page" style={styles.page}>
+  {menuOpen && (
+    <div
+      className="reports-overlay"
+      onClick={() => setMenuOpen(false)}
+    />
+  )}
+      <aside
+  className={`reports-sidebar ${menuOpen ? "open" : ""}`}
+  style={styles.sidebar}
+>
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
 
@@ -134,15 +151,15 @@ function ReportsView({ userProfile, stats, loading, error }) {
         </div>
 
         <nav style={styles.nav}>
-          <button style={styles.navItem} onClick={() => navigate("/dashboard")}>
+          <button style={styles.navItem} onClick={() => goTo("/dashboard")}>
             Dashboard
           </button>
 
-          <button style={styles.navItem} onClick={() => navigate("/cases")}>
+          <button style={styles.navItem} onClick={() => goTo("/cases")}>
             Cases
           </button>
 
-          <button style={styles.navItem} onClick={() => navigate("/users")}>
+          <button style={styles.navItem} onClick={() => goTo("/users")}>
             Users
           </button>
 
@@ -150,20 +167,33 @@ function ReportsView({ userProfile, stats, loading, error }) {
             Reports
           </button>
 
-          <button style={styles.navItem} onClick={() => navigate("/profile")}>
+          <button style={styles.navItem} onClick={() => goTo("/profile")}>
             Profile
           </button>
         </nav>
       </aside>
 
-      <main style={styles.main}>
+      <main className="reports-main" style={styles.main}>
+
+  <div className="reports-mobile-topbar">
+    <button
+      className="reports-menu-button"
+      onClick={() => setMenuOpen(true)}
+    >
+      ☰
+    </button>
+
+    <span className="reports-mobile-title">
+      Reports
+    </span>
+  </div>
         <header style={styles.header}>
           <h1 style={styles.title}>Reports & Statistics</h1>
         </header>
 
         {error && <div style={styles.errorBox}>{error}</div>}
 
-        <section style={styles.filtersBar}>
+       <section className="reports-filters" style={styles.filtersBar}>
           <input
             placeholder="Search by requester, city, status..."
             value={search}
@@ -197,7 +227,7 @@ function ReportsView({ userProfile, stats, loading, error }) {
           </select>
         </section>
 
-        <section style={styles.feedbackCards}>
+        <section className="reports-feedback-cards" style={styles.feedbackCards}>
   <StatCard
     title="Average Rating"
     value={`${stats?.averageRating || "0.0"} / 5`}
@@ -222,7 +252,7 @@ function ReportsView({ userProfile, stats, loading, error }) {
     color="#8b5cf6"
   />
 </section>
-<section style={styles.feedbackSection}>
+<section className="reports-feedback-section" style={styles.feedbackSection}>
   <div style={styles.feedbackMainPanel}>
     <h2 style={styles.panelTitle}>Latest Feedback</h2>
 
@@ -263,7 +293,7 @@ function ReportsView({ userProfile, stats, loading, error }) {
   </div>
 </section>
 
-        <section style={styles.analyticsGrid}>
+        <section className="reports-analytics-grid" style={styles.analyticsGrid}>
           <div style={styles.chartPanel}>
             <h2 style={styles.panelTitle}>Cases by Status</h2>
 
@@ -297,7 +327,7 @@ function ReportsView({ userProfile, stats, loading, error }) {
           </div>
         </section>
 
-        <section style={styles.grid}>
+        <section className="reports-grid" style={styles.grid}>
           <button style={styles.panelButton} onClick={() => setModalType("users")}>
             <h2 style={styles.panelTitle}>Users Summary</h2>
             <p style={styles.panelText}>
