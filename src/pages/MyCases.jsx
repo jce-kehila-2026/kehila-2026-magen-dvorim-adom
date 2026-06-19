@@ -62,7 +62,9 @@ function MyCases() {
       }
 
       setCoordinatorData(coordMap);
-      setUsers(await getAssignableUsers());
+      if (userProfile.role !== "volunteer") {
+        setUsers(await getAssignableUsers());
+      }
       setAssignments(
         await getAssignmentsByCaseIds(caseData.map((item) => item.id))
       );

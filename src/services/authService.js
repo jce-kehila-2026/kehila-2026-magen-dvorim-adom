@@ -3,9 +3,10 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+   getAuth ,
 } from "firebase/auth";
 
-import { auth } from "../firebase";
+import { auth, firebaseConfig, } from "../firebase";
 
 import {
   createUserProfile,
@@ -13,6 +14,8 @@ import {
   getUserByEmail,
   updateLastLogin,
 } from "./userService";
+
+import { getApps, getApp, initializeApp } from "firebase/app";
 
 // Firebase Authentication error messages
 const AUTH_ERROR_MESSAGES = {
@@ -52,64 +55,50 @@ function validateEmailAndPassword(email, password) {
 // 1. Create Firebase Auth account
 // 2. Create Firestore user profile
 export async function registerUser(email, password, userData = {}) {
-  let userCredential = null;
-
   try {
     validateEmailAndPassword(email, password);
 
     const normalizedEmail = normalizeEmail(email);
 
-    // Create Firebase Authentication account
-    userCredential = await createUserWithEmailAndPassword(
-      auth,
+    // ✅ Create secondary Firebase app
+    
+    const secondaryApp =
+      getApps().find(app => app.name === "Secondary") ||
+      initializeApp(firebaseConfig, "Secondary");
+
+    const secondaryAuth = getAuth(secondaryApp);
+
+    // ✅ Create user WITHOUT switching current session
+    const userCredential = await createUserWithEmailAndPassword(
+      secondaryAuth,
       normalizedEmail,
       password
     );
 
     const uid = userCredential.user.uid;
 
-    // Create Firestore user profile
-    const profile = await createUserProfile(uid, {
+    // ✅ Now Firestore still sees YOU as admin
+    await createUserProfile(uid, {
       ...userData,
       email: normalizedEmail,
     });
 
+    // ✅ logout secondary (cleanup)
+    await secondaryAuth.signOut();
+
     return {
-      authUser: userCredential.user,
-      profile,
+      uid,
+      email: normalizedEmail,
     };
+
   } catch (error) {
-    // Rollback:
-    // If Firestore profile creation fails,
-    // remove the Firebase Auth account
-    if (userCredential?.user) {
-      await userCredential.user.delete().catch((deleteError) => {
-        console.error(
-          "Rollback auth user delete failed:",
-          deleteError
-        );
-      });
-    }
-
     console.error("Register user failed:", error);
-
     throw new Error(getAuthErrorMessage(error));
   }
 }
 
-async function findUserProfile(uid, email) {
-  const profileById = await getUserById(uid);
-
-  if (profileById) {
-    return profileById;
-  }
-
-  if (!email) {
-    return null;
-  }
-
-  const profileByEmail = await getUserByEmail(email);
-  return profileByEmail;
+async function findUserProfile(uid) {
+  return await getUserById(uid);
 }
 
 // Login existing user
@@ -128,8 +117,8 @@ export async function loginUser(email, password) {
 
     const uid = userCredential.user.uid;
 
-    // Fetch Firestore profile by uid, then fallback to email lookup
-    const profile = await findUserProfile(uid, normalizedEmail);
+    // Fetch Firestore profile by uid, 
+    const profile = await findUserProfile(uid);
 
     if (!profile) {
       await signOut(auth);
@@ -188,7 +177,7 @@ export async function getCurrentUserProfile() {
     // Fetch Firestore profile
     const email = currentUser.email ? normalizeEmail(currentUser.email) : "";
 
-    return await findUserProfile(currentUser.uid, email);
+    return await findUserProfile(currentUser.uid);
   } catch (error) {
     console.error(
       "Fetch current user profile failed:",
