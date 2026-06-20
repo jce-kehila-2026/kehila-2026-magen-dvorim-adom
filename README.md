@@ -1,20 +1,23 @@
-# Project Title
-One-line description (e.g., "Volunteer scheduling app for [Non‑Profit Name]")
 
+# Magen Dvorim Adom 2026
+A web application designed for a non-profit organization dedicated to saving and safely relocating bees. The system enables members of the public to report cases involving bees in distress and allows organizational staff to manage cases efficiently through structured workflows.
+The system supports case intake, volunteer coordination, progress tracking, feedback collection, notifications, and statistical reporting.
 ## Contents
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
 
 ## Overview
-Briefly describe what the project does, who it serves, and the main value (1–2 sentences).
+serves the magen dvorim adom volunteers to organiza tasks and bee saving missions.
 
 ## Non‑Profit
-- Organization: [Non‑Profit Name]  
-- Primary stakeholder(s): Name — role — email  
+- Organization: Magen Dvorim Adom  
+- Primary stakeholder(s): Name — role — email .
 - Key deliverable for them: e.g., "Simple roster export and sign-up form."
 
-## Team
-- Team lead — Name — email — GitHub  
-- Members — Name — role — GitHub  
+## Team Introduction
+- Team lead — Aseel Janazira — Janaziraaseel@gmail.com — Aseel-zira  
+- Member — Doaa Abdeen — doaaab@post.jce.ac.il — doaa-ab
+- Member — Aya Diab — diabaya2004@gmail.com — AyaDiab-dev
+ 
 Include student IDs if required.
 
 ## Quick start (local)
@@ -34,7 +37,7 @@ Open http://localhost:3000
 ## Handover (minimum)
 - [ ] Deployed URL + admin credentials (shared securely)  
 - [ ] HANDOVER.md with maintenance steps  
-- [ ] Add non‑profit staff as repo collaborators or transfer repo
+- [ ] Add non‑profit staff as repo collaborators or transfer repo.
 
 ## Privacy & Security
 List data collected (names, emails), storage location, and retention policy. Never commit secrets; use environment variables and GitHub secrets.
@@ -43,9 +46,11 @@ List data collected (names, emails), storage location, and retention policy. Nev
 Briefly list major limitations or missing features and any workarounds.
 
 ## Contacts
-- Project lead: Name — email  
-- Non‑profit contact: Name — email  
-- Instructor / TA: Name — email
+- Project lead: Asee Janazira — janaziraaseel@gmail.com  
+
 
 ## License
 Specify license (e.g., MIT) and any IP/ownership notes relevant to the non‑profit.
+
+## Use Case Documentation
+The detailed use case documentation for the system is available in the project Wiki.

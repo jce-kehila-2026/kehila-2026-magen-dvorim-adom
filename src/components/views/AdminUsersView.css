@@ -1,0 +1,116 @@
+.users-mobile-topbar,
+.users-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+
+  .users-page {
+    display: block !important;
+  }
+
+  .users-mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+    padding: 0 14px;
+    background: #fff8ef;
+    border-bottom: 1px solid #f0e5d8;
+    position: sticky;
+    top: 0;
+    z-index: 9997;
+  }
+
+  .users-menu-button {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 10px;
+    background: #fff1df;
+    color: #e85d04;
+    font-size: 22px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .users-mobile-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: #2b160c;
+  }
+
+  .users-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    z-index: 9998;
+  }
+
+  .users-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+
+    width: 270px !important;
+    height: 100vh !important;
+
+    background: #fff8ef !important;
+
+    padding: 24px 18px !important;
+
+    transform: translateX(-100%) !important;
+    transition: transform 0.25s ease !important;
+
+    z-index: 9999 !important;
+
+    overflow-y: auto !important;
+  }
+
+  .users-sidebar.open {
+    transform: translateX(0) !important;
+  }
+
+  .users-main {
+    padding: 10px !important;
+    overflow: visible !important;
+  }
+
+  .users-content-card {
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .users-content-card header {
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: flex-start !important;
+  }
+
+  .users-content-card h1 {
+    font-size: 22px !important;
+  }
+
+  .users-toolbar {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .users-toolbar input,
+  .users-toolbar select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .users-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .users-table-scroll > div {
+    min-width: 850px;
+  }
+}

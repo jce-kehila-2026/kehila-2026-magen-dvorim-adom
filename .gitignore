@@ -1,4 +1,6 @@
+# =========================
 # Logs
+# =========================
 logs
 *.log
 npm-debug.log*
@@ -7,12 +9,30 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# =========================
+# Dependencies
+# =========================
 node_modules
+
+# =========================
+# Build output
+# =========================
 dist
 dist-ssr
+
+# =========================
+# Environment variables (IMPORTANT)
+# =========================
+.env*
+
+# =========================
+# Local config files
+# =========================
 *.local
 
-# Editor directories and files
+# =========================
+# Editor / IDE files
+# =========================
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -22,9 +42,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-backend/privateKey.json
-.env*
 
-# Firebase
+# =========================
+# Backend secrets
+# =========================
+backend/privateKey.json
+
+# =========================
+# Firebase local config
+# =========================
 .firebase/
 .firebaserc
