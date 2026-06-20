@@ -5,6 +5,8 @@ import { useState } from "react";
 import "./AdminUsersView.css";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+import BulkImportModal from "../bulk-import/BulkImportModal";
+
 
 // Returns the visual badge style and label based on the user's role.
 function getRoleBadge(role, USER_ROLES) {
@@ -61,7 +63,9 @@ function AdminUsersView({
   sortField,
   sortDirection,
   handleSort,
-  
+  importModalOpen,
+  setImportModalOpen,
+  handleImportComplete,
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -194,7 +198,7 @@ const goTo = (path) => {
                         type="button"
                         onClick={() => {
                           setAddMenuOpen(false);
-                          alert("Import users will be added later");
+                          setImportModalOpen(true);
                         }}
                         style={styles.addMenuItem}
                       >
@@ -444,7 +448,7 @@ const goTo = (path) => {
                   Password *
                   <input
                     name="password"
-                    type="password"
+                    type="text"
                     value={formData.password}
                     onChange={handleChange}
                     style={styles.input}
@@ -611,6 +615,13 @@ const goTo = (path) => {
           </div>
         </div>
       )}
+            {canManageUsers && importModalOpen && (
+              <BulkImportModal
+                isOpen={importModalOpen}
+                onClose={() => setImportModalOpen(false)}
+                onComplete={handleImportComplete}
+              />
+            )}
     </div>
   );
 }
@@ -799,6 +810,10 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     fontSize: "14px",
+    
+    color: "#2b160c",      
+    caretColor: "#2b160c",  
+
   },
 
   selectInput: {
@@ -1001,6 +1016,9 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     boxSizing: "border-box",
+    color: "#2b160c",       
+    caretColor: "#2b160c",  
+
   },
 
   disabledInput: {

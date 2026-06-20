@@ -251,7 +251,30 @@ if (activeFilter === "open") {
           <div style={styles.emptyState}>No cases match this view.</div>
         ) : (
           <div style={styles.casesList} className="cases-list">
-            {activeCases.map((caseItem) => {
+
+  {/* ✅ HEADER ROW */}
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "2fr 1.5fr 1.5fr 1fr 1fr 40px",
+      padding: "12px 18px",
+      fontWeight: "900",
+      background: "#fff8ef",
+      borderBottom: "1px solid #eadfd2",
+      fontSize: "13px",
+      color: "#51443a"
+    }}
+  >
+    <span>Name</span>
+    <span>Phone</span>
+    <span>Opened</span>
+    <span>Urgency</span>
+    <span>Status</span>
+    <span></span>
+  </div>
+
+  {/* ✅ CASES */}
+  {activeCases.map((caseItem) => {
 
   const caseAssignments = assignments[caseItem.id] || [];
 
@@ -300,32 +323,47 @@ if (activeFilter === "open") {
     >
 
       <button
-
         type="button"
-
-        style={styles.caseAccordionHeader}
-
-        className="case-accordion-header"
-
         onClick={() => setExpandedCaseId(isExpanded ? null : caseItem.id)}
-
+        style={{
+          ...styles.caseAccordionHeader,
+          display: "grid",
+          gridTemplateColumns: "2fr 1.5fr 1.5fr 1fr 1fr 40px",
+          alignItems: "center",
+          gap: "8px"
+        }}
       >
-
-        <span style={styles.requesterName}>
-
-          👤 {caseItem.requester_first_name} {caseItem.requester_last_name}
-
+      
+        <span style={{ color: "#2b160c", fontWeight: "700" }}>
+          {caseItem.requester_first_name} {caseItem.requester_last_name}
         </span>
 
 
+        <span style={{ color: "#2b160c" }}>
+          {caseItem.requester_phone || "—"}
+        </span>
+
+
+        <span style={{ color: "#2b160c" }}>
+          {formatDate(caseItem.opened_at)}
+        </span>
+
+
+        <span style={getUrgencyStyle(caseItem.urgency)}>
+          {caseItem.urgency || "low"}
+        </span>
+
+        <span style={getStatusStyle(caseItem.status)}>
+          {caseItem.status}
+        </span>
 
         <span style={styles.arrowIcon}>
-
           {isExpanded ? "▲" : "▼"}
-
         </span>
-
       </button>
+
+
+     
 
 
 
@@ -857,6 +895,9 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     fontSize: "14px",
+    color: "#2b160c",        // ✅ ADD THIS
+    caretColor: "#2b160c",   // ✅ ADD THIS
+
   },
 
   sortSelect: {
@@ -1179,6 +1220,9 @@ userList: {
   minHeight: "38px",
   maxHeight: "50px",
   resize: "none",
+  color: "#2b160c",
+  caretColor: "#2b160c",
+
 },
 
   emptyText: {
@@ -1255,16 +1299,15 @@ caseAccordionCard: {
   marginBottom: "10px",
 },
 
+
 caseAccordionHeader: {
   width: "100%",
   border: "none",
   background: "white",
   padding: "16px 18px",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
   cursor: "pointer",
 },
+
 
 caseAccordionBody: {
   borderTop: "1px solid #eadfd2",

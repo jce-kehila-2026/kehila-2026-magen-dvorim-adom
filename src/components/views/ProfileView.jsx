@@ -526,6 +526,9 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     fontSize: "14px",
+    color: "#2b160c",        
+    caretColor: "#2b160c",   
+
   },
 
   disabledInput: {

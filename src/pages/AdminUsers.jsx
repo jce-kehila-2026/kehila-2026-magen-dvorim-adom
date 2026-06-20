@@ -47,7 +47,8 @@ function AdminUsers() {
   const [saving, setSaving] = useState(false);
 
   const [addMenuOpen, setAddMenuOpen] = useState(false);
-  
+  const [importModalOpen, setImportModalOpen] = useState(false);
+    
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -233,6 +234,11 @@ return canManageUsers;
       setSaving(false);
     }
   };
+
+  const handleImportComplete = async () => {
+    await loadUsers();
+  };
+
 
   const handleDelete = async (user) => {
     if (!window.confirm(`Delete ${user.full_name || user.email}?`)) return;
@@ -423,6 +429,9 @@ const getDaysUntilPermanentDelete = (deletedAt) => {
       sortField={sortField}
       sortDirection={sortDirection}
       handleSort={handleSort}
+      importModalOpen={importModalOpen}
+      setImportModalOpen={setImportModalOpen}
+      handleImportComplete={handleImportComplete}
     />
   );
 }
