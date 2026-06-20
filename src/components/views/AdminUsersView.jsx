@@ -24,6 +24,7 @@ function getRoleBadge(role, USER_ROLES) {
 }
 
 function AdminUsersView({
+  userProfile,
   currentUserName,
   handleLogout,
   filteredUsers,
@@ -117,6 +118,12 @@ const goTo = (path) => {
             onClick={() => goTo("/reports")}
           >
             Reports
+          </button>
+        )}
+
+        {userProfile?.role === USER_ROLES.ADMIN && (
+          <button style={styles.navItem} onClick={() => goTo("/backup")}>
+            Backup
           </button>
         )}
 

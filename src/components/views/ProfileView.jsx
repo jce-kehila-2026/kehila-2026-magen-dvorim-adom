@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { USER_ROLES } from "../../services/userSchema";
 import logo from "../../assets/logo.png";
 import "./ProfileView.css";
 
@@ -64,7 +65,7 @@ export default function ProfileView({
             Dashboard
           </button>
 
-          {userProfile?.role === "admin" && (
+          {userProfile?.role === USER_ROLES.ADMIN && (
             <>
               <button style={styles.navItem} onClick={() => goTo("/cases")}>
                 Cases
@@ -77,10 +78,14 @@ export default function ProfileView({
               <button style={styles.navItem} onClick={() => goTo("/reports")}>
                 Reports
               </button>
+
+              <button style={styles.navItem} onClick={() => goTo("/backup")}>
+                Backup
+              </button>
             </>
           )}
 
-          {userProfile?.role === "coordinator" && (
+          {userProfile?.role === USER_ROLES.COORDINATOR && (
             <>
               <button style={styles.navItem} onClick={() => goTo("/cases")}>
                 Cases
@@ -92,7 +97,7 @@ export default function ProfileView({
             </>
           )}
 
-          {userProfile?.role === "volunteer" && (
+          {userProfile?.role === USER_ROLES.VOLUNTEER && (
             <button style={styles.navItem} onClick={() => goTo("/my-cases")}>
               My Cases
             </button>

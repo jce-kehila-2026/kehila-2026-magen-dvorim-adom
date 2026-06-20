@@ -450,6 +450,7 @@ const handleSendFeedback = async (caseItem) => {
 };
  return (
   <CasesView
+    userProfile={userProfile}
     currentUserRole={currentUserRole}
     currentUserName={currentUserName}
     handleLogout={handleLogout}

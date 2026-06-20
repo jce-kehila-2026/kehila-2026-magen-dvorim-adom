@@ -5,8 +5,10 @@ import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import VolunteerRecommendationMap from "./VolunteerRecommendationMap";
 import { useState } from "react";
+import { USER_ROLES } from "../../services/userSchema";
 
 function CasesView({
+  userProfile,
   currentUserRole,
   currentUserName,
   cases = [],
@@ -158,6 +160,18 @@ if (activeFilter === "open") {
         {currentUserRole === "admin" && (
           <button style={styles.navItem} onClick={() => navigate("/reports")}>
             Reports
+          </button>
+        )}
+
+        {userProfile?.role === USER_ROLES.ADMIN && (
+          <button
+            style={styles.navItem}
+            onClick={() => {
+              navigate("/backup");
+              setMobileMenuOpen(false);
+            }}
+          >
+            Backup
           </button>
         )}
 

@@ -91,6 +91,12 @@ const goTo = (path) => {
                   Reports
                 </button>
               )}
+
+              {userProfile?.role === USER_ROLES.ADMIN && (
+                <button style={styles.navItem} onClick={() => goTo("/backup")}>
+                  Backup
+                </button>
+              )}
             </>
             
           )}

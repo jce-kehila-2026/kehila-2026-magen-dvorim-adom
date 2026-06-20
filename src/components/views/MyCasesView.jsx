@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { USER_ROLES } from "../../services/userSchema";
 import logo from "../../assets/logo.png";
 import "./MyCasesView.css";
 
@@ -70,6 +71,12 @@ function MyCasesView({
               <button style={styles.navItem} onClick={() => goTo("/users")}>
                 Users
               </button>
+
+              {userProfile?.role === USER_ROLES.ADMIN && (
+                <button style={styles.navItem} onClick={() => goTo("/backup")}>
+                  Backup
+                </button>
+              )}
             </>
           )}
 

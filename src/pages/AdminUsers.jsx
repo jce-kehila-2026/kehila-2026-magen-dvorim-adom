@@ -386,6 +386,7 @@ const getDaysUntilPermanentDelete = (deletedAt) => {
 
   return (
     <AdminUsersView
+      userProfile={userProfile}
       currentUserName={currentUserName}
       handleLogout={handleLogout}
       users={users}

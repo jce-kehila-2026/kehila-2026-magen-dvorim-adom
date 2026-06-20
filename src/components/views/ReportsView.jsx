@@ -2,6 +2,7 @@
 // Displays system statistics, charts, and performance insights.
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { USER_ROLES } from "../../services/userSchema";
 import logo from "../../assets/logo.png";
 import "./ReportsView.css";
 
@@ -166,6 +167,12 @@ const goTo = (path) => {
           <button style={{ ...styles.navItem, ...styles.navItemActive }}>
             Reports
           </button>
+
+          {userProfile?.role === USER_ROLES.ADMIN && (
+            <button style={styles.navItem} onClick={() => goTo("/backup")}>
+              Backup
+            </button>
+          )}
 
           <button style={styles.navItem} onClick={() => goTo("/profile")}>
             Profile
