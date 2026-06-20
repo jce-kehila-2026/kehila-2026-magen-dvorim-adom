@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Papa from "papaparse";
 import { USER_ROLES } from "../../services/userSchema";
 import { getAllUsers } from "../../services/userService";
 import { getAllCases } from "../../services/caseService";
@@ -21,23 +22,115 @@ const BACKUP_OPTIONS = [
   { value: BACKUP_TYPES.REPORTS, label: "Reports" },
 ];
 
-function serializeForBackup(key, value) {
-  if (value?.toDate) {
-    return value.toDate().toISOString();
-  }
+const DETAIL_FIELDS = [
+  { key: "name", label: "Full Name", header: "Name" },
+  { key: "email", label: "Email", header: "Email" },
+  { key: "phone", label: "Phone", header: "Phone" },
+  { key: "role", label: "Role", header: "User Role" },
+  { key: "status", label: "Status", header: "Status" },
+];
 
-  if (value?.seconds && typeof value.seconds === "number") {
-    return new Date(value.seconds * 1000).toISOString();
-  }
+const DEFAULT_DETAIL_FIELDS = DETAIL_FIELDS.map((field) => field.key);
 
-  return value;
+function formatRole(role) {
+  if (!role) return "";
+  return String(role)
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
-function downloadJsonFile(data, selectedType) {
+function formatStatus(status) {
+  if (typeof status === "boolean") {
+    return status ? "Active" : "Inactive";
+  }
+
+  if (!status) return "";
+  return formatRole(status);
+}
+
+function getUserStatus(user) {
+  if (user.is_active === false) return "Inactive";
+  if (user.is_available === false) return "Unavailable";
+  return "Active";
+}
+
+function getCaseName(caseItem) {
+  return [caseItem.requester_first_name, caseItem.requester_last_name]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function buildRow(recordType, source, selectedFields) {
+  const row = {
+    "Record Type": recordType,
+  };
+
+  DETAIL_FIELDS.forEach((field) => {
+    if (!selectedFields.includes(field.key)) return;
+
+    if (recordType === "User") {
+      const values = {
+        name: source.full_name || source.displayName || "",
+        email: source.email || "",
+        phone: source.phone || "",
+        role: formatRole(source.role),
+        status: getUserStatus(source),
+      };
+      row[field.header] = values[field.key] || "";
+      return;
+    }
+
+    if (recordType === "Case") {
+      const values = {
+        name: getCaseName(source),
+        email: "",
+        phone: source.requester_phone || "",
+        role: source.coordinator_name ? `Coordinator: ${source.coordinator_name}` : "",
+        status: formatStatus(source.status),
+      };
+      row[field.header] = values[field.key] || "";
+      return;
+    }
+
+    const values = {
+      name: source.metric || "",
+      email: "",
+      phone: "",
+      role: "",
+      status: source.value ?? "",
+    };
+    row[field.header] = values[field.key] || "";
+  });
+
+  return row;
+}
+
+function flattenReportsForCsv(reports) {
+  if (!reports) return [];
+
+  return [
+    { metric: "Total Cases", value: reports.totalCases || 0 },
+    { metric: "Open Cases", value: reports.openCases || 0 },
+    { metric: "Assigned Cases", value: reports.assignedCases || 0 },
+    { metric: "Closed Cases", value: reports.closedCases || 0 },
+    { metric: "Success Rate", value: `${reports.successRate || 0}%` },
+    { metric: "Admins", value: reports.admins || 0 },
+    { metric: "Coordinators", value: reports.coordinators || 0 },
+    { metric: "Volunteers", value: reports.volunteers || 0 },
+    { metric: "Average Rating", value: reports.averageRating || "0.0" },
+    { metric: "Total Feedbacks", value: reports.totalFeedbacks || 0 },
+  ];
+}
+
+function downloadCsvFile(rows, selectedTypes) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const filename = `magen-dvorim-adom-${selectedType}-backup-${timestamp}.json`;
-  const json = JSON.stringify(data, serializeForBackup, 2);
-  const blob = new Blob([json], { type: "application/json" });
+  const typeLabel = selectedTypes.includes(BACKUP_TYPES.ALL)
+    ? BACKUP_TYPES.ALL
+    : selectedTypes.join("-");
+  const filename = `magen-dvorim-adom-${typeLabel}-backup-${timestamp}.csv`;
+  const csv = Papa.unparse(rows);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
 
@@ -52,7 +145,8 @@ function downloadJsonFile(data, selectedType) {
 export default function BackupView({ userProfile, currentUserName, handleLogout }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState(BACKUP_TYPES.ALL);
+  const [selectedTypes, setSelectedTypes] = useState([BACKUP_TYPES.ALL]);
+  const [selectedFields, setSelectedFields] = useState(DEFAULT_DETAIL_FIELDS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -62,52 +156,102 @@ export default function BackupView({ userProfile, currentUserName, handleLogout 
     navigate(path);
   };
 
+  const effectiveSelectedTypes = selectedTypes.includes(BACKUP_TYPES.ALL)
+    ? [BACKUP_TYPES.USERS, BACKUP_TYPES.CASES, BACKUP_TYPES.REPORTS]
+    : selectedTypes;
+
+  const toggleType = (type) => {
+    setSelectedTypes((current) => {
+      if (type === BACKUP_TYPES.ALL) {
+        return current.includes(BACKUP_TYPES.ALL) ? [] : [BACKUP_TYPES.ALL];
+      }
+
+      const withoutAll = current.filter((item) => item !== BACKUP_TYPES.ALL);
+      const next = withoutAll.includes(type)
+        ? withoutAll.filter((item) => item !== type)
+        : [...withoutAll, type];
+
+      return next.length === 3 ? [BACKUP_TYPES.ALL] : next;
+    });
+  };
+
+  const toggleField = (fieldKey) => {
+    setSelectedFields((current) =>
+      current.includes(fieldKey)
+        ? current.filter((item) => item !== fieldKey)
+        : [...current, fieldKey]
+    );
+  };
+
   const fetchBackupData = async () => {
-    if (selectedType === BACKUP_TYPES.USERS) {
-      const result = await getAllUsers(1000);
-      return { users: result.users || [] };
-    }
+    const data = {};
 
-    if (selectedType === BACKUP_TYPES.CASES) {
-      return { cases: await getAllCases() };
-    }
+    await Promise.all(
+      effectiveSelectedTypes.map(async (type) => {
+        if (type === BACKUP_TYPES.USERS) {
+          const result = await getAllUsers(1000);
+          data.users = result.users || [];
+        }
 
-    if (selectedType === BACKUP_TYPES.REPORTS) {
-      return { reports: await getReportsStats() };
-    }
+        if (type === BACKUP_TYPES.CASES) {
+          data.cases = await getAllCases();
+        }
 
-    const [usersResult, cases, reports] = await Promise.all([
-      getAllUsers(1000),
-      getAllCases(),
-      getReportsStats(),
-    ]);
+        if (type === BACKUP_TYPES.REPORTS) {
+          data.reports = await getReportsStats();
+        }
+      })
+    );
 
-    return {
-      users: usersResult.users || [],
-      cases,
-      reports,
-    };
+    return data;
+  };
+
+  const buildCsvRows = (data) => {
+    const rows = [];
+
+    (data.users || []).forEach((user) => {
+      rows.push(buildRow("User", user, selectedFields));
+    });
+
+    (data.cases || []).forEach((caseItem) => {
+      rows.push(buildRow("Case", caseItem, selectedFields));
+    });
+
+    flattenReportsForCsv(data.reports).forEach((reportRow) => {
+      rows.push(buildRow("Report", reportRow, selectedFields));
+    });
+
+    return rows;
   };
 
   const handleDownload = async () => {
+    if (effectiveSelectedTypes.length === 0) {
+      setError("Select at least one data type to export.");
+      setSuccess("");
+      return;
+    }
+
+    if (selectedFields.length === 0) {
+      setError("Select at least one detail field to include.");
+      setSuccess("");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
 
     try {
       const data = await fetchBackupData();
-      const backupPayload = {
-        metadata: {
-          exported_at: new Date().toISOString(),
-          exported_by: userProfile?.uid || null,
-          exported_by_email: userProfile?.email || null,
-          data_type: selectedType,
-        },
-        data,
-      };
+      const rows = buildCsvRows(data);
 
-      downloadJsonFile(backupPayload, selectedType);
-      setSuccess("Backup file downloaded successfully.");
+      if (rows.length === 0) {
+        setError("No matching records were found for this export.");
+        return;
+      }
+
+      downloadCsvFile(rows, selectedTypes);
+      setSuccess("CSV backup downloaded successfully.");
     } catch (err) {
       console.error("Failed to create backup:", err);
       setError(err.message || "Failed to create backup. Please try again.");
@@ -190,7 +334,7 @@ export default function BackupView({ userProfile, currentUserName, handleLogout 
               Backup
             </h1>
             <p style={styles.subtitle}>
-              Export a JSON backup for the selected system data.
+              Export a spreadsheet-ready CSV with the details you choose.
             </p>
           </div>
 
@@ -198,20 +342,37 @@ export default function BackupView({ userProfile, currentUserName, handleLogout 
           {success && <div style={styles.successBox}>{success}</div>}
 
           <div style={styles.formPanel}>
-            <label style={styles.field}>
-              Data Type
-              <select
-                value={selectedType}
-                onChange={(event) => setSelectedType(event.target.value)}
-                style={styles.input}
-              >
+            <div style={styles.fieldGroup}>
+              <div style={styles.groupTitle}>Data to Export</div>
+              <div style={styles.checkboxGrid}>
                 {BACKUP_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
+                  <label key={option.value} style={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={selectedTypes.includes(option.value)}
+                      onChange={() => toggleType(option.value)}
+                    />
                     {option.label}
-                  </option>
+                  </label>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <div style={styles.groupTitle}>Details to Include</div>
+              <div style={styles.checkboxGrid}>
+                {DETAIL_FIELDS.map((field) => (
+                  <label key={field.key} style={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={selectedFields.includes(field.key)}
+                      onChange={() => toggleField(field.key)}
+                    />
+                    {field.label}
+                  </label>
+                ))}
+              </div>
+            </div>
 
             <button
               type="button"
@@ -222,7 +383,7 @@ export default function BackupView({ userProfile, currentUserName, handleLogout 
                 ...(loading ? styles.buttonDisabled : {}),
               }}
             >
-              {loading ? "Preparing..." : "Download JSON Backup"}
+              {loading ? "Preparing..." : "Download CSV Backup"}
             </button>
           </div>
         </section>
@@ -361,6 +522,36 @@ const styles = {
     flexDirection: "column",
     gap: "7px",
     color: "#2b160c",
+    fontWeight: "800",
+  },
+
+  fieldGroup: {
+    display: "grid",
+    gap: "12px",
+    padding: "16px",
+    border: "1px solid #f0e5d8",
+    borderRadius: "18px",
+    background: "#fffdf8",
+  },
+
+  groupTitle: {
+    color: "#2b160c",
+    fontSize: "15px",
+    fontWeight: "900",
+  },
+
+  checkboxGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: "10px",
+  },
+
+  checkboxLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    color: "#3d332b",
+    fontSize: "14px",
     fontWeight: "800",
   },
 
