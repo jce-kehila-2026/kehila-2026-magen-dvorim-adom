@@ -51,7 +51,6 @@ function AdminUsersView({
   handleSubmit,
   handleDelete,
   handleRestore,
-  getDaysUntilPermanentDelete,
   isFormValid,
   ISRAELI_CITIES,
   USER_ROLES,
@@ -244,8 +243,8 @@ const goTo = (path) => {
               style={{
                 ...styles.tableHeader,
                 gridTemplateColumns: canManageUsers
-                  ? "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr 0.8fr"
-                  : "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr",
+  ? "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr"
+  : "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr",
               }}
             >
              <button
@@ -289,7 +288,7 @@ const goTo = (path) => {
 >
   Status {sortField === "is_available" && (sortDirection === "asc" ? "▲" : "▼")}
 </button>
-              {canManageUsers && <span>Delete In</span>}
+             
               <span>Actions</span>
             </div>
 
@@ -307,8 +306,8 @@ const goTo = (path) => {
                   style={{
                     ...styles.tableRow,
                     gridTemplateColumns: canManageUsers
-                      ? "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr 0.8fr"
-                      : "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr",
+  ? "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr"
+  : "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr",
                   }}
                 >
                     <span style={styles.userName}>{user.full_name || "—"}</span>
@@ -342,14 +341,6 @@ const goTo = (path) => {
                         ? "Available"
                         : "Unavailable"}
                     </span>
-
-                    {canManageUsers && (
-                      <span>
-                        {viewMode === "deleted"
-                          ? `${getDaysUntilPermanentDelete(user.deleted_at)} days`
-                          : "—"}
-                      </span>
-                    )}
 
                     <div style={styles.actions}>
                       {canManageUsers ? (
@@ -819,7 +810,7 @@ const styles = {
   tableHeader: {
     display: "grid",
     gridTemplateColumns:
-      "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr 0.8fr",
+       "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr",
     gap: "10px",
     padding: "12px 14px",
     background: "#fff8ef",
@@ -831,7 +822,7 @@ const styles = {
   tableRow: {
     display: "grid",
     gridTemplateColumns:
-      "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr 0.8fr",
+       "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr",
     gap: "10px",
     alignItems: "center",
     padding: "14px",

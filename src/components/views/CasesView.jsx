@@ -284,7 +284,10 @@ if (activeFilter === "open") {
 
 
   const isExpanded = expandedCaseId === caseItem.id;
-
+  const cleanDate = (date) => {
+    if (!date) return "—";
+    return new Date(date.seconds ? date.seconds * 1000 : date).toLocaleDateString("en-GB");
+};
 
 
   return (
@@ -300,32 +303,59 @@ if (activeFilter === "open") {
     >
 
       <button
+  type="button"
+  style={styles.caseAccordionHeader}
+  className="case-accordion-header"
+  onClick={() => setExpandedCaseId(isExpanded ? null : caseItem.id)}
+>
+  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    
+    <div style={styles.requesterName}>
+      👤 {caseItem.requester_first_name} {caseItem.requester_last_name}
+    </div>
 
-        type="button"
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "12px",
+        fontSize: "13px",
+        color: "#6b625c",
+      }}
+    >
+      <span>Phone: {caseItem.requester_phone || "—"}</span>
 
-        style={styles.caseAccordionHeader}
+      <span>
+        Opened: {cleanDate(caseItem.opened_at)}
+      </span>
 
-        className="case-accordion-header"
-
-        onClick={() => setExpandedCaseId(isExpanded ? null : caseItem.id)}
-
+      <span
+        style={getUrgencyStyle(caseItem.urgency || "low")}
       >
+        {caseItem.urgency || "low"}
+      </span>
 
-        <span style={styles.requesterName}>
+      <span
+        style={getStatusStyle(caseItem.status || "open")}
+      >
+        {caseItem.status || "open"}
+      </span>
+      {caseItem.status === "closed" && (
+  <>
+    <span>Closed: {cleanDate(caseItem.closed_at)}</span>
 
-          👤 {caseItem.requester_first_name} {caseItem.requester_last_name}
+    <span style={getStatusStyle("closed")}>
+      Result: {getResultLabel(caseItem.result_status)}
+    </span>
+  </>
+)}
+    </div>
+  </div>
 
-        </span>
-
-
-
-        <span style={styles.arrowIcon}>
-
-          {isExpanded ? "▲" : "▼"}
-
-        </span>
-
-      </button>
+  <span style={styles.arrowIcon}>
+    {isExpanded ? "▲" : "▼"}
+  </span>
+</button>
 
 
 
@@ -337,10 +367,8 @@ if (activeFilter === "open") {
 
             <div>
 
-              <div style={styles.infoLabel}>Phone</div>
-
+            <div style={styles.infoLabel}>Phone</div>
               <div style={styles.infoValue}>{caseItem.requester_phone || "—"}</div>
-
             </div>
 
 
@@ -415,12 +443,19 @@ if (activeFilter === "open") {
 
               <div style={styles.infoValue}>
 
-                {caseItem.status === "closed" ? formatDate(caseItem.closed_at) : "—"}
+                {caseItem.status === "closed" ? cleanDate(caseItem.closed_at) : "—"}
 
               </div>
 
             </div>
-
+            {caseItem.status === "closed" && (
+  <div>
+    <div style={styles.infoLabel}>Result Status</div>
+    <div style={styles.infoValue}>
+      {getResultLabel(caseItem.result_status)}
+    </div>
+  </div>
+)}
 
 
             <div>
