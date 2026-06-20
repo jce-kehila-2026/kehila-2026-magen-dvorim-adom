@@ -8,6 +8,7 @@ import CoordinatorCases from "./pages/CoordinatorCases";
 import CoordinatorSendForm from "./pages/CoordinatorSendForm";
 import MyCases from "./pages/MyCases";
 import Profile from "./pages/Profile";
+import Backup from "./pages/Backup";
 
 import Reports from "./pages/Reports";
 
@@ -114,6 +115,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
               <Reports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/backup"
+          element={
+            <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
+              <Backup />
             </ProtectedRoute>
           }
         />
