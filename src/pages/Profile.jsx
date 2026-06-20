@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ProfileView from "../components/views/ProfileView";
 import { updateUserProfile } from "../services/userService";
-import { logoutUser } from "../services/authService";
+import { changeUserPassword, logoutUser } from "../services/authService";
 
 const ISRAELI_CITIES = [
   "Jerusalem",
@@ -28,6 +28,10 @@ function Profile() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
   const [citySearch, setCitySearch] = useState("");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
@@ -38,6 +42,12 @@ function Profile() {
     city: "",
     is_available: true,
     photo_url: "",
+  });
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmNewPassword: "",
   });
 
   useEffect(() => {
@@ -77,6 +87,61 @@ function Profile() {
       photo_url: previewUrl,
       photo_file: file,
     }));
+  };
+
+  const openPasswordModal = () => {
+    setPasswordData({
+      currentPassword: "",
+      newPassword: "",
+      confirmNewPassword: "",
+    });
+    setPasswordError("");
+    setPasswordSuccess("");
+    setPasswordModalOpen(true);
+  };
+
+  const closePasswordModal = () => {
+    if (passwordLoading) return;
+
+    setPasswordModalOpen(false);
+    setPasswordError("");
+    setPasswordSuccess("");
+    setPasswordData({
+      currentPassword: "",
+      newPassword: "",
+      confirmNewPassword: "",
+    });
+  };
+
+  const handlePasswordSubmit = async (event) => {
+    event.preventDefault();
+
+    setPasswordLoading(true);
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    try {
+      if (passwordData.newPassword !== passwordData.confirmNewPassword) {
+        throw new Error("New passwords do not match.");
+      }
+
+      await changeUserPassword(
+        passwordData.currentPassword,
+        passwordData.newPassword
+      );
+
+      setPasswordSuccess("Password changed successfully!");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmNewPassword: "",
+      });
+    } catch (err) {
+      console.error(err);
+      setPasswordError(err.message || "Failed to change password");
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -125,7 +190,16 @@ function Profile() {
       loading={loading}
       error={error}
       success={success}
+      passwordModalOpen={passwordModalOpen}
+      passwordData={passwordData}
+      setPasswordData={setPasswordData}
+      passwordLoading={passwordLoading}
+      passwordError={passwordError}
+      passwordSuccess={passwordSuccess}
       handleSubmit={handleSubmit}
+      handlePasswordSubmit={handlePasswordSubmit}
+      openPasswordModal={openPasswordModal}
+      closePasswordModal={closePasswordModal}
       handleLogout={handleLogout}
       handlePhotoChange={handlePhotoChange}
       ISRAELI_CITIES={ISRAELI_CITIES}
