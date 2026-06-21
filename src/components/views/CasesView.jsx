@@ -43,6 +43,7 @@ function CasesView({
   formatDate,
   getResultLabel,
   handleLogout,
+  handleSendFeedback,
 }) {
    // Used to navigate between app pages.
   const navigate = useNavigate();
@@ -266,24 +267,29 @@ if (activeFilter === "open") {
         ) : (
           <div style={styles.casesList} className="cases-list">
 
-  {/* ✅ HEADER ROW */}
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "2fr 1.5fr 1.5fr 1fr 1fr 40px",
-      padding: "12px 18px",
-      fontWeight: "900",
-      background: "#fff8ef",
-      borderBottom: "1px solid #eadfd2",
-      fontSize: "13px",
-      color: "#51443a"
-    }}
-  >
+{/* ✅ HEADER ROW */}
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns:
+      window.innerWidth < 768
+        ? "1fr 1fr auto auto"   // mobile
+        : "2fr 1.5fr 1.5fr 1fr 1fr 1.3fr 40px", // desktop ✅ IMPORTANT
+    alignItems: "center",
+    padding: "12px 18px",
+    fontWeight: "900",
+    background: "#fff8ef",
+    borderBottom: "1px solid #eadfd2",
+    fontSize: "13px",
+    color: "#51443a"
+  }}
+>
     <span>Name</span>
     <span>Phone</span>
     <span>Opened</span>
     <span>Urgency</span>
     <span>Status</span>
+    <span>Feedback</span>
     <span></span>
   </div>
 
@@ -342,7 +348,10 @@ if (activeFilter === "open") {
         style={{
           ...styles.caseAccordionHeader,
           display: "grid",
-          gridTemplateColumns: "2fr 1.5fr 1.5fr 1fr 1fr 40px",
+          gridTemplateColumns:
+            window.innerWidth < 768
+              ? "1fr 1fr auto auto"
+              : "2fr 1.5fr 1.5fr 1fr 1fr 1.3fr 40px",
           alignItems: "center",
           gap: "8px"
         }}
@@ -370,6 +379,48 @@ if (activeFilter === "open") {
         <span style={getStatusStyle(caseItem.status)}>
           {caseItem.status}
         </span>
+<span>
+  {caseItem.status === "closed" ? (
+    <span
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "6px"
+      }}
+    >
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSendFeedback(caseItem);
+        }}
+        style={{
+          padding: "4px 8px",
+          fontSize: "12px",
+          borderRadius: "6px",
+          border: "none",
+          background: "#16a34a",
+          color: "white",
+          cursor: "pointer",
+          fontWeight: "700"
+        }}
+      >
+        Copy
+      </button>
+
+      <span
+        style={{
+          fontSize: "12px",
+          fontWeight: "800",
+          color: caseItem.feedback_submitted ? "#16a34a" : "#dc2626"
+        }}
+      >
+        {caseItem.feedback_submitted ? "✔" : "✖"}
+      </span>
+    </span>
+  ) : (
+    <span style={{ opacity: 0.3 }}>—</span>  // ✅ keeps layout aligned
+  )}
+</span>
 
         <span style={styles.arrowIcon}>
           {isExpanded ? "▲" : "▼"}
@@ -1159,6 +1210,7 @@ userList: {
     display: "flex",
     flexDirection: "column",
     gap: "4px",
+    color: "#2b160c",
   },
 
   userOptionActive: {
