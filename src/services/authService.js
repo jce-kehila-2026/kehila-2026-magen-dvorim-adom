@@ -1,9 +1,12 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
    getAuth ,
+  reauthenticateWithCredential,
+  updatePassword,
 } from "firebase/auth";
 
 import { auth, firebaseConfig, } from "../firebase";
@@ -150,6 +153,37 @@ export async function logoutUser() {
     console.error("Logout user failed:", error);
 
     throw new Error("Logout failed. Please try again.");
+  }
+}
+
+// Change the current user's password after confirming their current password
+export async function changeUserPassword(currentPassword, newPassword) {
+  try {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser?.email) {
+      throw new Error("No authenticated user found.");
+    }
+
+    validateEmailAndPassword(currentUser.email, currentPassword);
+
+    if (!newPassword) {
+      throw new Error("New password is required.");
+    }
+
+    const credential = EmailAuthProvider.credential(
+      currentUser.email,
+      currentPassword
+    );
+
+    await reauthenticateWithCredential(currentUser, credential);
+    await updatePassword(currentUser, newPassword);
+
+    return true;
+  } catch (error) {
+    console.error("Change password failed:", error);
+
+    throw new Error(getAuthErrorMessage(error), { cause: error });
   }
 }
 

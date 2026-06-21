@@ -5,8 +5,10 @@ import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import VolunteerRecommendationMap from "./VolunteerRecommendationMap";
 import { useState } from "react";
+import { USER_ROLES } from "../../services/userSchema";
 
 function CasesView({
+  userProfile,
   currentUserRole,
   currentUserName,
   cases = [],
@@ -41,6 +43,7 @@ function CasesView({
   formatDate,
   getResultLabel,
   handleLogout,
+  handleSendFeedback,
 }) {
    // Used to navigate between app pages.
   const navigate = useNavigate();
@@ -161,6 +164,18 @@ if (activeFilter === "open") {
           </button>
         )}
 
+        {userProfile?.role === USER_ROLES.ADMIN && (
+          <button
+            style={styles.navItem}
+            onClick={() => {
+              navigate("/backup");
+              setMobileMenuOpen(false);
+            }}
+          >
+            Backup
+          </button>
+        )}
+
         <button style={styles.navItem} onClick={() => navigate("/profile")}>
           Profile
         </button>
@@ -251,7 +266,35 @@ if (activeFilter === "open") {
           <div style={styles.emptyState}>No cases match this view.</div>
         ) : (
           <div style={styles.casesList} className="cases-list">
-            {activeCases.map((caseItem) => {
+
+{/* ✅ HEADER ROW */}
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns:
+      window.innerWidth < 768
+        ? "1fr 1fr auto auto"   // mobile
+        : "2fr 1.5fr 1.5fr 1fr 1fr 1.3fr 40px", // desktop ✅ IMPORTANT
+    alignItems: "center",
+    padding: "12px 18px",
+    fontWeight: "900",
+    background: "#fff8ef",
+    borderBottom: "1px solid #eadfd2",
+    fontSize: "13px",
+    color: "#51443a"
+  }}
+>
+    <span>Name</span>
+    <span>Phone</span>
+    <span>Opened</span>
+    <span>Urgency</span>
+    <span>Status</span>
+    <span>Feedback</span>
+    <span></span>
+  </div>
+
+  {/* ✅ CASES */}
+  {activeCases.map((caseItem) => {
 
   const caseAssignments = assignments[caseItem.id] || [];
 
@@ -303,59 +346,92 @@ if (activeFilter === "open") {
     >
 
       <button
-  type="button"
-  style={styles.caseAccordionHeader}
-  className="case-accordion-header"
-  onClick={() => setExpandedCaseId(isExpanded ? null : caseItem.id)}
->
-  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-    
-    <div style={styles.requesterName}>
-      👤 {caseItem.requester_first_name} {caseItem.requester_last_name}
-    </div>
+        type="button"
+        onClick={() => setExpandedCaseId(isExpanded ? null : caseItem.id)}
+        style={{
+          ...styles.caseAccordionHeader,
+          display: "grid",
+          gridTemplateColumns:
+            window.innerWidth < 768
+              ? "1fr 1fr auto auto"
+              : "2fr 1.5fr 1.5fr 1fr 1fr 1.3fr 40px",
+          alignItems: "center",
+          gap: "8px"
+        }}
+      >
+      
+        <span style={{ color: "#2b160c", fontWeight: "700" }}>
+          {caseItem.requester_first_name} {caseItem.requester_last_name}
+        </span>
 
-    <div
+
+        <span style={{ color: "#2b160c" }}>
+          {caseItem.requester_phone || "—"}
+        </span>
+
+
+        <span style={{ color: "#2b160c" }}>
+          {formatDate(caseItem.opened_at)}
+        </span>
+
+
+        <span style={getUrgencyStyle(caseItem.urgency)}>
+          {caseItem.urgency || "low"}
+        </span>
+
+        <span style={getStatusStyle(caseItem.status)}>
+          {caseItem.status}
+        </span>
+<span>
+  {caseItem.status === "closed" ? (
+    <span
       style={{
         display: "flex",
-        flexWrap: "wrap",
-        gap: "12px",
-        fontSize: "13px",
-        color: "#6b625c",
+        alignItems: "center",
+        gap: "6px"
       }}
     >
-      <span>Phone: {caseItem.requester_phone || "—"}</span>
-
-      <span>
-        Opened: {cleanDate(caseItem.opened_at)}
-      </span>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSendFeedback(caseItem);
+        }}
+        style={{
+          padding: "4px 8px",
+          fontSize: "12px",
+          borderRadius: "6px",
+          border: "none",
+          background: "#16a34a",
+          color: "white",
+          cursor: "pointer",
+          fontWeight: "700"
+        }}
+      >
+        Copy
+      </button>
 
       <span
-        style={getUrgencyStyle(caseItem.urgency || "low")}
+        style={{
+          fontSize: "12px",
+          fontWeight: "800",
+          color: caseItem.feedback_submitted ? "#16a34a" : "#dc2626"
+        }}
       >
-        {caseItem.urgency || "low"}
+        {caseItem.feedback_submitted ? "✔" : "✖"}
       </span>
-
-      <span
-        style={getStatusStyle(caseItem.status || "open")}
-      >
-        {caseItem.status || "open"}
-      </span>
-      {caseItem.status === "closed" && (
-  <>
-    <span>Closed: {cleanDate(caseItem.closed_at)}</span>
-
-    <span style={getStatusStyle("closed")}>
-      Result: {getResultLabel(caseItem.result_status)}
     </span>
-  </>
-)}
-    </div>
-  </div>
+  ) : (
+    <span style={{ opacity: 0.3 }}>—</span>  // ✅ keeps layout aligned
+  )}
+</span>
 
-  <span style={styles.arrowIcon}>
-    {isExpanded ? "▲" : "▼"}
-  </span>
-</button>
+        <span style={styles.arrowIcon}>
+          {isExpanded ? "▲" : "▼"}
+        </span>
+      </button>
+
+
+     
 
 
 
@@ -892,6 +968,9 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     fontSize: "14px",
+    color: "#2b160c",        // ✅ ADD THIS
+    caretColor: "#2b160c",   // ✅ ADD THIS
+
   },
 
   sortSelect: {
@@ -1139,6 +1218,7 @@ userList: {
     display: "flex",
     flexDirection: "column",
     gap: "4px",
+    color: "#2b160c",
   },
 
   userOptionActive: {
@@ -1214,6 +1294,9 @@ userList: {
   minHeight: "38px",
   maxHeight: "50px",
   resize: "none",
+  color: "#2b160c",
+  caretColor: "#2b160c",
+
 },
 
   emptyText: {
@@ -1290,16 +1373,15 @@ caseAccordionCard: {
   marginBottom: "10px",
 },
 
+
 caseAccordionHeader: {
   width: "100%",
   border: "none",
   background: "white",
   padding: "16px 18px",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
   cursor: "pointer",
 },
+
 
 caseAccordionBody: {
   borderTop: "1px solid #eadfd2",

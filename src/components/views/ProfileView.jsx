@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { USER_ROLES } from "../../services/userSchema";
 import logo from "../../assets/logo.png";
 import "./ProfileView.css";
 
@@ -18,7 +19,16 @@ export default function ProfileView({
   loading,
   error,
   success,
+  passwordModalOpen,
+  passwordData,
+  setPasswordData,
+  passwordLoading,
+  passwordError,
+  passwordSuccess,
   handleSubmit,
+  handlePasswordSubmit,
+  openPasswordModal,
+  closePasswordModal,
   handleLogout,
   handlePhotoChange,
   ISRAELI_CITIES,
@@ -40,6 +50,103 @@ export default function ProfileView({
 
   return (
     <div className="profile-layout" style={styles.layout}>
+      {passwordModalOpen && (
+        <div style={styles.modalOverlay} onClick={closePasswordModal}>
+          <div style={styles.modal} onClick={(event) => event.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <div>
+                <h2 style={styles.modalTitle}>Change Password</h2>
+                <p style={styles.modalSubtitle}>
+                  Enter your current password before choosing a new one.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closePasswordModal}
+                disabled={passwordLoading}
+                style={styles.closeButton}
+                aria-label="Close change password modal"
+              >
+                x
+              </button>
+            </div>
+
+            {passwordError && <div style={styles.errorBox}>{passwordError}</div>}
+            {passwordSuccess && <div style={styles.successBox}>{passwordSuccess}</div>}
+
+            <form onSubmit={handlePasswordSubmit}>
+              <div style={styles.field}>
+                <label>Current Password</label>
+                <input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) =>
+                    setPasswordData((prev) => ({
+                      ...prev,
+                      currentPassword: e.target.value,
+                    }))
+                  }
+                  required
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={styles.field}>
+                <label>New Password</label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) =>
+                    setPasswordData((prev) => ({
+                      ...prev,
+                      newPassword: e.target.value,
+                    }))
+                  }
+                  required
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={styles.field}>
+                <label>Confirm New Password</label>
+                <input
+                  type="password"
+                  value={passwordData.confirmNewPassword}
+                  onChange={(e) =>
+                    setPasswordData((prev) => ({
+                      ...prev,
+                      confirmNewPassword: e.target.value,
+                    }))
+                  }
+                  required
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={styles.modalActions}>
+                <button
+                  type="button"
+                  onClick={closePasswordModal}
+                  disabled={passwordLoading}
+                  style={styles.secondaryButton}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={passwordLoading}
+                  style={styles.button}
+                >
+                  {passwordLoading ? "Updating..." : "Update Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {menuOpen && (
         <div
           className="profile-overlay"
@@ -64,7 +171,7 @@ export default function ProfileView({
             Dashboard
           </button>
 
-          {userProfile?.role === "admin" && (
+          {userProfile?.role === USER_ROLES.ADMIN && (
             <>
               <button style={styles.navItem} onClick={() => goTo("/cases")}>
                 Cases
@@ -77,10 +184,14 @@ export default function ProfileView({
               <button style={styles.navItem} onClick={() => goTo("/reports")}>
                 Reports
               </button>
+
+              <button style={styles.navItem} onClick={() => goTo("/backup")}>
+                Backup
+              </button>
             </>
           )}
 
-          {userProfile?.role === "coordinator" && (
+          {userProfile?.role === USER_ROLES.COORDINATOR && (
             <>
               <button style={styles.navItem} onClick={() => goTo("/cases")}>
                 Cases
@@ -92,7 +203,7 @@ export default function ProfileView({
             </>
           )}
 
-          {userProfile?.role === "volunteer" && (
+          {userProfile?.role === USER_ROLES.VOLUNTEER && (
             <button style={styles.navItem} onClick={() => goTo("/my-cases")}>
               My Cases
             </button>
@@ -291,6 +402,14 @@ export default function ProfileView({
             </div>
 
             <div style={styles.actions}>
+              <button
+                type="button"
+                onClick={openPasswordModal}
+                style={styles.secondaryButton}
+              >
+                Change Password
+              </button>
+
               <button type="submit" disabled={loading} style={styles.button}>
                 {loading ? "Saving..." : "Save Changes"}
               </button>
@@ -526,6 +645,9 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     fontSize: "14px",
+    color: "#2b160c",        
+    caretColor: "#2b160c",   
+
   },
 
   disabledInput: {
@@ -618,6 +740,8 @@ const styles = {
   actions: {
     display: "flex",
     justifyContent: "flex-end",
+    gap: "12px",
+    flexWrap: "wrap",
     marginTop: "24px",
   },
 
@@ -627,6 +751,16 @@ const styles = {
     borderRadius: "14px",
     background: "#f97316",
     color: "white",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+
+  secondaryButton: {
+    border: "1px solid #f0c49d",
+    padding: "13px 24px",
+    borderRadius: "14px",
+    background: "#fff8ef",
+    color: "#e85d04",
     fontWeight: "800",
     cursor: "pointer",
   },
@@ -645,5 +779,68 @@ const styles = {
     padding: "12px",
     borderRadius: "12px",
     marginBottom: "16px",
+  },
+
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(43, 22, 12, 0.35)",
+    display: "grid",
+    placeItems: "center",
+    padding: "18px",
+    zIndex: 100,
+  },
+
+  modal: {
+    width: "100%",
+    maxWidth: "460px",
+    background: "white",
+    borderRadius: "24px",
+    padding: "26px",
+    boxShadow: "0 24px 80px rgba(43, 22, 12, 0.18)",
+    border: "1px solid #f2e7dc",
+    boxSizing: "border-box",
+  },
+
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "16px",
+    marginBottom: "20px",
+  },
+
+  modalTitle: {
+    margin: 0,
+    color: "#173b2f",
+    fontSize: "24px",
+    fontWeight: "900",
+  },
+
+  modalSubtitle: {
+    margin: "8px 0 0",
+    color: "#6b625c",
+    fontSize: "13px",
+    fontWeight: "400",
+  },
+
+  closeButton: {
+    width: "34px",
+    height: "34px",
+    border: "none",
+    borderRadius: "12px",
+    background: "#fff1df",
+    color: "#e85d04",
+    fontSize: "18px",
+    fontWeight: "900",
+    cursor: "pointer",
+  },
+
+  modalActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "12px",
+    flexWrap: "wrap",
+    marginTop: "8px",
   },
 };

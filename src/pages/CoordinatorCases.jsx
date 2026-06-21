@@ -109,18 +109,21 @@ function CoordinatorCases() {
   };
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return "—";
+  if (!timestamp) return "—";
 
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const date = timestamp.toDate
+    ? timestamp.toDate()
+    : new Date(timestamp);
 
-    return date.toLocaleDateString("he-IL", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+};
 
   const FINISHING_STATUSES = [
     { value: "evacuated_by_volunteer", label: "Evacuated by a volunteer" },
@@ -447,6 +450,7 @@ const handleSendFeedback = async (caseItem) => {
 };
  return (
   <CasesView
+    userProfile={userProfile}
     currentUserRole={currentUserRole}
     currentUserName={currentUserName}
     handleLogout={handleLogout}
