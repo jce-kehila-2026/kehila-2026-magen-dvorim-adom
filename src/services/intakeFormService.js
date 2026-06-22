@@ -7,13 +7,22 @@ import {
   doc,
   updateDoc,
   addDoc,
+  onSnapshot,
   Timestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
-// ✅ normalize
 function normalizePhone(phone) {
   return phone.replace(/\D/g, "");
+}
+
+// Israeli phone: 05X-XXXXXXX (10 digits starting with 05)
+// International fallback: 7–15 digits
+export function isValidPhone(phone) {
+  const digits = normalizePhone(phone);
+  const israeli = /^05\d{8}$/.test(digits);
+  const international = digits.length >= 7 && digits.length <= 15;
+  return israeli || international;
 }
 
 async function resolveCoordinator({ coordinator_id, coordinator_phone }) {
@@ -21,14 +30,10 @@ async function resolveCoordinator({ coordinator_id, coordinator_phone }) {
     const userRef = doc(db, "users", coordinator_id);
     const userSnap = await getDoc(userRef);
 
-    if (!userSnap.exists()) {
-      return null;
-    }
+    if (!userSnap.exists()) return null;
 
     const userData = userSnap.data();
-    if (userData?.role !== "coordinator") {
-      return null;
-    }
+    if (userData?.role !== "coordinator" && userData?.role !== "admin") return null;
 
     return {
       coordinator_id,
@@ -36,23 +41,18 @@ async function resolveCoordinator({ coordinator_id, coordinator_phone }) {
     };
   }
 
-  if (!coordinator_phone) {
-    return null;
-  }
+  if (!coordinator_phone) return null;
 
   coordinator_phone = normalizePhone(coordinator_phone);
 
   const userQuery = query(
     collection(db, "users"),
     where("phone", "==", coordinator_phone),
-    where("role", "==", "coordinator")
+    where("role", "in", ["coordinator", "admin"])
   );
 
   const userSnap = await getDocs(userQuery);
-
-  if (userSnap.empty) {
-    return null;
-  }
+  if (userSnap.empty) return null;
 
   return {
     coordinator_id: userSnap.docs[0].id,
@@ -60,10 +60,8 @@ async function resolveCoordinator({ coordinator_id, coordinator_phone }) {
   };
 }
 
-
 async function markExpiredIfNeeded(formDoc) {
   const data = formDoc.data();
-
   if (data.status !== "sent") return data;
 
   const expires = data.expires_at?.toDate
@@ -72,19 +70,15 @@ async function markExpiredIfNeeded(formDoc) {
 
   if (expires < new Date()) {
     const ref = doc(db, "intakeForms", formDoc.id);
-
-    await updateDoc(ref, {
-      status: "expired",
-    });
-
-    return {
-      ...data,
-      status: "expired",
-    };
+    await updateDoc(ref, { status: "expired" });
+    return { ...data, status: "expired" };
   }
 
   return data;
 }
+
+// ─── One-time fetches (kept for backwards compat) ────────────────────────────
+
 export async function getIntakeFormsByCoordinator(coordinator_id) {
   if (!coordinator_id) return [];
 
@@ -94,40 +88,72 @@ export async function getIntakeFormsByCoordinator(coordinator_id) {
   );
 
   const snap = await getDocs(q);
-
-  const results = await Promise.all(
+  return Promise.all(
     snap.docs.map(async (docItem) => {
       const updatedData = await markExpiredIfNeeded(docItem);
-
-      return {
-        id: docItem.id,
-        ...updatedData,
-      };
+      return { id: docItem.id, ...updatedData };
     })
   );
-
-  return results;
 }
-
 
 export async function getAllIntakeForms() {
   const snap = await getDocs(collection(db, "intakeForms"));
-
-  const results = await Promise.all(
+  return Promise.all(
     snap.docs.map(async (docItem) => {
       const updatedData = await markExpiredIfNeeded(docItem);
-
-      return {
-        id: docItem.id,
-        ...updatedData,
-      };
+      return { id: docItem.id, ...updatedData };
     })
   );
-
-  return results;
 }
 
-// ✅ requester check
+// ─── Realtime listeners ───────────────────────────────────────────────────────
+
+/**
+ * Subscribe to all intake forms (admin).
+ * Returns an unsubscribe function.
+ */
+export function subscribeToAllIntakeForms(callback) {
+  const q = collection(db, "intakeForms");
+
+  return onSnapshot(q, async (snap) => {
+    const forms = await Promise.all(
+      snap.docs.map(async (docItem) => {
+        const updatedData = await markExpiredIfNeeded(docItem);
+        return { id: docItem.id, ...updatedData };
+      })
+    );
+    callback(forms);
+  });
+}
+
+/**
+ * Subscribe to intake forms sent by a specific coordinator.
+ * Returns an unsubscribe function.
+ */
+export function subscribeToCoordinatorIntakeForms(coordinator_id, callback) {
+  if (!coordinator_id) {
+    callback([]);
+    return () => {};
+  }
+
+  const q = query(
+    collection(db, "intakeForms"),
+    where("coordinator_id", "==", coordinator_id)
+  );
+
+  return onSnapshot(q, async (snap) => {
+    const forms = await Promise.all(
+      snap.docs.map(async (docItem) => {
+        const updatedData = await markExpiredIfNeeded(docItem);
+        return { id: docItem.id, ...updatedData };
+      })
+    );
+    callback(forms);
+  });
+}
+
+// ─── Validation + creation ────────────────────────────────────────────────────
+
 export async function getValidIntakeFormForRequester({
   requester_phone,
   coordinator_phone,
@@ -140,9 +166,7 @@ export async function getValidIntakeFormForRequester({
     coordinator_phone,
   });
 
-  if (!coordinator) {
-    return null;
-  }
+  if (!coordinator) return null;
 
   const intakeQuery = query(
     collection(db, "intakeForms"),
@@ -155,42 +179,37 @@ export async function getValidIntakeFormForRequester({
   if (intakeSnap.empty) return null;
 
   const docData = intakeSnap.docs[0].data();
-
   if (docData.expires_at.toDate() < new Date()) return null;
 
-  return {
-    id: intakeSnap.docs[0].id,
-    ...docData,
-  };
+  return { id: intakeSnap.docs[0].id, ...docData };
 }
 
-// ✅ create intake form
 export async function createIntakeForm({
   requester_phone,
-  coordinator_phone,
   coordinator_id,
 }) {
-  requester_phone = normalizePhone(requester_phone);
-
-  const coordinator = await resolveCoordinator({
-    coordinator_id,
-    coordinator_phone,
-  });
-
-  if (!coordinator) {
-    throw new Error("Coordinator not found.");
+  if (!isValidPhone(requester_phone)) {
+    throw new Error("Invalid phone number.");
   }
 
+  requester_phone = normalizePhone(requester_phone);
+
+  // Resolve coordinator directly by ID (always pass coordinator_id from auth)
+  const coordinator = await resolveCoordinator({ coordinator_id });
+  if (!coordinator) {
+    throw new Error("Coordinator not found. Make sure your account has coordinator or admin role.");
+  }
+
+  // Check for duplicate active form from this coordinator
   const dupQuery = query(
     collection(db, "intakeForms"),
     where("requester_phone", "==", requester_phone),
     where("coordinator_id", "==", coordinator.coordinator_id),
     where("status", "==", "sent")
   );
-
   const dupSnap = await getDocs(dupQuery);
   if (!dupSnap.empty) {
-    throw new Error("An active form already exists.");
+    throw new Error("An active form already exists for this phone number.");
   }
 
   // Check if ANY coordinator already has an active form for this phone
@@ -202,9 +221,10 @@ export async function createIntakeForm({
   const anyActiveSnap = await getDocs(anyActiveQuery);
   if (!anyActiveSnap.empty) {
     throw new Error(
-      "This requester already has an active form sent by another coordinator. Please coordinate before sending a new one."
+      "This requester already has an active form sent by another coordinator."
     );
   }
+
   const now = new Date();
   const expires = new Date(now);
   expires.setDate(now.getDate() + 30);
@@ -219,14 +239,10 @@ export async function createIntakeForm({
     expires_at: Timestamp.fromDate(expires),
     submitted_at: null,
   });
-
-  // ✅ TODO: send SMS here later
 }
 
-// ✅ mark as used
 export async function markIntakeFormSubmitted(id, caseId) {
   const ref = doc(db, "intakeForms", id);
-
   await updateDoc(ref, {
     status: "submitted",
     case_id: caseId,

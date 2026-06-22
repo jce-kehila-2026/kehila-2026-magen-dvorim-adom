@@ -1,71 +1,128 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
+
+import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  getDoc,
+  doc,
+} from "firebase/firestore";
+import { db } from "../firebase";
+
 import VolunteerDashboardView from "../components/views/VolunteerDashboardView";
-import { getVolunteerAssignmentStats } from "../services/assignmentService";
-import { getCasesForVolunteer } from "../services/caseService";
 import { logoutUser } from "../services/authService";
+import { useAuth } from "../contexts/AuthContext";
 
 function VolunteerDashboard() {
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
 
-  const [stats, setStats] = useState({
-    openCases: 0,
-    completedRescues: 0,
-  });
-
-  const [recentCases, setRecentCases] = useState([]);
+  const [activeCase, setActiveCase] = useState(null);   // single case object or null
+  const [completedCount, setCompletedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const unsubRef = useRef(null);
+
   useEffect(() => {
     if (!userProfile?.uid) return;
-    loadStats();
-  }, [userProfile]);
 
-  const loadStats = async () => {
     setLoading(true);
     setError("");
 
+    // Listen to all assignment documents for this volunteer.
+    // When assignments change, re-fetch the linked cases to determine
+    // which are active (not closed) and which are completed (closed).
+    const assignmentsQuery = query(
+      collection(db, "assignments"),
+      where("user_id", "==", userProfile.uid)
+    );
+
+    unsubRef.current = onSnapshot(
+      assignmentsQuery,
+      async (snap) => {
+        try {
+          if (snap.empty) {
+            setActiveCase(null);
+            setCompletedCount(0);
+            setLoading(false);
+            return;
+          }
+
+          // Fetch all linked cases in parallel
+          const casePromises = snap.docs.map((assignmentDoc) => {
+            const { case_id } = assignmentDoc.data();
+            if (!case_id) return Promise.resolve(null);
+            return getDoc(doc(db, "cases", case_id)).then((caseSnap) => {
+              if (!caseSnap.exists()) return null;
+              return { id: caseSnap.id, ...caseSnap.data() };
+            });
+          });
+
+          const cases = (await Promise.all(casePromises)).filter(Boolean);
+
+          // Active = not closed (open or assigned)
+          const activeCases = cases.filter((c) => c.status !== "closed");
+          // Completed = closed
+          const completedCases = cases.filter((c) => c.status === "closed");
+
+          // Business rule: volunteer can only have one active case at a time.
+          // Take the first one if somehow multiple exist.
+          setActiveCase(activeCases.length > 0 ? activeCases[0] : null);
+          setCompletedCount(completedCases.length);
+          setLoading(false);
+        } catch (err) {
+          console.error("Failed to resolve volunteer cases:", err);
+          setError("Failed to load dashboard data.");
+          setLoading(false);
+        }
+      },
+      (err) => {
+        console.error("Assignments listener error:", err);
+        setError("Failed to load assignments.");
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      if (unsubRef.current) unsubRef.current();
+    };
+  }, [userProfile?.uid]);
+
+  const handleLogout = async () => {
     try {
-      const { assignedCases, completedRescues } =
-        await getVolunteerAssignmentStats(userProfile.uid);
-
-      const volunteerCases = await getCasesForVolunteer(userProfile.uid);
-
-      const recent = volunteerCases
-        .filter((caseItem) => caseItem.status !== "closed")
-        .slice(0, 3);
-
-      setStats({
-        openCases: assignedCases,
-        completedRescues,
-      });
-
-      setRecentCases(recent);
+      await logoutUser();
+      navigate("/");
     } catch (err) {
-      console.error("Failed to load dashboard:", err);
-      setError(err.message || "Unable to load dashboard.");
-    } finally {
-      setLoading(false);
+      console.error("Logout failed:", err);
+      setError("Logout failed. Please try again.");
     }
   };
 
-  const handleLogout = async () => {
-    await logoutUser();
+  const handleCaseClick = () => {
+    if (activeCase?.id) {
+      navigate(`/cases/${activeCase.id}`);
+    }
   };
 
-  if (!userProfile) {
-    return <div>Loading...</div>;
-  }
+  const handleHistoryClick = () => {
+    navigate("/my-cases");
+  };
+
+  if (!userProfile) return <div>Loading...</div>;
 
   return (
     <VolunteerDashboardView
       userProfile={userProfile}
-      stats={stats}
-      recentCases={recentCases}
+      activeCase={activeCase}
+      completedCount={completedCount}
       loading={loading}
       error={error}
       handleLogout={handleLogout}
+      onCaseClick={handleCaseClick}
+      onHistoryClick={handleHistoryClick}
     />
   );
 }

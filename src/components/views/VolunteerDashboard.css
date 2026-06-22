@@ -6,6 +6,7 @@
   display: none;
 }
 
+
 @media (max-width: 768px) {
   .volunteer-page {
     display: block !important;
@@ -13,18 +14,19 @@
     background: #fffdf8 !important;
   }
 
-  .mobile-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 58px;
-    padding: 0 14px;
-    background: #fff8ef;
-    border-bottom: 1px solid #f0e5d8;
-    position: sticky;
-    top: 0;
-    z-index: 20;
-  }
+.mobile-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;   /* ✅ center everything */
+  position: relative;        /* ✅ needed for absolute positioning */
+  height: 80px;
+  padding: 0 14px;
+  background: #fff8ef;
+  border-bottom: 1px solid #f0e5d8;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
 
   .menu-button {
     width: 40px;
@@ -36,13 +38,19 @@
     font-size: 22px;
     font-weight: 900;
     cursor: pointer;
+    position: absolute;   /* ✅ takes it out of flow */
+    left: 14px;
   }
 
-  .mobile-logo {
-    width: 36px;
-    height: 36px;
-    object-fit: contain;
-  }
+
+.mobile-logo {
+  height: 36px;
+  width: auto;        /* ✅ important */
+  display: block;     /* ✅ prevents weird inline spacing */
+  object-fit: contain;
+}
+
+
 
   .mobile-title {
     color: #2b160c;
@@ -92,27 +100,16 @@
   .content-card {
     padding: 16px !important;
     border-radius: 18px !important;
-    box-shadow: 0 12px 28px rgba(43, 22, 12, 0.05) !important;
   }
 
   .volunteer-title {
-    text-align: left !important;
     font-size: 22px !important;
     line-height: 1.25 !important;
   }
 
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
-    margin-bottom: 14px !important;
-  }
-
-  .latest-city-card {
-    display: none !important;
-  }
-
+  /* Card grid: 2 columns on tablet, 1 column on small mobile */
   .dashboard-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr 1fr !important;
     gap: 12px !important;
   }
 }
@@ -130,7 +127,8 @@
     font-size: 20px !important;
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr 1fr !important;
+  /* Single column on small phones */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
   }
 }
