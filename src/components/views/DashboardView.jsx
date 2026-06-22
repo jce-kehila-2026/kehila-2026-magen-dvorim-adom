@@ -1,7 +1,4 @@
-// Main dashboard UI component.
-// Displays role-based statistics, navigation, and dashboard content.
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AssignedCasesMap from "../AssignedCasesMap";
 import CoordinatorSendForm from "../../pages/CoordinatorSendForm";
@@ -10,60 +7,131 @@ import logo from "../../assets/logo.png";
 
 import "./DashboardView.css";
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDate(value) {
+  if (!value) return "—";
+  const d = value?.toDate ? value.toDate() : new Date(value);
+  if (isNaN(d)) return "—";
+  return d.toLocaleDateString("he-IL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function statusLabel(status) {
+  if (status === "waiting") return "sent";
+  return status || "—";
+}
+
+function statusColor(status) {
+  const s = statusLabel(status);
+  switch (s) {
+    case "sent":
+      return { bg: "#fff1df", color: "#c2410c" };
+    case "submitted":
+      return { bg: "#dcfce7", color: "#15803d" };
+    case "expired":
+      return { bg: "#fee2e2", color: "#b42318" };
+    default:
+      return { bg: "#f1f5f9", color: "#475569" };
+  }
+}
+
+// ─── DashboardView ────────────────────────────────────────────────────────────
+
 function DashboardView({
   userProfile,
   stats,
   allCases,
+  intakeForms = [],
+  coordinatorNames = {},
   error,
   onLogout,
 }) {
- const navigate = useNavigate();
-const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
-const goTo = (path) => {
-  setMenuOpen(false);
-  navigate(path);
-};
-  const urgentCases = allCases.filter((c) => c.urgency === "high").length;
+  // Map filters
+  const [activeFilter, setActiveFilter] = useState("all");
 
- const dashboardTitle =
-  userProfile?.role === USER_ROLES.ADMIN
-    ? `Welcome back, ${userProfile?.full_name || "Admin"}`
-    : userProfile?.role === USER_ROLES.COORDINATOR
-    ? `Welcome back, ${userProfile?.full_name || "Coordinator"}`
-    : `Welcome back, ${userProfile?.full_name || "Volunteer"}`;
+  // Form tracking sort
+  const [sortDir, setSortDir] = useState("desc"); // desc = newest first
+
+  const isAdmin = userProfile?.role === USER_ROLES.ADMIN;
+
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const goTo = (path) => {
+    setMenuOpen(false);
+    navigate(path);
+  };
 
   const mapCases = allCases.filter((c) => c.status !== "closed");
 
   const openCasesCount = mapCases.filter((c) => c.status === "open").length;
-  const assignedCasesCount = mapCases.filter((c) => c.status === "assigned").length;
-
-  const [activeFilter, setActiveFilter] = useState("all");
+  const assignedCasesCount = mapCases.filter(
+    (c) => c.status === "assigned"
+  ).length;
 
   const filteredMapCases =
     activeFilter === "all"
       ? mapCases
       : mapCases.filter((c) => c.status === activeFilter);
 
+const filteredForms = useMemo(() => {
+  if (statusFilter === "all") return intakeForms;
+
+  return intakeForms.filter((form) => {
+    const s = statusLabel(form.status);
+    return s === statusFilter;
+  });
+}, [intakeForms, statusFilter]);
+
+const sortedForms = useMemo(() => {
+  return [...filteredForms].sort((a, b) => {
+    const aTime = a.sent_at?.toDate
+      ? a.sent_at.toDate().getTime()
+      : new Date(a.sent_at).getTime();
+    const bTime = b.sent_at?.toDate
+      ? b.sent_at.toDate().getTime()
+      : new Date(b.sent_at).getTime();
+    return sortDir === "desc" ? bTime - aTime : aTime - bTime;
+  });
+}, [filteredForms, sortDir]);
+
+  function handleFormRowClick(form) {
+    if (form.status === "submitted" && form.case_id) {
+      navigate(`/cases/${form.case_id}`);
+    }
+  }
+
+  function handleMarkerClick(caseItem) {
+    navigate(`/cases/${caseItem.id}`);
+  }
+
+  const dashboardTitle =
+    isAdmin
+      ? `Welcome back, ${userProfile?.full_name || "Admin"}`
+      : `Welcome back, ${userProfile?.full_name || "Coordinator"}`;
 
   return (
-<div
-  className="dashboard-page"
-  style={styles.page}
->
-  {menuOpen && (
-    <div
-      className="dashboard-overlay"
-      onClick={() => setMenuOpen(false)}
-    />
-  )}
+    <div className="dashboard-page" style={styles.page}>
+      {menuOpen && (
+        <div
+          className="dashboard-overlay"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
       <aside
-  className={`dashboard-sidebar ${menuOpen ? "open" : ""}`}
-  style={styles.sidebar}
->
+        className={`dashboard-sidebar ${menuOpen ? "open" : ""}`}
+        style={styles.sidebar}
+      >
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
-
           <div>
             <h2 style={styles.brandTitle}>Magen Dvorim Adom</h2>
             <p style={styles.brandSub}>{userProfile?.full_name || "User"}</p>
@@ -75,32 +143,27 @@ const goTo = (path) => {
             Dashboard
           </button>
 
-          {(userProfile?.role === USER_ROLES.ADMIN ||
-            userProfile?.role === USER_ROLES.COORDINATOR) && (
-            <>
-              <button style={styles.navItem} onClick={() => goTo("/cases")}>
-                Cases
-              </button>
+          <button style={styles.navItem} onClick={() => goTo("/cases")}>
+            Cases
+          </button>
 
-              <button style={styles.navItem} onClick={() => goTo("/users")}>
-                Users
-              </button>
+          <button style={styles.navItem} onClick={() => goTo("/users")}>
+            Users
+          </button>
 
-              {userProfile?.role === USER_ROLES.ADMIN && (
-                <button style={styles.navItem} onClick={() => goTo("/reports")}>
-                  Reports
-                </button>
-              )}
-
-              {userProfile?.role === USER_ROLES.ADMIN && (
-                <button style={styles.navItem} onClick={() => goTo("/backup")}>
-                  Backup
-                </button>
-              )}
-            </>
-            
+          {isAdmin && (
+            <button style={styles.navItem} onClick={() => goTo("/reports")}>
+              Reports
+            </button>
           )}
-         <button style={styles.navItem} onClick={() => goTo("/profile")}>
+
+          {isAdmin && (
+            <button style={styles.navItem} onClick={() => goTo("/backup")}>
+              Backup
+            </button>
+          )}
+
+          <button style={styles.navItem} onClick={() => goTo("/profile")}>
             Profile
           </button>
         </nav>
@@ -110,113 +173,180 @@ const goTo = (path) => {
         </button>
       </aside>
 
-      <main
-  className="dashboard-main"
-  style={styles.main}
->
-  <div className="dashboard-mobile-topbar">
-  <button
-    className="dashboard-menu-button"
-    onClick={() => setMenuOpen(true)}
-  >
-    ☰
-  </button>
-
-  <span className="dashboard-mobile-title">
-    Dashboard
-  </span>
-</div>
+      {/* Main */}
+      <main className="dashboard-main" style={styles.main}>
+        <div className="dashboard-mobile-topbar">
+          <button
+            className="dashboard-menu-button"
+            onClick={() => setMenuOpen(true)}
+          >
+            ☰
+          </button>
+          <span className="dashboard-mobile-title">Dashboard</span>
+        </div>
 
         {error && <div style={styles.errorBox}>{error}</div>}
 
-        {(userProfile?.role === USER_ROLES.ADMIN ||
-  userProfile?.role === USER_ROLES.COORDINATOR) && (
-  <section
-  className="dashboard-map-section"
-  style={styles.mapSection}
->
- <div
-  className="dashboard-map-layout"
-  style={styles.mapLayout}
->
 
-    <div
-  className="dashboard-map-box"
-  style={styles.mapBox}
->
-      <AssignedCasesMap
-        cases={filteredMapCases}
-        defaultFilter="all"
-      />
-    </div>
 
-  <div
-  className="dashboard-control-panel"
-  style={styles.controlPanel}
->
-  <button
-    style={{
-      ...styles.filterButton,
-      ...(activeFilter === "all"
-        ? styles.filterButtonActive
-        : {}),
-    }}
-    onClick={() => setActiveFilter("all")}
-  >
-    All {mapCases.length}
-  </button>
+        {/* ── NEW MAIN GRID ─────────────────────────────────────────── */}
+        <div className="dashboard-main-grid" style={styles.mainGrid}>
+          {/* LEFT SIDE */}
+          <div style={styles.leftCol}>
+            <section style={styles.mapSection}>
+              <h2 style={styles.sectionTitle}>Active Cases</h2>
 
-  <button
-    style={{
-      ...styles.filterButton,
-      ...(activeFilter === "open"
-        ? styles.filterButtonActive
-        : {}),
-    }}
-    onClick={() => setActiveFilter("open")}
-  >
-    Open {openCasesCount}
-  </button>
+              <div style={styles.filterRow}>
+                <FilterButton
+                  label="All"
+                  count={mapCases.length}
+                  active={activeFilter === "all"}
+                  onClick={() => setActiveFilter("all")}
+                />
+                <FilterButton
+                  label="Open"
+                  count={openCasesCount}
+                  active={activeFilter === "open"}
+                  onClick={() => setActiveFilter("open")}
+                />
+                <FilterButton
+                  label="Assigned"
+                  count={assignedCasesCount}
+                  active={activeFilter === "assigned"}
+                  onClick={() => setActiveFilter("assigned")}
+                />
+              </div>
 
-  <button
-    style={{
-      ...styles.filterButton,
-      ...(activeFilter === "assigned"
-        ? styles.filterButtonActive
-        : {}),
-    }}
-    onClick={() => setActiveFilter("assigned")}
-  >
-    Assigned {assignedCasesCount}
-  </button>
+              <div style={styles.mapBox}>
+                <AssignedCasesMap
+                  cases={filteredMapCases}
+                  defaultFilter={activeFilter}
+                  onMarkerClick={handleMarkerClick}
+                />
+              </div>
+            </section>
+          </div>
 
- <div style={styles.sendFormCard}>
-  <CoordinatorSendForm />
-</div>
-</div>
+          {/* RIGHT SIDE */}
+          <div style={styles.rightCol}>
+            {/* Send Form */}
+            <section style={styles.formCard}>
+              <h2 style={styles.sectionTitle}>Send Form to Requester</h2>
+              <CoordinatorSendForm />
+            </section>
 
-  </div>
-</section>
-)}
+            {/* Track Form Status */}
+            <section style={styles.trackCard}>
+              <div style={styles.trackHeader}>
+                <h2 style={styles.sectionTitle}>Track Form Status</h2>
 
-          </main>
+               <div style={{ display: "flex", gap: "8px" }}>
+                  <select
+                    style={styles.sortSelect}
+                    value={sortDir}
+                    onChange={(e) => setSortDir(e.target.value)}
+                  >
+                    <option value="desc">Newest first</option>
+                    <option value="asc">Oldest first</option>
+                  </select>
+
+                  <select
+                    style={styles.sortSelect}
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="all">All</option>
+                    <option value="sent">Sent</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="expired">Expired</option>
+                  </select>
+                </div>
+              </div>
+
+              {sortedForms.length === 0 ? (
+                <p style={styles.emptyText}>No forms sent yet.</p>
+              ) : (
+                <div style={styles.tableWrapper}>
+                  <div style={styles.tableScroll}>
+                    <table style={styles.table}>
+                      <thead>
+                        <tr>
+                          <th style={styles.th}>Date</th>
+                          <th style={styles.th}>Phone</th>
+                          {isAdmin && <th style={styles.th}>Coordinator</th>}
+                          <th style={styles.th}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedForms.map((form) => {
+                          const isSubmitted = form.status === "submitted";
+                          const sc = statusColor(form.status);
+
+                          return (
+                            <tr
+                              key={form.id}
+                              style={{
+                                ...styles.tr,
+                                cursor: isSubmitted ? "pointer" : "default",
+                              }}
+                              onClick={() => handleFormRowClick(form)}
+                            >
+                              <td style={styles.td}>
+                                {formatDate(form.sent_at)}
+                              </td>
+                              <td style={styles.td}>
+                                {form.requester_phone || "—"}
+                              </td>
+                              {isAdmin && (
+                                <td style={styles.td}>
+                                  {coordinatorNames[form.coordinator_id] || "—"}
+                                </td>
+                              )}
+                              <td style={styles.td}>
+                                <span
+                                  style={{
+                                    ...styles.badge,
+                                    background: sc.bg,
+                                    color: sc.color,
+                                  }}
+                                >
+                                  {statusLabel(form.status)}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
         </div>
-      );
-    }
 
-function StatCard({ title, value, description, color, bg }) {
-  return (
-    <div style={styles.statCard}>
-      <div style={{ ...styles.statIcon, background: bg, color }}>●</div>
-
-      <div>
-        <h3 style={styles.statTitle}>{title}</h3>
-        <p style={{ ...styles.statNumber, color }}>{value}</p>
-        <p style={styles.statDescription}>{description}</p>
-      </div>
+      </main>
     </div>
   );
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function FilterButton({ label, count, active, onClick }) {
+  return (
+    <button
+      style={{
+        ...styles.filterButton,
+        ...(active ? styles.filterButtonActive : {}),
+      }}
+      onClick={onClick}
+    >
+      {label} {count}
+    </button>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = {
   page: {
@@ -299,126 +429,13 @@ const styles = {
     cursor: "pointer",
   },
 
- main: {
-  padding: "18px",
-  boxSizing: "border-box",
-  overflow: "hidden",
-},
-
-  header: {
+  main: {
+    padding: "18px",
+    boxSizing: "border-box",
+    overflow: "auto",
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: "20px",
-    marginBottom: "28px",
-  },
-
-  title: {
-    margin: 0,
-    color: "#2b160c",
-    fontSize: "30px",
-    textAlign: "center",
-    fontWeight: "900",
-  },
-
-  subtitle: {
-    margin: "8px 0 0",
-    color: "#6b625c",
-    fontSize: "15px",
-  },
-
-  headerActions: {
-    display: "flex",
-    gap: "12px",
-  },
-
-  primaryButton: {
-    border: "none",
-    borderRadius: "12px",
-    background: "#ea580c",
-    color: "white",
-    padding: "12px 18px",
-    fontWeight: "900",
-    cursor: "pointer",
-  },
-
-  secondaryButton: {
-    border: "1px solid #f3c49a",
-    borderRadius: "12px",
-    background: "white",
-    color: "#c2410c",
-    padding: "12px 18px",
-    fontWeight: "900",
-    cursor: "pointer",
-  },
-
-  cards: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(180px, 1fr))",
-    gap: "14px",
-    marginBottom: "22px",
-  },
-
-  statCard: {
-    background: "white",
-    border: "1px solid #f0e5d8",
-    borderRadius: "18px",
-    padding: "10px",
-    display: "flex",
+    flexDirection: "column",
     gap: "16px",
-    alignItems: "center",
-  },
-
-  statIcon: {
-    width: "46px",
-    height: "46px",
-    borderRadius: "14px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "18px",
-  },
-
-  statTitle: {
-    margin: 0,
-    color: "#2b160c",
-    fontSize: "18px",
-    fontWeight: "900",
-  },
-
-  statNumber: {
-    margin: "4px 0",
-    fontSize: "30px",
-    fontWeight: "900",
-  },
-
-  statDescription: {
-    margin: 0,
-    color: "#6b625c",
-    fontSize: "12px",
-  },
-sectionHeader: {
-  background: "white",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  marginBottom: "14px",
-  paddingBottom: "12px",
-},
-  sectionTitle: {
-    margin: 0,
-    color: "#2b160c",
-    fontSize: "20px",
-   textAlign: "center",
-    fontWeight: "900",
-  },
-
-  legend: {
-    display: "flex",
-    gap: "16px",
-    color: "#4b3b31",
-    fontSize: "13px",
-    fontWeight: "800",
   },
 
   errorBox: {
@@ -427,170 +444,173 @@ sectionHeader: {
     backgroundColor: "#fde8e8",
     color: "#b42318",
     fontSize: "14px",
-    marginBottom: "18px",
   },
 
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.42)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-    padding: "20px",
-  },
-
-  modalContent: {
-    width: "100%",
-    maxWidth: "560px",
+  // ── Map section ──
+  mapSection: {
     background: "white",
-    borderRadius: "24px",
-    padding: "24px",
-    boxShadow: "0 24px 80px rgba(0,0,0,0.18)",
+    border: "1px solid #f0e5d8",
+    borderRadius: "20px",
+    padding: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    height: "100%",    
   },
- mapSection: {
-  background: "white",
-  border: "1px solid #f0e5d8",
-  borderRadius: "20px",
-  padding: "12px",
-  height: "calc(100vh - 40px)",
-  display: "flex",
-  flexDirection: "column",
-  overflow: "hidden",
-},
-mapLayout: {
-  display: "grid",
-  gridTemplateColumns: "1fr 300px",
-  gap: "20px",
-  height: "100%",
-},
-controlPanel: {
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-},
 
-mapTopBar: {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: "12px",
-  marginBottom: "12px",
-  flexWrap: "wrap",
-},
+  sectionTitle: {
+    margin: 0,
+    color: "#2b160c",
+    fontSize: "18px",
+    fontWeight: "900",
+  },
 
-mapFilters: {
-  display: "flex",
-  gap: "10px",
-  flexWrap: "wrap",
-},
+  filterRow: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+  },
 
-filterButton: {
-  border: "1px solid #f3c49a",
-  background: "#fffaf4",
-  color: "#2b160c",
-  borderRadius: "999px",
-  padding: "10px 18px",
-  fontWeight: "900",
-  cursor: "pointer",
-},
+  filterButton: {
+    border: "1px solid #f3c49a",
+    background: "#fffaf4",
+    color: "#2b160c",
+    borderRadius: "999px",
+    padding: "8px 16px",
+    fontWeight: "900",
+    fontSize: "13px",
+    cursor: "pointer",
+  },
 
-filterButtonActive: {
-  background: "#ea580c",
-  color: "white",
-  borderColor: "#ea580c",
-},
+  filterButtonActive: {
+    background: "#ea580c",
+    color: "white",
+    borderColor: "#ea580c",
+  },
 
 mapBox: {
-  flex: 1,
-  height: "100%",
-  minHeight: 0,
-  width: "100%",
+  height: window.innerWidth <= 900 ? "280px" : "520px",
   borderRadius: "16px",
   overflow: "hidden",
   border: "1px solid #eadfd2",
 },
-sendFormCard: {
-  marginTop: "10px",
-  background: "#fffaf4",
-  border: "1px solid #f0e5d8",
-  borderRadius: "18px",
-  padding: "18px",
+
+
+
+
+
+  // ── Bottom two-column grid ──
+  bottomGrid: {
+    display: "grid",
+    gridTemplateColumns: "300px 1fr",
+    gap: "16px",
+    alignItems: "start",
+  },
+
+  formCard: {
+    background: "white",
+    border: "1px solid #f0e5d8",
+    borderRadius: "20px",
+    padding: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
+
+  trackCard: {
+    background: "white",
+    border: "1px solid #f0e5d8",
+    borderRadius: "20px",
+    padding: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
+
+  trackHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+  },
+
+  sortSelect: {
+    padding: "7px 10px",
+    borderRadius: "10px",
+    border: "1px solid #d8d2ca",
+    background: "#ffffff",
+    color: "#2b160c",
+    fontSize: "13px",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+
+  tableWrapper: {
+    overflowX: "auto",
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "13px",
+  },
+
+  th: {
+    textAlign: "left",
+    padding: "8px 10px",
+    color: "#6b625c",
+    fontWeight: "800",
+    borderBottom: "1px solid #f0e5d8",
+    whiteSpace: "nowrap",
+  },
+
+  td: {
+    padding: "10px 10px",
+    color: "#2b160c",
+    borderBottom: "1px solid #f8f4f0",
+    verticalAlign: "middle",
+  },
+
+  tr: {
+    transition: "background 0.15s",
+  },
+
+  badge: {
+    display: "inline-block",
+    padding: "3px 10px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    textTransform: "capitalize",
+  },
+
+  emptyText: {
+    margin: 0,
+    color: "#7a6658",
+    fontSize: "14px",
+  },
+
+  mainGrid: {
+  display: "grid",
+  gridTemplateColumns: "40% 60%",
+  gap: "16px",
+},
+
+leftCol: {
   display: "flex",
   flexDirection: "column",
-  gap: "12px",
 },
 
-sendFormTitle: {
-  margin: 0,
-  textAlign: "center",
-  color: "#2b160c",
-  fontSize: "20px",
-  fontWeight: "900",
+rightCol: {
+  display: "flex",
+  flexDirection: "column",
+  gap: "16px",
 },
 
-createFormButton: {
-  border: "none",
-  borderRadius: "12px",
-  background: "#ea580c",
-  color: "white",
-  padding: "12px",
-  fontWeight: "900",
-  cursor: "pointer",
+tableScroll: {
+  maxHeight: window.innerWidth <= 900 ? "250px" : "400px",
+  overflowY: "auto",
 },
-
-copyLinkButton: {
-  border: "none",
-  borderRadius: "12px",
-  background: "#15803d",
-  color: "white",
-  padding: "12px",
-  fontWeight: "900",
-  cursor: "pointer",
-},
-
-
-phoneInput: {
-  width: "100%",
-  boxSizing: "border-box",
-  padding: "10px",
-  borderRadius: "10px",
-  border: "1px solid #d8d2ca",
-  marginTop: "10px",
-},
-
-quickFormActions: {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: "8px",
-  marginTop: "10px",
-},
-searchInput: {
-  width: "100%",
-  boxSizing: "border-box",
-  padding: "10px",
-  borderRadius: "10px",
-  border: "1px solid #d8d2ca",
-},
-tabActive: {
-  border: "none",
-  borderRadius: "999px",
-  padding: "6px 10px",
-  background: "#15803d",
-  color: "white",
-  fontWeight: "800",
-},
-
-tabButton: {
-  border: "none",
-  borderRadius: "999px",
-  padding: "6px 10px",
-  background: "#eee",
-  color: "#4b3b31",
-  fontWeight: "800",
-},
-
 };
 
 export default DashboardView;

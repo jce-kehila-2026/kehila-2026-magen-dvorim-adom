@@ -1,36 +1,38 @@
-// Volunteer dashboard interface.
-// Shows assigned cases and volunteer statistics.
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import "./VolunteerDashboard.css";
 
+
 function VolunteerDashboardView({
   userProfile,
-  stats,
-  recentCases = [],
+  activeCase,
+  completedCount,
   loading,
   error,
   handleLogout,
+  onCaseClick,
+  onHistoryClick,
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const currentCase = recentCases[0];
 
   const goTo = (path) => {
     setMenuOpen(false);
     navigate(path);
   };
 
+  const volunteerArea =
+    userProfile?.city ||
+    userProfile?.area ||
+    userProfile?.region ||
+    "Not set";
+
   return (
     <div className="volunteer-page" style={styles.page}>
       {menuOpen && (
-        <div
-          className="mobile-overlay"
-          onClick={() => setMenuOpen(false)}
-        />
+        <div className="mobile-overlay" onClick={() => setMenuOpen(false)} />
       )}
 
       <aside
@@ -39,7 +41,6 @@ function VolunteerDashboardView({
       >
         <div className="volunteer-brand" style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
-
           <div>
             <h2 style={styles.brandTitle}>Magen Dvorim Adom</h2>
             <p style={styles.brandSub}>
@@ -65,11 +66,7 @@ function VolunteerDashboardView({
           </button>
         </nav>
 
-        <button
-          className="logout-button"
-          style={styles.logoutButton}
-          onClick={handleLogout}
-        >
+        <button style={styles.logoutButton} onClick={handleLogout}>
           Logout
         </button>
       </aside>
@@ -83,166 +80,149 @@ function VolunteerDashboardView({
           >
             ☰
           </button>
-
-          <img src={logo} alt="Magen Dvorim Adom" className="mobile-logo" />
-
-          <span className="mobile-title">Volunteer</span>
+          <img
+            src={logo}
+            alt="Magen Dvorim Adom"
+            className="mobile-logo"
+            style={{ width: "80px", height: "80px" }}
+          />
         </div>
 
         <section className="content-card" style={styles.contentCard}>
           <header style={styles.header}>
-            <h1 className="volunteer-title" style={styles.title}>
+            <h1 style={styles.title}>
               Welcome back,
-              <span style={styles.userName}>
-                {" "}
-                {userProfile?.full_name || "Volunteer"}
-              </span>
             </h1>
+
+            <h2 style={styles.bigName}>
+              {userProfile?.full_name || "Volunteer"}
+            </h2>
           </header>
 
           {error && <div style={styles.errorBox}>{error}</div>}
+{loading ? (
+  <div style={styles.loading}>Loading your dashboard...</div>
+) : (
+  <>
+    {/* PRIMARY CARD */}
+    <ActiveCaseCard
+      activeCase={activeCase}
+      onClick={() => navigate("/my-cases")}
+    />
 
-          {loading && (
-            <div style={styles.loading}>Loading your dashboard...</div>
-          )}
+    {/* SECONDARY GRID */}
+    <div className="dashboard-grid" style={styles.cardGrid}>
+      <ClickableCard
+        title="Completed Cases"
+        value={completedCount}
+        valueColor="#15803d"
+        subtitle="View history"
+        onClick={onHistoryClick}
+      />
 
-          {!loading && !error && (
-            <>
-              <div className="stats-grid" style={styles.statsGrid}>
-                <StatCard
-                  title="Assigned Cases"
-                  value={stats.openCases}
-                  tone="orange"
-                />
-
-                <StatCard
-                  title="Completed Cases"
-                  value={stats.completedRescues}
-                  tone="green"
-                />
-
-                <StatCard
-                  className="latest-city-card"
-                  title="Latest City"
-                  value={currentCase?.city || "None"}
-                  tone="neutral"
-                />
-              </div>
-
-              <div className="dashboard-grid" style={styles.dashboardGrid}>
-                <section style={styles.currentCard}>
-                  <div style={styles.sectionHeader}>
-                    <h3 style={styles.sectionTitle}>Current Assignment</h3>
-
-                    {currentCase && (
-                      <span style={styles.statusBadge}>
-                        {currentCase.status || "assigned"}
-                      </span>
-                    )}
-                  </div>
-
-                  {!currentCase ? (
-                    <p style={styles.emptyText}>
-                      No active assignments right now.
-                    </p>
-                  ) : (
-                    <>
-                      <div style={styles.caseInfo}>
-                        <p style={styles.caseCity}>
-                          {currentCase.city || "Unknown city"}
-                        </p>
-
-                        <p style={styles.caseDescription}>
-                          {currentCase.description ||
-                            "No description provided."}
-                        </p>
-
-                        <div style={styles.caseDetails}>
-                          <span>
-                            Requester:{" "}
-                            <strong>
-                              {currentCase.requester_first_name || ""}{" "}
-                              {currentCase.requester_last_name || ""}
-                            </strong>
-                          </span>
-
-                          <span>
-                            Phone:{" "}
-                            <strong>
-                              {currentCase.requester_phone || "Not provided"}
-                            </strong>
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        style={styles.primaryButton}
-                        onClick={() => navigate("/my-cases")}
-                      >
-                        View case details
-                      </button>
-                    </>
-                  )}
-                </section>
-
-                <section style={styles.recentCard}>
-                  <h3 style={styles.sectionTitle}>Recent Assignments</h3>
-
-                  {recentCases.length === 0 ? (
-                    <p style={styles.emptyText}>
-                      Your recent assignments will appear here.
-                    </p>
-                  ) : (
-                    <div style={styles.recentList}>
-                      {recentCases.slice(0, 4).map((caseItem) => (
-                        <div key={caseItem.id} style={styles.recentItem}>
-                          <div>
-                            <strong style={styles.recentCity}>
-                              {caseItem.city || "Unknown city"}
-                            </strong>
-
-                            <p style={styles.recentName}>
-                              {caseItem.requester_first_name}{" "}
-                              {caseItem.requester_last_name}
-                            </p>
-                          </div>
-
-                          <span style={styles.recentStatus}>
-                            {caseItem.status || "assigned"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              </div>
-            </>
-          )}
+      <InfoCard
+        title="Your Area"
+        value={`${volunteerArea}`}
+        valueColor="#6598ad"
+      />
+    </div>
+  </>
+)}
         </section>
       </main>
     </div>
   );
 }
 
-function StatCard({ title, value, tone, className = "" }) {
-  const toneStyle =
-    tone === "orange"
-      ? styles.orangeTone
-      : tone === "green"
-      ? styles.greenTone
-      : styles.neutralTone;
+// ─── Active Case Card ─────────────────────────────────────────────────────────
+
+function ActiveCaseCard({ activeCase, onClick }) {
+  const hasCase = !!activeCase;
 
   return (
-    <div className={className} style={styles.statCard}>
-      <span style={{ ...styles.statIndicator, background: toneStyle.color }} />
-
-      <div>
-        <h3 style={styles.statTitle}>{title}</h3>
-        <p style={{ ...styles.statValue, color: toneStyle.color }}>{value}</p>
+    <div
+      style={{
+        ...styles.card,
+        padding: "28px",
+        marginBottom: "20px",
+        fontSize: "16px",
+        cursor: hasCase ? "pointer" : "default",
+        borderColor: hasCase ? "#fbbf24" : "#f0e5d8",
+      }}
+      onClick={hasCase ? onClick : undefined}
+      title={hasCase ? "Click to view case details" : undefined}
+    >
+      <div style={styles.cardIconRow}>
+        <span
+          style={{
+            ...styles.dot,
+            background: hasCase ? "#d97706" : "#9ca3af",
+          }}
+        />
+        <span
+          style={{
+            ...styles.cardLabel,
+            color: hasCase ? "#d97706" : "#6b625c",
+          }}
+        >
+          {hasCase
+            ? "You have an active case"
+            : "No assigned case at the moment"}
+        </span>
       </div>
+
+        {!hasCase && (
+          <p style={{ ...styles.caseDesc, textAlign: "left" }}>
+            You'll be notified by a coordinator when you're assigned to a case.
+          </p>
+        )}
+
+
+      {hasCase && (
+        <div style={styles.caseSnippet}>
+          <p style={styles.caseCity}>
+            {activeCase.city || "Unknown location"}
+          </p>
+          <p style={styles.caseDesc}>
+            {activeCase.case_complexity
+              ? `Complexity: ${activeCase.case_complexity.charAt(0).toUpperCase() + activeCase.case_complexity.slice(1)}`
+              : "Complexity: Not specified"}
+          </p>
+          <span style={styles.tapHint}>
+              Tap to view your case →
+            </span>
+        </div>
+      )}
     </div>
   );
 }
+
+// ─── Clickable stat card ──────────────────────────────────────────────────────
+
+function ClickableCard({ title, value, valueColor, subtitle, onClick }) {
+  return (
+    <div style={{ ...styles.card, cursor: "pointer" }} onClick={onClick}>
+      <p style={styles.cardTitle}>{title}</p>
+      <p style={{ ...styles.cardValue, color: valueColor }}>
+        {value} cases
+      </p>
+      {subtitle && <p style={styles.cardSubtitle}>{subtitle} →</p>}
+    </div>
+  );
+}
+
+// ─── Info card ────────────────────────────────────────────────────────────────
+
+function InfoCard({ title, value, valueColor }) {
+  return (
+    <div style={styles.card}>
+      <p style={styles.cardTitle}>{title}</p>
+      <p style={{ ...styles.cardValue, color: valueColor }}>{value}</p>
+    </div>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = {
   page: {
@@ -250,9 +230,8 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "240px 1fr",
     background: "#fffdf8",
-    fontFamily: "Arial, sans-serif",
-  },
 
+  },
   sidebar: {
     height: "100vh",
     position: "sticky",
@@ -264,39 +243,16 @@ const styles = {
     display: "flex",
     flexDirection: "column",
   },
-
   brand: {
     display: "flex",
     alignItems: "center",
     gap: "12px",
     marginBottom: "36px",
   },
-
-  logo: {
-    width: "50px",
-    height: "50px",
-    objectFit: "contain",
-  },
-
-  brandTitle: {
-    margin: 0,
-    color: "#2b160c",
-    fontSize: "16px",
-    fontWeight: "900",
-  },
-
-  brandSub: {
-    margin: "4px 0 0",
-    color: "#ff6f0f",
-    fontSize: "13px",
-  },
-
-  nav: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-
+  logo: { width: "50px", height: "50px", objectFit: "contain" },
+  brandTitle: { margin: 0, color: "#2b160c", fontSize: "16px", fontWeight: "900" },
+  brandSub: { margin: "4px 0 0", color: "#ff6f0f", fontSize: "13px" },
+  nav: { display: "flex", flexDirection: "column", gap: "10px" },
   navItem: {
     border: "none",
     background: "transparent",
@@ -307,12 +263,7 @@ const styles = {
     fontWeight: "800",
     cursor: "pointer",
   },
-
-  navItemActive: {
-    background: "#fff1df",
-    color: "#ff6f0f",
-  },
-
+  navItemActive: { background: "#fff1df", color: "#ff6f0f" },
   logoutButton: {
     marginTop: "auto",
     border: "none",
@@ -323,219 +274,72 @@ const styles = {
     fontWeight: "800",
     cursor: "pointer",
   },
-
-  main: {
-    padding: "28px",
-    boxSizing: "border-box",
-  },
-
+  main: { padding: "28px", boxSizing: "border-box" },
   contentCard: {
     background: "white",
     borderRadius: "22px",
     padding: "28px",
     border: "1px solid #f2e7dc",
     boxShadow: "0 16px 50px rgba(43, 22, 12, 0.05)",
+    minHeight: "70vh",
   },
-
-  header: {
-    marginBottom: "24px",
-  },
-
+  header: { marginBottom: "24px" },
   title: {
-    margin: 0,
-    color: "#2b160c",
-    fontSize: "30px",
-    fontWeight: "900",
-  },
-
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(180px, 1fr))",
-    gap: "14px",
-    marginBottom: "22px",
-  },
-
-  statCard: {
-    background: "#fffdf8",
-    border: "1px solid #f0e5d8",
-    borderRadius: "18px",
-    padding: "18px",
+  margin: 0,
+  color: "#2b160c",
+  fontSize: "26px",
+  fontWeight: "800",
+  textAlign: "left",   
+},
+  
+  userName: { color: "#ff6f0f" },
+ cardGrid: {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(160px, 1fr))",
+  gap: "16px",
+},
+card: {
+  background: "#fffdf8",
+  border: "1px solid #f0e5d8",
+  borderRadius: "20px",
+  padding: "24px",
+  minHeight: "120px",  // ✅ ADD
+  display: "flex",     // ✅ optional polish
+  flexDirection: "column",
+  justifyContent: "center",
+},
+  cardIconRow: {
     display: "flex",
     alignItems: "center",
-    gap: "14px",
-  },
-
-  statIndicator: {
-    width: "10px",
-    height: "38px",
-    borderRadius: "999px",
-    display: "inline-block",
-  },
-
-  statTitle: {
-    margin: 0,
-    color: "#6b625c",
-    fontSize: "13px",
-    fontWeight: "800",
-  },
-
-  statValue: {
-    margin: "5px 0 0",
-    fontSize: "24px",
-    fontWeight: "800",
-  },
-
-  orangeTone: {
-    color: "#d97706",
-  },
-
-  greenTone: {
-    color: "#15803d",
-  },
-
-  neutralTone: {
-    color: "#6598ad",
-  },
-
-  userName: {
-    color: "#ff6f0f",
-  },
-
-  dashboardGrid: {
-    display: "grid",
-    gridTemplateColumns: "1.4fr 1fr",
-    gap: "18px",
-  },
-
-  currentCard: {
-    background: "#fffdf8",
-    border: "1px solid #f0e5d8",
-    borderRadius: "20px",
-    padding: "24px",
-  },
-
-  recentCard: {
-    background: "#fffdf8",
-    border: "1px solid #f0e5d8",
-    borderRadius: "20px",
-    padding: "24px",
-  },
-
-  sectionHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "12px",
-    marginBottom: "18px",
-  },
-
-  sectionTitle: {
-    margin: 0,
-    color: "#2b160c",
-    fontSize: "18px",
-    fontWeight: "900",
-  },
-
-  statusBadge: {
-    background: "#fff1df",
-    color: "#ff6f0f",
-    borderRadius: "999px",
-    padding: "6px 12px",
-    fontSize: "12px",
-    fontWeight: "800",
-    textTransform: "capitalize",
-  },
-
-  caseInfo: {
-    marginBottom: "22px",
-  },
-
-  caseCity: {
-    margin: "0 0 8px",
-    color: "#2b160c",
-    fontSize: "24px",
-    fontWeight: "900",
-  },
-
-  caseDescription: {
-    margin: "0 0 18px",
-    color: "#6b625c",
-    fontSize: "14px",
-    lineHeight: 1.6,
-  },
-
-  caseDetails: {
-    display: "grid",
-    gap: "8px",
-    color: "#3d332b",
-    fontSize: "14px",
-  },
-
-  primaryButton: {
-    border: "none",
-    background: "#ff6f0f",
-    color: "white",
-    borderRadius: "12px",
-    padding: "11px 16px",
-    fontWeight: "900",
-    cursor: "pointer",
-  },
-
-  recentList: {
-    display: "grid",
     gap: "10px",
+    marginBottom: "12px",
   },
 
-  recentItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px 0",
-    borderTop: "1px solid #f1ebe5",
-  },
+bigName: {
+  margin: "4px 0 20px",
+  fontSize: "36px",
+  fontWeight: "900",
+  color: "#ff6f0f",
+  textAlign: "left",   
+},
 
-  recentCity: {
-    color: "#2b160c",
-    fontSize: "14px",
-  },
-
-  recentName: {
-    margin: "4px 0 0",
-    color: "#7a6658",
-    fontSize: "13px",
-  },
-
-  recentStatus: {
-    background: "#f8efe5",
-    color: "#9a3412",
-    borderRadius: "999px",
-    padding: "5px 10px",
-    fontSize: "12px",
-    fontWeight: "800",
-    textTransform: "capitalize",
-    whiteSpace: "nowrap",
-  },
-
-  emptyText: {
-    margin: 0,
-    color: "#7a6658",
-    fontSize: "14px",
-    lineHeight: 1.6,
-  },
-
-  loading: {
-    padding: "20px",
-    color: "#6b625c",
-    textAlign: "center",
-  },
-
+  dot: { width: "10px", height: "10px", borderRadius: "50%", flexShrink: 0 },
+  cardLabel: { fontSize: "14px", fontWeight: "800", margin: 0 },
+  caseSnippet: { marginTop: "4px" },
+  caseCity: { margin: "0 0 4px", color: "#2b160c", fontSize: "18px", fontWeight: "900" },
+  caseDesc: { margin: "0 0 10px", color: "#6b625c", fontSize: "13px", lineHeight: 1.5 },
+  tapHint: { fontSize: "12px", color: "#d97706", fontWeight: "800" },
+  cardTitle: { margin: "0 0 8px", color: "#6b625c", fontSize: "13px", fontWeight: "800" },
+  cardValue: { margin: "0 0 4px", fontSize: "28px", fontWeight: "900" },
+  cardSubtitle: { margin: 0, fontSize: "12px", color: "#d97706", fontWeight: "800" },
+  loading: { padding: "20px", color: "#6b625c", textAlign: "center" },
   errorBox: {
     background: "#fee2e2",
     color: "#991b1b",
     borderRadius: "12px",
     padding: "12px",
     marginBottom: "16px",
+    fontSize: "14px",
   },
 };
 
