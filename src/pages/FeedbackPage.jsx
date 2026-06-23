@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { submitFeedback } from "../services/feedbackService";
+import { submitFeedback, checkFeedbackStatus } from "../services/feedbackService";
 import logo from "../assets/logo.png";
 
 function FeedbackPage() {
@@ -16,9 +16,28 @@ function FeedbackPage() {
     comments: "",
   });
 
-  const [touched, setTouched] = useState({});
+const [touched, setTouched] = useState({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const status = await checkFeedbackStatus(token);
+        if (status.feedback_submitted) {
+          setSubmitted(true);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkStatus();
+  }, [token]);
 
   const t = {
     he: {
@@ -45,7 +64,42 @@ function FeedbackPage() {
     },
   };
 
-  const txt = t[language];
+const txt = t[language];
+
+  if (checkingStatus) {
+    return (
+      <div style={styles.page} dir={language === "he" ? "rtl" : "ltr"}>
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <img src={logo} alt="logo" style={styles.logo} />
+            <p style={styles.subtitle}>
+              {language === "he" ? "טוען..." : "Loading..."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div style={styles.page} dir={language === "he" ? "rtl" : "ltr"}>
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <img src={logo} alt="logo" style={styles.logo} />
+            <h1 style={styles.title}>
+              {language === "he" ? "תודה על המשוב!" : "Thank you for your feedback!"}
+            </h1>
+            <p style={styles.subtitle}>
+              {language === "he"
+                ? "המשוב שלך התקבל בהצלחה."
+                : "Your feedback has been received."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,9 +116,9 @@ function FeedbackPage() {
 
     setError("");
     setLoading(true);
-
-    try {
+try {
       await submitFeedback({ token, data: form });
+      setSubmitted(true);
     } catch (err) {
       setError(err.message);
     } finally {

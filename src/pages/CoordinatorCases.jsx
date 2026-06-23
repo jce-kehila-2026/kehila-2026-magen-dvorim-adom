@@ -1,15 +1,19 @@
-import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import CasesView from "../components/views/CasesView";
 import { recommendVolunteersForCase } from "../services/recommendationService";
 import { logoutUser } from "../services/authService";
-
 import {
   getCasesForCoordinatorById,
   getAllCases,
   updateCaseStatus,
+  updateCaseComplexity,
+  updateCaseCoordinator,
   attachFeedbackToken,
 } from "../services/caseService";
+
+import { getFeedbackByCaseIds } from "../services/feedbackService";
+
+import { useEffect, useState } from "react";
 
 import {
   getAssignableUsers,
@@ -30,7 +34,17 @@ function CoordinatorCases() {
 
   const [activeFilter, setActiveFilter] = useState("open");
   const [caseSearch, setCaseSearch] = useState("");
-  const [sortMode, setSortMode] = useState("newest");
+  const [sortColumn, setSortColumn] = useState("opened_at");
+  const [sortDirection, setSortDirection] = useState("desc");
+
+  const handleSortClick = (column) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
 
   const [detailsCase, setDetailsCase] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
@@ -45,6 +59,14 @@ function CoordinatorCases() {
     notes: "",
   });
 
+  const [closingCase, setClosingCase] = useState({
+    caseId: null,
+    result_status: "evacuated_by_volunteer",
+    notes: "",
+  });
+
+  const [feedbackByCase, setFeedbackByCase] = useState({});
+  
   const currentUserId = userProfile?.uid || null;
   const currentUserRole = userProfile?.role || "";
   const currentUserName =
@@ -91,39 +113,42 @@ function CoordinatorCases() {
         data = await getCasesForCoordinatorById(currentUserId);
       }
 
-      setCases(data || []);
+    setCases(data || []);
 
       const assignmentMap = await getAssignmentsByCaseIds(
         (data || []).map((item) => item.id)
       );
 
       setAssignments(assignmentMap || {});
+
+      const feedbackMap = await getFeedbackByCaseIds(
+        (data || []).map((item) => item.id)
+      );
+
+      setFeedbackByCase(feedbackMap || {});
     } catch (err) {
       setError(err.message || "Failed to load cases.");
     }
   };
-
+  
   const refreshData = async () => {
     await loadCases();
     await loadUsers();
   };
 
-  const formatDate = (timestamp) => {
-  if (!timestamp) return "—";
+const formatDate = (timestamp) => {
+    if (!timestamp) return "—";
 
-  const date = timestamp.toDate
-    ? timestamp.toDate()
-    : new Date(timestamp);
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
 
-  const day = date.getDate();
-  const month = date.getMonth() + 1;
-  const year = date.getFullYear();
-
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
-};
+    return date.toLocaleDateString("en-GB", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   const FINISHING_STATUSES = [
     { value: "evacuated_by_volunteer", label: "Evacuated by a volunteer" },
@@ -140,8 +165,19 @@ function CoordinatorCases() {
     return option ? option.label : value || "Not specified";
   };
 
-  const activeCases = cases.filter((caseItem) => caseItem.status !== "closed");
-  const closedCases = cases.filter((caseItem) => caseItem.status === "closed");
+const activeCases = cases.filter((caseItem) => caseItem.status !== "closed");
+const closedCases = cases.filter((caseItem) => caseItem.status === "closed");
+
+// ✅ quick lookup: user ID → full user object (used to show coordinator's name)
+const usersById = users.reduce((acc, user) => {
+  acc[user.id] = user;
+  return acc;
+}, {});
+
+// ✅ who's allowed to be picked as a case's coordinator (admin can act as coordinator too)
+const coordinatorOptions = users.filter(
+  (user) => user.role === "coordinator" || user.role === "admin"
+);
 
   const getAssignedUsersForCase = (caseItem) => {
     const caseAssignments = assignments[caseItem.id] || [];
@@ -162,11 +198,11 @@ function CoordinatorCases() {
   };
 
   const openCases =
-    currentUserRole === "admin"
-      ? activeCases.filter((caseItem) => caseItem.status === "open")
-      : activeCases.filter(
-          (caseItem) => caseItem.status === "open" && !caseItem.coordinator_id
-        );
+  currentUserRole === "admin"
+    ? activeCases.filter((caseItem) => caseItem.status === "open")
+    : activeCases.filter(
+        (caseItem) => caseItem.status === "open" && isMyCoordinatorCase(caseItem)
+      );
 
   const myCases = activeCases.filter((caseItem) =>
   (assignments[caseItem.id] || []).some(
@@ -204,9 +240,10 @@ function CoordinatorCases() {
     medium: 2,
     low: 1,
   };
-
-  const baseCases =
-  activeFilter === "open"
+const baseCases =
+  activeFilter === "all"
+    ? cases
+    : activeFilter === "open"
     ? openCases
     : activeFilter === "assigned"
     ? assignedCases
@@ -234,18 +271,25 @@ function CoordinatorCases() {
         (caseItem.urgency || "").toLowerCase().includes(search)
       );
     })
-    .sort((a, b) => {
-      if (sortMode === "oldest") {
-        return getCaseTime(a) - getCaseTime(b);
+   .sort((a, b) => {
+      let result = 0;
+
+      if (sortColumn === "name") {
+        const nameA = `${a.requester_first_name || ""} ${a.requester_last_name || ""}`
+          .trim()
+          .toLowerCase();
+        const nameB = `${b.requester_first_name || ""} ${b.requester_last_name || ""}`
+          .trim()
+          .toLowerCase();
+        result = nameA.localeCompare(nameB);
+      } else if (sortColumn === "phone") {
+        result = (a.requester_phone || "").localeCompare(b.requester_phone || "");
+      } else {
+        result = getCaseTime(a) - getCaseTime(b);
       }
 
-      if (sortMode === "urgency") {
-        return (urgencyRank[b.urgency] || 0) - (urgencyRank[a.urgency] || 0);
-      }
-
-      return getCaseTime(b) - getCaseTime(a);
+      return sortDirection === "asc" ? result : -result;
     });
-
  const assignedUserIds = Object.entries(assignments).reduce(
   (acc, [caseId, assignmentList]) => {
     if (!Array.isArray(assignmentList)) {
@@ -310,16 +354,21 @@ function CoordinatorCases() {
     return text.includes(userSearch.toLowerCase());
   });
    
-  const beginCloseCase = async (caseId) => {
-  const confirmed = window.confirm("Are you sure you want to close this case?");
-  if (!confirmed) return;
+const beginCloseCase = (caseId) => {
+  setClosingCase({ caseId, result_status: "evacuated_by_volunteer", notes: "" });
+};
 
+const cancelCloseCase = () => {
+  setClosingCase({ caseId: null, result_status: "evacuated_by_volunteer", notes: "" });
+};
+
+const confirmCloseCase = async () => {
   setError("");
 
   try {
-    await updateCaseStatus(caseId, "closed", {
-      result_status: "evacuated_by_volunteer",
-      result_notes: null,
+    await updateCaseStatus(closingCase.caseId, "closed", {
+      result_status: closingCase.result_status,
+      result_notes: closingCase.notes || null,
       closed_by: {
         user_id: userProfile?.uid || null,
         full_name: userProfile?.full_name || userProfile?.email || "Unknown",
@@ -327,6 +376,7 @@ function CoordinatorCases() {
       },
     });
 
+    cancelCloseCase();
     await loadCases();
   } catch (err) {
     setError(err.message || "Failed to close case.");
@@ -433,7 +483,27 @@ const handleSendFeedback = async (caseItem) => {
   }
 };
 
-  const handleGetRecommendations = (caseItem) => {
+  const handleChangeComplexity = async (caseId, newComplexity) => {
+  setError("");
+  try {
+    await updateCaseComplexity(caseId, newComplexity);
+    await loadCases();
+  } catch (err) {
+    setError(err.message || "Failed to update complexity.");
+  }
+};
+
+const handleChangeCoordinator = async (caseId, newCoordinatorId) => {
+  setError("");
+  try {
+    await updateCaseCoordinator(caseId, newCoordinatorId);
+    await loadCases();
+  } catch (err) {
+    setError(err.message || "Failed to update coordinator.");
+  }
+};
+
+const handleGetRecommendations = (caseItem) => {
     if (!caseItem) return;
 
     const result = recommendVolunteersForCase({
@@ -450,7 +520,6 @@ const handleSendFeedback = async (caseItem) => {
 };
  return (
   <CasesView
-    userProfile={userProfile}
     currentUserRole={currentUserRole}
     currentUserName={currentUserName}
     handleLogout={handleLogout}
@@ -464,8 +533,9 @@ const handleSendFeedback = async (caseItem) => {
     setActiveFilter={setActiveFilter}
     caseSearch={caseSearch}
     setCaseSearch={setCaseSearch}
-    sortMode={sortMode}
-    setSortMode={setSortMode}
+    sortColumn={sortColumn}
+    sortDirection={sortDirection}
+    handleSortClick={handleSortClick}
     error={error}
     assignments={assignments}
     detailsCase={detailsCase}
@@ -480,12 +550,22 @@ const handleSendFeedback = async (caseItem) => {
     assigning={assigning}
     PRESET_EQUIPMENT={PRESET_EQUIPMENT}
     beginCloseCase={beginCloseCase}
+    cancelCloseCase={cancelCloseCase}
+    confirmCloseCase={confirmCloseCase}
+    closingCase={closingCase}
+    setClosingCase={setClosingCase}
+    FINISHING_STATUSES={FINISHING_STATUSES}
     handleAssignFromModal={handleAssignFromModal}
     handleGetRecommendations={handleGetRecommendations}
     handleReopenCase={handleReopenCase}
     handleSendFeedback={handleSendFeedback}
     formatDate={formatDate}
     getResultLabel={getResultLabel}
+    usersById={usersById}
+    coordinatorOptions={coordinatorOptions}
+handleChangeComplexity={handleChangeComplexity}
+    handleChangeCoordinator={handleChangeCoordinator}
+    feedbackByCase={feedbackByCase}
   />
 );
    

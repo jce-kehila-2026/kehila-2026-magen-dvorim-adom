@@ -3,6 +3,7 @@ import {
   addDoc,
   Timestamp,
   getDocs,
+  getDoc,
   query,
   where,
   doc,
@@ -39,19 +40,18 @@ async function hasOpenCase(requester_phone) {
   const snap = await getDocs(collection(db, "cases"));
 
   for (const docItem of snap.docs) {
-  const data = docItem.data();
+    const data = docItem.data();
 
-  // ✅ PROTECT AGAINST BAD DATA
-  if (!data) continue;
+    // ✅ PROTECT AGAINST BAD DATA
+    if (!data) continue;
 
-  if (
-    data.requester_phone === requester_phone &&
-    (data.status === "open" || data.status === "in_progress")
-  ) {
-    return true;
+    if (
+      data.requester_phone === requester_phone &&
+      (data.status === "open" || data.status === "assigned")
+    ) {
+      return true;
+    }
   }
-}
-
 
   return false;
 }
@@ -107,9 +107,8 @@ const docRef = await addDoc(collection(db, "cases"), {
   image_urls: data.image_urls || [], // ✅ ensure saved
   ...(geoLocation || {}),
   status: "open",
-  result: null,
-  opened_at: Timestamp.now(),
-  closed_at: null,
+opened_at: Timestamp.now(),
+closed_at: null,
 });
 
 return docRef.id;
@@ -164,16 +163,29 @@ export async function getAllCases() {
   return casesSnap.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() }));
 }
 
+const COORDINATOR_EDITABLE_STATUSES = ["open", "assigned"];
+
 export async function updateCaseCoordinator(caseId, coordinatorId) {
   if (!caseId) {
     throw new Error("Case ID is required.");
   }
-
   if (!coordinatorId) {
     throw new Error("Coordinator ID is required.");
   }
 
   const ref = doc(db, "cases", caseId);
+
+  // ✅ check the case is still open/assigned before allowing the change
+  const caseSnap = await getDoc(ref);
+  if (!caseSnap.exists()) {
+    throw new Error("Case not found.");
+  }
+
+  const currentStatus = caseSnap.data().status;
+  if (!COORDINATOR_EDITABLE_STATUSES.includes(currentStatus)) {
+    throw new Error("Coordinator can only be changed for open or assigned cases.");
+  }
+
   await updateDoc(ref, {
     coordinator_id: coordinatorId,
     updated_at: Timestamp.now(),
@@ -251,7 +263,7 @@ export async function getCasesForVolunteer(volunteerId) {
 /**
  * Update case status
  */
-const ALLOWED_STATUSES = ["open", "in_progress", "assigned", "closed"];
+const ALLOWED_STATUSES = ["open","assigned", "closed"];
 
 export async function updateCaseStatus(caseId, newStatus, extra = {}) {
   // ✅ VALIDATE STATUS
@@ -285,6 +297,17 @@ export async function updateCaseComplexity(caseId, newComplexity) {
   }
 
   const ref = doc(db, "cases", caseId);
+
+  // ✅ only allow editing complexity while the case is still open
+  const caseSnap = await getDoc(ref);
+  if (!caseSnap.exists()) {
+    throw new Error("Case not found.");
+  }
+
+  if (caseSnap.data().status !== "open") {
+    throw new Error("Complexity can only be changed while the case is open.");
+  }
+
   await updateDoc(ref, {
     case_complexity: newComplexity,
   });

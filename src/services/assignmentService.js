@@ -88,7 +88,7 @@ export async function getVolunteerAssignmentStats(user_id) {
 
     if (caseData.status === "closed") {
       completedRescues += 1;
-    } else if (["open", "assigned", "in_progress"].includes(caseData.status)) {
+    } else if (["open", "assigned"].includes(caseData.status)) {
       assignedCases += 1;
     }
   });
@@ -135,6 +135,15 @@ export async function assignUserToCase({
   required_equipment = [],
   notes = null,
 }) {
+  // ✅ block a 2nd volunteer from being assigned to the same case
+  const existingForCase = await getDocs(
+    query(collection(db, "assignments"), where("case_id", "==", case_id))
+  );
+
+  if (!existingForCase.empty) {
+    throw new Error("This case already has a volunteer assigned.");
+  }
+
   const activeAssignments = await getActiveUserAssignments(user_id);
 
   if (activeAssignments.length) {
@@ -162,8 +171,10 @@ export async function assignUserToCase({
 
   return ref.id;
 }
- 
 
+// 🔹 Removes ONE volunteer from a case.
+// If that was the only volunteer left, the case goes back to "open".
+// 👉 Use this for the normal "Unassign Volunteer" button.
 export async function removeAssignment(assignmentId, caseId) {
   await deleteDoc(doc(db, "assignments", assignmentId));
 
@@ -179,6 +190,9 @@ export async function removeAssignment(assignmentId, caseId) {
   }
 }
 
+// 🔸 EMERGENCY RESET — removes ALL volunteers from a case (even if there's more than one)
+// and forces the case back to "open" no matter what.
+// 👉 Don't use this for normal unassigning — only to fix a broken/conflicted case.
 export async function reopenCaseAndCleanConflicts(caseId) {
   const assignmentSnap = await getDocs(
     query(collection(db, "assignments"), where("case_id", "==", caseId))
@@ -203,4 +217,3 @@ export async function reopenCaseAndCleanConflicts(caseId) {
 
   return removed;
 }
-  
