@@ -46,7 +46,6 @@ function SubmitCase() {
     height_from_ground: "",
     floor: "",
     navigation_link: "",
-    urgency: "",
     first_seen: "",
     coordinator_phone: "",
     agreeToTerms: false,
@@ -78,13 +77,6 @@ function SubmitCase() {
       navLink: "קישור לניווט",
       navHint: "הדבק/י קישור מ-Google Maps או Waze",
       aboutBees: "פרטי הנחיל",
-      urgency: "רמת דחיפות",
-      urgencyLow: "נמוכה",
-      urgencyLowDesc: "ללא סכנה מיידית",
-      urgencyMed: "בינונית",
-      urgencyMedDesc: "רצוי לטפל בקרוב",
-      urgencyHigh: "גבוהה",
-      urgencyHighDesc: "סכנה מיידית",
       firstSeen: "כמה זמן הנחיל נמצא?",
       firstSeenUnknown: "לא בטוח/ה",
       firstSeen1d: "בערך יום",
@@ -128,13 +120,6 @@ function SubmitCase() {
       navLink: "Navigation link",
       navHint: "Paste a Google Maps or Waze link",
       aboutBees: "About the Bees",
-      urgency: "Urgency",
-      urgencyLow: "Low",
-      urgencyLowDesc: "No immediate danger",
-      urgencyMed: "Medium",
-      urgencyMedDesc: "Should be handled soon",
-      urgencyHigh: "High",
-      urgencyHighDesc: "Immediate danger",
       firstSeen: "How long have the bees been there?",
       firstSeenUnknown: "I'm not sure",
       firstSeen1d: "About 1 day",
@@ -186,7 +171,7 @@ function SubmitCase() {
   const handleBlur = (name) => setTouched(prev => ({ ...prev, [name]: true }));
 
   const isRequired = (field) => {
-    const required = ["requester_first_name", "requester_last_name", "requester_phone", "city", "street", "location_description", "height_from_ground", "floor", "urgency"];
+    const required = ["requester_first_name", "requester_last_name", "requester_phone", "city", "street", "location_description", "height_from_ground", "floor"];
     if (!coordinatorIdFromUrl) required.push("coordinator_phone");
     return required.includes(field);
   };
@@ -212,7 +197,7 @@ function SubmitCase() {
     e.preventDefault();
     setError("");
 
-    const allRequired = ["requester_first_name", "requester_last_name", "requester_phone", "city", "street", "location_description", "height_from_ground", "floor", "urgency"];
+    const allRequired = ["requester_first_name", "requester_last_name", "requester_phone", "city", "street", "location_description", "height_from_ground", "floor"];
     if (!coordinatorIdFromUrl) allRequired.push("coordinator_phone");
 
     const newTouched = {};
@@ -227,7 +212,7 @@ function SubmitCase() {
 
 
     const requesterPhone = normalizePhone(formData.requester_phone);
-    if (!formData.requester_first_name || !formData.requester_last_name || !requesterPhone || !formData.city || !formData.street || !formData.location_description || !formData.height_from_ground || !formData.floor || !formData.urgency) {
+    if (!formData.requester_first_name || !formData.requester_last_name || !requesterPhone || !formData.city || !formData.street || !formData.location_description || !formData.height_from_ground || !formData.floor) {
       setError(t.errorFillAll);
       return;
     }
@@ -271,7 +256,6 @@ function SubmitCase() {
         height_from_ground: Number(formData.height_from_ground),
         floor: formData.floor,
         navigation_link: formData.navigation_link.trim() || null,
-        urgency: formData.urgency,
         first_seen: formData.first_seen || null,
         image_urls: uploadedUrls,
         ...(coordinatorIdFromUrl
@@ -516,32 +500,7 @@ function SubmitCase() {
 
               <h2 style={styles.sectionTitle}>{t.aboutBees}</h2>
             </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>{t.urgency} <span style={styles.req}>*</span></label>
-              <div style={styles.urgencyRow}>
-                {[
-                  { value: "low", label: t.urgencyLow, desc: t.urgencyLowDesc, color: "#4A7C3F", bg: "#EEF5EA", border: "#A8D08A" },
-                  { value: "medium", label: t.urgencyMed, desc: t.urgencyMedDesc, color: "#C47A2A", bg: "#FEF3E2", border: "#F4A261" },
-                  { value: "high", label: t.urgencyHigh, desc: t.urgencyHighDesc, color: "#C13B3B", bg: "#FEF0F0", border: "#E07A7A" },
-                ].map(opt => (
-                  <div 
-                    key={opt.value} 
-                    onClick={() => { setFormData(prev => ({ ...prev, urgency: opt.value })); setTouched(prev => ({ ...prev, urgency: true })); }} 
-                    style={{ 
-                      ...styles.urgencyOption, 
-                      background: formData.urgency === opt.value ? opt.bg : "white", 
-                      borderColor: formData.urgency === opt.value ? opt.border : "#E8DEC0", 
-                      color: formData.urgency === opt.value ? opt.color : "#6B6B6B" 
-                    }}
-                  >
-                    <strong style={{ fontSize: "15px" }}>{opt.label}</strong>
-                    <span style={{ fontSize: "10px", marginTop: "2px", opacity: 0.8 }}>{opt.desc}</span>
-                  </div>
-                ))}
-              </div>
-              {touched.urgency && !formData.urgency && <span style={styles.fieldError}>{t.required}</span>}
-            </div>
-            <div style={styles.fieldGroup}>
+           <div style={styles.fieldGroup}>
               <label style={styles.label}>{t.firstSeen}</label>
               <select 
                 name="first_seen" 

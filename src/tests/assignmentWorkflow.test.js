@@ -1,10 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
-/* ============================================================
-   🔧 FIRESTORE MOCK LAYER
-   - Mock all Firestore primitives used by assignmentService
-   - This keeps the tests isolated and deterministic
-============================================================ */
 vi.mock("firebase/firestore", async (importOriginal) => {
   const actual = await importOriginal();
 
@@ -25,7 +20,6 @@ vi.mock("firebase/firestore", async (importOriginal) => {
   };
 });
 
-/* Mock the case service dependency so we can observe status changes without hitting Firestore. */
 vi.mock("../services/caseService", () => ({
   updateCaseStatus: vi.fn(),
 }));
@@ -43,7 +37,6 @@ import { AssignmentSchema } from "../services/assignmentSchema";
 
 beforeEach(() => {
   vi.clearAllMocks();
-
   getDocs.mockReset();
   addDoc.mockReset();
   deleteDoc.mockReset();
@@ -58,17 +51,14 @@ const validAssignmentPayload = {
   notes: "Bring extra gloves",
 };
 
-/* ============================================================
-   1. ASSIGNMENT SCHEMA VALIDATION
-   - Ensure the schema continues to enforce required fields
-   - This is the foundation for safe assignment creation
-============================================================ */
 describe("AssignmentSchema", () => {
   test("accepts a fully valid assignment payload", () => {
-    expect(() => AssignmentSchema.parse({
-      ...validAssignmentPayload,
-      assigned_at: new Date(),
-    })).not.toThrow();
+    expect(() =>
+      AssignmentSchema.parse({
+        ...validAssignmentPayload,
+        assigned_at: new Date(),
+      })
+    ).not.toThrow();
   });
 
   test("rejects missing required fields", () => {
@@ -93,14 +83,12 @@ describe("AssignmentSchema", () => {
   });
 });
 
-/* ============================================================
-   2. ASSIGN USER WORKFLOW
-   - Covers the core assignment service behavior
-   - Includes success, blocking, and edge cases
-============================================================ */
 describe("assignUserToCase", () => {
   test("assigns a volunteer when they have no active case", async () => {
-    getDocs.mockResolvedValueOnce({ docs: [] });
+    getDocs
+      .mockResolvedValueOnce({ empty: true, docs: [] })
+      .mockResolvedValueOnce({ empty: true, docs: [] });
+
     addDoc.mockResolvedValueOnce({ id: "assignment-1" });
 
     const result = await assignUserToCase(validAssignmentPayload);
@@ -110,23 +98,50 @@ describe("assignUserToCase", () => {
     expect(updateCaseStatus).toHaveBeenCalledWith("case-123", "assigned");
   });
 
+  test("blocks assignment when the case already has a volunteer", async () => {
+    getDocs.mockResolvedValueOnce({
+      empty: false,
+      docs: [
+        {
+          id: "assignment-existing",
+          data: () => ({ case_id: "case-123", user_id: "vol-999" }),
+        },
+      ],
+    });
+
+    await expect(assignUserToCase(validAssignmentPayload)).rejects.toThrow(
+      "This case already has a volunteer assigned."
+    );
+
+    expect(addDoc).not.toHaveBeenCalled();
+    expect(updateCaseStatus).not.toHaveBeenCalled();
+  });
+
   test("blocks assignment when the volunteer already has an active case", async () => {
     getDocs
-      .mockResolvedValueOnce({ docs: [
-        {
-          id: "assign-old",
-          data: () => ({ case_id: "other-case", user_id: "vol-456" }),
-        },
-      ] })
-      .mockResolvedValueOnce({ docs: [
-        {
-          id: "other-case",
-          data: () => ({ status: "open" }),
-        },
-      ] });
+      .mockResolvedValueOnce({ empty: true, docs: [] })
+      .mockResolvedValueOnce({
+        empty: false,
+        docs: [
+          {
+            id: "assign-old",
+            data: () => ({ case_id: "other-case", user_id: "vol-456" }),
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        empty: false,
+        docs: [
+          {
+            id: "other-case",
+            data: () => ({ status: "open" }),
+          },
+        ],
+      });
 
-    await expect(assignUserToCase(validAssignmentPayload))
-      .rejects.toThrow("already has an active case");
+    await expect(assignUserToCase(validAssignmentPayload)).rejects.toThrow(
+      "already has an active case"
+    );
 
     expect(addDoc).not.toHaveBeenCalled();
     expect(updateCaseStatus).not.toHaveBeenCalled();
@@ -134,18 +149,25 @@ describe("assignUserToCase", () => {
 
   test("allows assignment if the volunteer only has a closed case", async () => {
     getDocs
-      .mockResolvedValueOnce({ docs: [
-        {
-          id: "assign-old",
-          data: () => ({ case_id: "closed-case", user_id: "vol-456" }),
-        },
-      ] })
-      .mockResolvedValueOnce({ docs: [
-        {
-          id: "closed-case",
-          data: () => ({ status: "closed" }),
-        },
-      ] });
+      .mockResolvedValueOnce({ empty: true, docs: [] })
+      .mockResolvedValueOnce({
+        empty: false,
+        docs: [
+          {
+            id: "assign-old",
+            data: () => ({ case_id: "closed-case", user_id: "vol-456" }),
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        empty: false,
+        docs: [
+          {
+            id: "closed-case",
+            data: () => ({ status: "closed" }),
+          },
+        ],
+      });
 
     addDoc.mockResolvedValueOnce({ id: "assignment-2" });
 
@@ -156,22 +178,20 @@ describe("assignUserToCase", () => {
   });
 
   test("throws when assignment payload fails schema validation", async () => {
-    getDocs.mockResolvedValueOnce({ docs: [] });
+    getDocs.mockResolvedValueOnce({ empty: true, docs: [] });
 
-    await expect(assignUserToCase({
-      ...validAssignmentPayload,
-      user_id: "",
-    })).rejects.toThrow();
+    await expect(
+      assignUserToCase({
+        ...validAssignmentPayload,
+        user_id: "",
+      })
+    ).rejects.toThrow();
 
     expect(addDoc).not.toHaveBeenCalled();
     expect(updateCaseStatus).not.toHaveBeenCalled();
   });
 });
 
-/* ============================================================
-   3. REMOVE ASSIGNMENT AND CASE STATUS UPDATE
-   - Verifies the case reopens only when no assignments remain
-============================================================ */
 describe("removeAssignment", () => {
   test("reopens the case when the last assignment is removed", async () => {
     deleteDoc.mockResolvedValueOnce();
@@ -202,10 +222,6 @@ describe("removeAssignment", () => {
   });
 });
 
-/* ============================================================
-   4. CLOSED HISTORY REOPEN WORKFLOW
-   - Covers reopen flow, conflict cleanup, and no-assignment edge cases
-============================================================ */
 describe("reopenCaseAndCleanConflicts", () => {
   test("returns an empty array and reopens a case when there are no current assignments", async () => {
     getDocs.mockResolvedValueOnce({ empty: true, docs: [] });
@@ -217,26 +233,16 @@ describe("reopenCaseAndCleanConflicts", () => {
     expect(updateCaseStatus).toHaveBeenCalledWith("case-123", "open", {});
   });
 
-  test("removes the conflicting user assignment and reopens the case", async () => {
-    getDocs
-      .mockResolvedValueOnce({ empty: false, docs: [
+  test("removes all assignments and reopens the case", async () => {
+    getDocs.mockResolvedValueOnce({
+      empty: false,
+      docs: [
         {
           id: "assignment-reopen",
           data: () => ({ case_id: "case-123", user_id: "vol-456" }),
         },
-      ] })
-      .mockResolvedValueOnce({ docs: [
-        {
-          id: "assignment-other",
-          data: () => ({ case_id: "case-999", user_id: "vol-456" }),
-        },
-      ] })
-      .mockResolvedValueOnce({ docs: [
-        {
-          id: "case-999",
-          data: () => ({ status: "open" }),
-        },
-      ] });
+      ],
+    });
 
     const result = await reopenCaseAndCleanConflicts("case-123");
 
@@ -246,39 +252,18 @@ describe("reopenCaseAndCleanConflicts", () => {
     expect(deleteDoc).toHaveBeenCalled();
     expect(updateCaseStatus).toHaveBeenCalledWith("case-123", "open", {});
   });
-
-  test("keeps the current assignment when the volunteer has no other active cases", async () => {
-    getDocs
-      .mockResolvedValueOnce({ empty: false, docs: [
-        {
-          id: "assignment-reopen",
-          data: () => ({ case_id: "case-123", user_id: "vol-456" }),
-        },
-      ] })
-      .mockResolvedValueOnce({ docs: [] });
-
-    const result = await reopenCaseAndCleanConflicts("case-123");
-
-  expect(result).toEqual([
-  { user_id: "vol-456", assignmentId: "assignment-reopen" },
-]);
-expect(deleteDoc).toHaveBeenCalled();
-    expect(updateCaseStatus).toHaveBeenCalledWith("case-123", "open", {});
-  });
 });
 
-/* ============================================================
-   5. QUERY UTILITIES
-   - Verifies grouping and user listing helpers behave as expected
-============================================================ */
 describe("assignment query helpers", () => {
   test("getAssignableUsers returns the user list in the expected shape", async () => {
-    getDocs.mockResolvedValueOnce({ docs: [
-      {
-        id: "user-1",
-        data: () => ({ full_name: "Volunteer One", phone: "0500000000" }),
-      },
-    ] });
+    getDocs.mockResolvedValueOnce({
+      docs: [
+        {
+          id: "user-1",
+          data: () => ({ full_name: "Volunteer One", phone: "0500000000" }),
+        },
+      ],
+    });
 
     const users = await getAssignableUsers();
 
@@ -288,16 +273,18 @@ describe("assignment query helpers", () => {
   });
 
   test("getAssignmentsByCaseIds groups assignments correctly", async () => {
-    getDocs.mockResolvedValueOnce({ docs: [
-      {
-        id: "assignment-1",
-        data: () => ({ case_id: "case-123", user_id: "vol-456" }),
-      },
-      {
-        id: "assignment-2",
-        data: () => ({ case_id: "case-999", user_id: "vol-789" }),
-      },
-    ] });
+    getDocs.mockResolvedValueOnce({
+      docs: [
+        {
+          id: "assignment-1",
+          data: () => ({ case_id: "case-123", user_id: "vol-456" }),
+        },
+        {
+          id: "assignment-2",
+          data: () => ({ case_id: "case-999", user_id: "vol-789" }),
+        },
+      ],
+    });
 
     const grouped = await getAssignmentsByCaseIds(["case-123"]);
 
@@ -313,38 +300,28 @@ describe("assignment query helpers", () => {
   });
 });
 
-/* ============================================================
-   6. FULL WORKFLOW INTEGRATION
-   - Simulates the new coordinator flow with assignment and reopen conflict handling
-============================================================ */
 describe("assignment workflow integration", () => {
   test("assigns a volunteer and then cleans conflicts on reopen", async () => {
-    getDocs.mockResolvedValueOnce({ docs: [] });
+    getDocs
+      .mockResolvedValueOnce({ empty: true, docs: [] })
+      .mockResolvedValueOnce({ empty: true, docs: [] });
+
     addDoc.mockResolvedValueOnce({ id: "assignment-int-1" });
 
     const assignmentId = await assignUserToCase(validAssignmentPayload);
+
     expect(assignmentId).toBe("assignment-int-1");
     expect(updateCaseStatus).toHaveBeenCalledWith("case-123", "assigned");
 
-    getDocs
-      .mockResolvedValueOnce({ empty: false, docs: [
+    getDocs.mockResolvedValueOnce({
+      empty: false,
+      docs: [
         {
           id: "assignment-int-1",
           data: () => ({ case_id: "case-123", user_id: "vol-456" }),
         },
-      ] })
-      .mockResolvedValueOnce({ docs: [
-        {
-          id: "assignment-other",
-          data: () => ({ case_id: "case-999", user_id: "vol-456" }),
-        },
-      ] })
-      .mockResolvedValueOnce({ docs: [
-        {
-          id: "case-999",
-          data: () => ({ status: "assigned" }),
-        },
-      ] });
+      ],
+    });
 
     const cleanup = await reopenCaseAndCleanConflicts("case-123");
 

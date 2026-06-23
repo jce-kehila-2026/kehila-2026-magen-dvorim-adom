@@ -13,22 +13,15 @@ export const CaseSchema = z.object({
   house_number: z.string().optional(),
 
   location_description: z.string().min(1),
-  height_from_ground: z.number().positive(),
+  height_from_ground: z.number().nonnegative(),
 
   floor: z.string().min(1), // ✅ mandatory
 
-  navigation_link: z.string().nullable().optional(),
+ navigation_link: z.string().nullable().optional(),
+  first_seen: z.enum(["1_day", "2_days", "3_days", "4_plus_days"]).nullable().optional(),
   image_urls: z.array(z.string()).max(2).optional(),
 
-  urgency: z.enum(["low", "medium", "high"]),
-  first_seen: z.enum([
-  "1_day",
-  "2_days",
-  "3_days",
-  "4_plus_days"
-]).nullable().optional(),
-
-  coordinator_id: z.string(),
+  coordinator_id: z.string().min(1),
   status: z.enum(["open", "assigned", "closed"]).default("open"),
   result_status: z.enum(["in_progress", "evacuated_by_volunteer", "sent_to_chofesh_farm", "remains_in_place_without_treatment", "cancelled"]).default("in_progress"),
   result_notes: z.string().nullable().optional(),
