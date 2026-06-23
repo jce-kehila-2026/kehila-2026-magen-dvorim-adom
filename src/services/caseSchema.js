@@ -13,14 +13,14 @@ export const CaseSchema = z.object({
   house_number: z.string().optional(),
 
   location_description: z.string().min(1),
-  height_from_ground: z.number().positive(),
+  height_from_ground: z.number().min(0),
+
 
   floor: z.string().min(1), // ✅ mandatory
 
   navigation_link: z.string().nullable().optional(),
   image_urls: z.array(z.string()).max(2).optional(),
 
-  urgency: z.enum(["low", "medium", "high"]),
   first_seen: z.enum([
   "1_day",
   "2_days",
