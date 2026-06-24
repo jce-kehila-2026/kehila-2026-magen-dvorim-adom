@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { createIntakeForm, isValidPhone } from "../services/intakeFormService";
+import { useLanguage } from "../contexts/LanguageContext";
 
 function CoordinatorSendForm() {
   const { userProfile } = useAuth();
@@ -10,14 +11,22 @@ function CoordinatorSendForm() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [msgIsError, setMsgIsError] = useState(false);
+  const { language } = useLanguage();
+  const isHebrew = language === "he";
 
   function validatePhone(value) {
     if (!value.trim()) {
-      setPhoneError("Phone number is required.");
+      setPhoneError(
+        isHebrew ? "יש להזין מספר טלפון" : "Phone number is required."
+      );
       return false;
     }
     if (!isValidPhone(value)) {
-      setPhoneError("Enter a valid phone number (e.g. 0521234567).");
+      setPhoneError(
+        isHebrew
+          ? "הכנס מספר טלפון תקין"
+          : "Enter a valid phone number (e.g. 0521234567)."
+      );
       return false;
     }
     setPhoneError("");
@@ -40,10 +49,14 @@ function CoordinatorSendForm() {
         coordinator_id: userProfile.uid,
       });
       setPhone("");
-      setMsg("Form created successfully.");
+      setMsg(
+        isHebrew ? "הטופס נוצר בהצלחה" : "Form created successfully."
+      );
       setMsgIsError(false);
     } catch (e) {
-      setMsg(e.message || "Failed to create form.");
+      setMsg(
+        isHebrew ? "יצירת הטופס נכשלה" : "Failed to create form."
+      );
       setMsgIsError(true);
     } finally {
       setLoading(false);
@@ -54,10 +67,16 @@ function CoordinatorSendForm() {
     const link = `${window.location.origin}/submit-case?coordinator=${userProfile.uid}`;
     try {
       await navigator.clipboard.writeText(link);
-      setMsg("Link copied to clipboard.");
+      setMsg(
+        isHebrew ? "הקישור הועתק" : "Link copied to clipboard."
+      );
       setMsgIsError(false);
     } catch {
-      setMsg(`Copy manually: ${link}`);
+      setMsg(
+  isHebrew
+    ? `העתק ידנית: ${link}`
+    : `Copy manually: ${link}`
+);
       setMsgIsError(false);
     }
   }
@@ -67,13 +86,18 @@ function CoordinatorSendForm() {
 
       <input
         type="tel"
-        placeholder="Requester phone number"
+        placeholder={
+          isHebrew ? "טלפון הפונה" : "Requester phone number"
+        }
+
         value={phone}
         onChange={handlePhoneChange}
         style={{
           ...s.input,
           borderColor: phoneError ? "#b42318" : "#ddd0c4",
+            textAlign: isHebrew ? "right" : "left"
         }}
+ 
         disabled={loading}
       />
 
@@ -81,11 +105,13 @@ function CoordinatorSendForm() {
 
       <div style={s.actions}>
         <button style={s.createBtn} onClick={handleCreate} disabled={loading}>
-          {loading ? "Sending..." : "Create form"}
+          {loading
+            ? (isHebrew ? "שולח..." : "Sending...")
+            : (isHebrew ? "צור טופס" : "Create form")}
         </button>
 
         <button style={s.linkBtn} onClick={handleCopyLink} disabled={loading}>
-          Copy link
+          {isHebrew ? "העתק קישור" : "Copy link"}
         </button>
       </div>
 

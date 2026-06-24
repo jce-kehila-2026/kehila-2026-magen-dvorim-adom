@@ -9,14 +9,13 @@ import CoordinatorSendForm from "./pages/CoordinatorSendForm";
 import MyCases from "./pages/MyCases";
 import Profile from "./pages/Profile";
 import Backup from "./pages/Backup";
-
 import Reports from "./pages/Reports";
-
 import { useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { USER_ROLES } from "./services/userSchema";
 import { getDashboardPathByRole } from "./utils/routes";
 import FeedbackPage from "./pages/FeedbackPage";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 
 function App() {
@@ -31,6 +30,7 @@ function App() {
   }
 
   return (
+    <LanguageProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
@@ -160,6 +160,7 @@ function App() {
         />
       </Routes>
     </BrowserRouter>
+    </LanguageProvider>
   );
 }
 

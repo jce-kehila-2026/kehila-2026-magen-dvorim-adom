@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { USER_ROLES } from "../../services/userSchema";
 import logo from "../../assets/logo.png";
 import "./ProfileView.css";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 export default function ProfileView({
   userProfile,
@@ -47,6 +48,57 @@ export default function ProfileView({
 
   const profileImage = formData.photo_url;
   const initials = (currentUserName || "U").charAt(0).toUpperCase();
+  
+const { language, setLanguage } = useLanguage();
+const isHebrew = language === "he";
+const t = {
+  dashboard: isHebrew ? "דשבורד" : "Dashboard",
+  cases: isHebrew ? "מקרים" : "Cases",
+  users: isHebrew ? "משתמשים" : "Users",
+  reports: isHebrew ? "דוחות" : "Reports",
+  backup: isHebrew ? "גיבוי" : "Backup",
+  profile: isHebrew ? "פרופיל" : "Profile",
+  logout: isHebrew ? "התנתק" : "Logout",
+
+  myCases: isHebrew ? "המקרים שלי" : "My Cases",
+
+  title: isHebrew ? "הפרופיל שלי" : "My Profile",
+
+  personalInfo: isHebrew ? "פרטים אישיים" : "Personal Information",
+  location: isHebrew ? "מיקום וזמינות" : "Location & Availability",
+
+  fullName: isHebrew ? "שם מלא" : "Full Name",
+  email: isHebrew ? "אימייל" : "Email",
+  phone: isHebrew ? "טלפון" : "Phone",
+  role: isHebrew ? "תפקיד" : "Role",
+
+  city: isHebrew ? "עיר" : "City",
+  searchCity: isHebrew ? "חיפוש עיר..." : "Search city...",
+
+  availability: isHebrew ? "זמינות" : "Availability",
+  availabilityDesc: isHebrew
+    ? "אפשר לרכזים לשבץ אותך למקרים"
+    : "Control whether coordinators can assign you to active cases.",
+
+  changePhoto: isHebrew ? "שנה תמונה" : "Change Photo",
+  remove: isHebrew ? "הסר" : "Remove",
+
+  changePassword: isHebrew ? "שינוי סיסמה" : "Change Password",
+  save: isHebrew ? "שמור שינויים" : "Save Changes",
+  saving: isHebrew ? "שומר..." : "Saving...",
+
+  cancel: isHebrew ? "ביטול" : "Cancel",
+  updatePassword: isHebrew ? "עדכן סיסמה" : "Update Password",
+  updating: isHebrew ? "מעדכן..." : "Updating...",
+
+  currentPassword: isHebrew ? "סיסמה נוכחית" : "Current Password",
+  newPassword: isHebrew ? "סיסמה חדשה" : "New Password",
+  confirmPassword: isHebrew ? "אימות סיסמה" : "Confirm New Password",
+
+  modalSubtitle: isHebrew
+    ? "הזן סיסמה נוכחית לפני בחירת סיסמה חדשה"
+    : "Enter your current password before choosing a new one.",
+};
 
   return (
     <div className="profile-layout" style={styles.layout}>
@@ -55,9 +107,9 @@ export default function ProfileView({
           <div style={styles.modal} onClick={(event) => event.stopPropagation()}>
             <div style={styles.modalHeader}>
               <div>
-                <h2 style={styles.modalTitle}>Change Password</h2>
+                <h2 style={styles.modalTitle}> {t.changePassword}</h2>
                 <p style={styles.modalSubtitle}>
-                  Enter your current password before choosing a new one.
+                  {t.modalSubtitle}
                 </p>
               </div>
 
@@ -73,11 +125,11 @@ export default function ProfileView({
             </div>
 
             {passwordError && <div style={styles.errorBox}>{passwordError}</div>}
-            {passwordSuccess && <div style={styles.successBox}>{passwordSuccess}</div>}
+            {passwordSuccess && <div style={styles.successBox}>{isHebrew ? "הפרופיל עודכן בהצלחה" : success}</div>}
 
             <form onSubmit={handlePasswordSubmit}>
               <div style={styles.field}>
-                <label>Current Password</label>
+                <label>{t.currentPassword}</label>
                 <input
                   type="password"
                   value={passwordData.currentPassword}
@@ -93,7 +145,7 @@ export default function ProfileView({
               </div>
 
               <div style={styles.field}>
-                <label>New Password</label>
+                <label>{t.newPassword}</label>
                 <input
                   type="password"
                   value={passwordData.newPassword}
@@ -109,7 +161,7 @@ export default function ProfileView({
               </div>
 
               <div style={styles.field}>
-                <label>Confirm New Password</label>
+                <label>{t.confirmPassword}</label>
                 <input
                   type="password"
                   value={passwordData.confirmNewPassword}
@@ -131,7 +183,7 @@ export default function ProfileView({
                   disabled={passwordLoading}
                   style={styles.secondaryButton}
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
 
                 <button
@@ -139,7 +191,7 @@ export default function ProfileView({
                   disabled={passwordLoading}
                   style={styles.button}
                 >
-                  {passwordLoading ? "Updating..." : "Update Password"}
+                  {passwordLoading ? t.updating : t.updatePassword}
                 </button>
               </div>
             </form>
@@ -168,25 +220,25 @@ export default function ProfileView({
 
         <nav style={styles.nav}>
           <button style={styles.navItem} onClick={() => goTo("/dashboard")}>
-            Dashboard
+            {t.dashboard}
           </button>
 
           {userProfile?.role === USER_ROLES.ADMIN && (
             <>
               <button style={styles.navItem} onClick={() => goTo("/cases")}>
-                Cases
+                {t.cases}
               </button>
 
               <button style={styles.navItem} onClick={() => goTo("/users")}>
-                Users
+                {t.users}
               </button>
 
               <button style={styles.navItem} onClick={() => goTo("/reports")}>
-                Reports
+                {t.reports}
               </button>
 
               <button style={styles.navItem} onClick={() => goTo("/backup")}>
-                Backup
+                {t.backup}
               </button>
             </>
           )}
@@ -194,29 +246,38 @@ export default function ProfileView({
           {userProfile?.role === USER_ROLES.COORDINATOR && (
             <>
               <button style={styles.navItem} onClick={() => goTo("/cases")}>
-                Cases
+                {t.cases}
               </button>
 
               <button style={styles.navItem} onClick={() => goTo("/users")}>
-                Users
+                {t.users}
               </button>
             </>
           )}
 
           {userProfile?.role === USER_ROLES.VOLUNTEER && (
             <button style={styles.navItem} onClick={() => goTo("/my-cases")}>
-              My Cases
+              {t.myCases}
             </button>
           )}
 
           <button style={{ ...styles.navItem, ...styles.navItemActive }}>
-            Profile
+            {t.profile}
           </button>
         </nav>
 
-        <button style={styles.logoutButton} onClick={handleLogout}>
-          Logout
-        </button>
+        <div style={styles.bottomSection}>
+          <button
+            style={styles.languageButton}
+            onClick={() => setLanguage(isHebrew ? "en" : "he")}
+          >
+            {isHebrew ? "English 🌐" : "עברית 🌐"}
+          </button>
+
+          <button style={styles.logoutButton} onClick={handleLogout}>
+            {t.logout}
+          </button>
+        </div>
       </aside>
 
       <main className="profile-main" style={styles.page}>
@@ -229,12 +290,12 @@ export default function ProfileView({
             ☰
           </button>
 
-          <span className="profile-mobile-title">Profile</span>
+          <span className="profile-mobile-title">{t.profile}</span>
         </div>
 
         <section className="profile-card" style={styles.card}>
           <div style={styles.header}>
-            <h1 className="profile-title" style={styles.title}>My Profile</h1>
+            <h1 className="profile-title" style={styles.title}> {t.title}</h1>
 
             <div style={styles.profileTop}>
               <div style={styles.avatarContainer}>
@@ -258,7 +319,7 @@ export default function ProfileView({
 
               <div style={styles.photoActions}>
                 <label style={styles.photoButton}>
-                  Change Photo
+                  {t.changePhoto}
                   <input
                     type="file"
                     accept="image/*"
@@ -279,7 +340,7 @@ export default function ProfileView({
                     }
                     style={styles.removePhotoButton}
                   >
-                    Remove
+                    {t.remove}
                   </button>
                 )}
               </div>
@@ -290,11 +351,11 @@ export default function ProfileView({
           {success && <div style={styles.successBox}>{success}</div>}
 
           <form onSubmit={handleSubmit}>
-            <div style={styles.sectionTitle}>Personal Information</div>
+            <div style={styles.sectionTitle}>{t.personalInfo}</div>
 
             <div className="profile-form-grid" style={styles.grid}>
               <div style={styles.field}>
-                <label>Full Name</label>
+                <label>{t.fullName}</label>
                 <input
                   value={formData.full_name}
                   onChange={(e) =>
@@ -305,12 +366,12 @@ export default function ProfileView({
               </div>
 
               <div style={styles.field}>
-                <label>Email</label>
+                <label>{t.email}</label>
                 <input value={userProfile.email || ""} disabled style={styles.disabledInput} />
               </div>
 
               <div style={styles.field}>
-                <label>Phone</label>
+                <label>{t.phone}</label>
                 <input
                   value={formData.phone}
                   onChange={(e) =>
@@ -321,15 +382,15 @@ export default function ProfileView({
               </div>
 
               <div style={styles.field}>
-                <label>Role</label>
+                <label>{t.role}</label>
                 <input value={userProfile.role || ""} disabled style={styles.disabledInput} />
               </div>
             </div>
 
-            <div style={styles.sectionTitle}>Location & Availability</div>
+            <div style={styles.sectionTitle}>{t.location}</div>
 
             <div style={styles.field}>
-              <label>City</label>
+              <label>{t.city}</label>
               <div style={{ position: "relative" }}>
                 <input
                   value={citySearch || formData.city}
@@ -339,7 +400,7 @@ export default function ProfileView({
                   }}
                   onFocus={() => setShowCityDropdown(true)}
                   onBlur={() => setTimeout(() => setShowCityDropdown(false), 150)}
-                  placeholder="Search city..."
+                  placeholder={t.searchCity}
                   style={styles.input}
                 />
 
@@ -367,9 +428,10 @@ export default function ProfileView({
 
             <div className="profile-availability-card" style={styles.availabilityCard}>
               <div>
-                <strong>Availability</strong>
+                <strong>{t.availability}</strong>
                 <p style={styles.smallText}>
-                  Control whether coordinators can assign you to active cases.
+                 {t.availabilityDesc}
+
                 </p>
               </div>
 
@@ -407,11 +469,12 @@ export default function ProfileView({
                 onClick={openPasswordModal}
                 style={styles.secondaryButton}
               >
-                Change Password
+                {t.changePassword}
               </button>
 
               <button type="submit" disabled={loading} style={styles.button}>
-                {loading ? "Saving..." : "Save Changes"}
+                {loading ? t.saving : t.save}
+
               </button>
             </div>
           </form>
@@ -843,4 +906,20 @@ const styles = {
     flexWrap: "wrap",
     marginTop: "8px",
   },
+  bottomSection: {
+  marginTop: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+},
+
+languageButton: {
+  padding: "13px",
+  borderRadius: "14px",
+  border: "1px solid #eadfd2",
+  background: "#fffaf4",
+  color: "#2b160c",
+  fontWeight: "800",
+  cursor: "pointer",
+},
 };

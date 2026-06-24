@@ -4,6 +4,8 @@ import AssignedCasesMap from "../AssignedCasesMap";
 import CoordinatorSendForm from "../../pages/CoordinatorSendForm";
 import { USER_ROLES } from "../../services/userSchema";
 import logo from "../../assets/logo.png";
+import { useLanguage } from "../../contexts/LanguageContext";
+
 
 import "./DashboardView.css";
 
@@ -20,20 +22,29 @@ function formatDate(value) {
   });
 }
 
-function statusLabel(status) {
-  if (status === "waiting") return "sent";
-  return status || "—";
+function statusLabel(status, isHebrew) {
+  const map = {
+    sent: isHebrew ? "נשלח" : "Sent",
+    submitted: isHebrew ? "הוגש" : "Submitted",
+    expired: isHebrew ? "פג תוקף" : "Expired",
+    waiting: isHebrew ? "נשלח" : "Sent",
+  };
+
+  return map[status] || "—";
 }
 
 function statusColor(status) {
-  const s = statusLabel(status);
-  switch (s) {
+  switch (status) {
     case "sent":
+    case "waiting":
       return { bg: "#fff1df", color: "#c2410c" };
+
     case "submitted":
       return { bg: "#dcfce7", color: "#15803d" };
+
     case "expired":
       return { bg: "#fee2e2", color: "#b42318" };
+
     default:
       return { bg: "#f1f5f9", color: "#475569" };
   }
@@ -52,6 +63,40 @@ function DashboardView({
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { language, setLanguage } = useLanguage();
+  const isHebrew = language === "he";
+
+  
+  // ✅ TEXTS
+  const texts = {
+    dashboard: isHebrew ? "דשבורד" : "Dashboard",
+    cases: isHebrew ? "מקרים" : "Cases",
+    users: isHebrew ? "משתמשים" : "Users",
+    reports: isHebrew ? "דוחות" : "Reports",
+    backup: isHebrew ? "גיבוי" : "Backup",
+    profile: isHebrew ? "פרופיל" : "Profile",
+    logout: isHebrew ? "התנתק" : "Logout",
+
+    activeCases: isHebrew ? "מקרים פעילים" : "Active Cases",
+
+    all: isHebrew ? "הכל" : "All",
+    open: isHebrew ? "פתוחים" : "Open",
+    assigned: isHebrew ? "משוייכים" : "Assigned",
+
+    sendForm: isHebrew ? "שליחת טופס לפונה" : "Send Form to Requester",
+    trackForms: isHebrew ? "מעקב אחר טפסים" : "Track Form Status",
+
+    newest: isHebrew ? "חדשים קודם" : "Newest first",
+    oldest: isHebrew ? "ישנים קודם" : "Oldest first",
+
+    date: isHebrew ? "תאריך" : "Date",
+    phone: isHebrew ? "טלפון" : "Phone",
+    coordinator: isHebrew ? "רכז" : "Coordinator",
+    status: isHebrew ? "סטטוס" : "Status",
+
+    noForms: isHebrew ? "אין טפסים שנשלחו עדיין" : "No forms sent yet.",
+  };
+
 
   // Map filters
   const [activeFilter, setActiveFilter] = useState("all");
@@ -140,37 +185,50 @@ const sortedForms = useMemo(() => {
 
         <nav style={styles.nav}>
           <button style={{ ...styles.navItem, ...styles.navItemActive }}>
-            Dashboard
+            {texts.dashboard}
           </button>
 
           <button style={styles.navItem} onClick={() => goTo("/cases")}>
-            Cases
+            {texts.cases}
           </button>
 
           <button style={styles.navItem} onClick={() => goTo("/users")}>
-            Users
+            {texts.users}
           </button>
 
           {isAdmin && (
             <button style={styles.navItem} onClick={() => goTo("/reports")}>
-              Reports
+              {texts.reports}
             </button>
           )}
 
           {isAdmin && (
             <button style={styles.navItem} onClick={() => goTo("/backup")}>
-              Backup
+              {texts.backup}
             </button>
           )}
 
           <button style={styles.navItem} onClick={() => goTo("/profile")}>
-            Profile
+            {texts.profile}
           </button>
         </nav>
 
-        <button style={styles.logoutButton} onClick={onLogout}>
-          Logout
-        </button>
+
+
+        <div style={styles.bottomSection}>
+          <button
+            style={styles.languageButton}
+            onClick={() =>
+              setLanguage(language === "he" ? "en" : "he")
+            }
+          >
+            {language === "he" ? "English 🌐" : "עברית 🌐"}
+          </button>
+
+          <button style={styles.logoutButton} onClick={onLogout}>
+            {texts.logout}
+          </button>
+        </div>
       </aside>
 
       {/* Main */}
@@ -182,7 +240,7 @@ const sortedForms = useMemo(() => {
           >
             ☰
           </button>
-          <span className="dashboard-mobile-title">Dashboard</span>
+          <span className="dashboard-mobile-title">{texts.dashboard}</span>
         </div>
 
         {error && <div style={styles.errorBox}>{error}</div>}
@@ -194,23 +252,30 @@ const sortedForms = useMemo(() => {
           {/* LEFT SIDE */}
           <div style={styles.leftCol}>
             <section style={styles.mapSection}>
-              <h2 style={styles.sectionTitle}>Active Cases</h2>
+              <h2
+                    style={{
+                      ...styles.sectionTitle,
+                      textAlign: isHebrew ? "right" : "left",
+                    }}
+                  >
+                    {texts.activeCases}
+                  </h2>
 
               <div style={styles.filterRow}>
                 <FilterButton
-                  label="All"
+                  label={texts.all}
                   count={mapCases.length}
                   active={activeFilter === "all"}
                   onClick={() => setActiveFilter("all")}
                 />
                 <FilterButton
-                  label="Open"
+                  label={texts.open}
                   count={openCasesCount}
                   active={activeFilter === "open"}
                   onClick={() => setActiveFilter("open")}
                 />
                 <FilterButton
-                  label="Assigned"
+                  label={texts.assigned}
                   count={assignedCasesCount}
                   active={activeFilter === "assigned"}
                   onClick={() => setActiveFilter("assigned")}
@@ -231,50 +296,67 @@ const sortedForms = useMemo(() => {
           <div style={styles.rightCol}>
             {/* Send Form */}
             <section style={styles.formCard}>
-              <h2 style={styles.sectionTitle}>Send Form to Requester</h2>
+              <h2 style={styles.sectionTitle}>{texts.sendForm}</h2>
               <CoordinatorSendForm />
             </section>
 
             {/* Track Form Status */}
             <section style={styles.trackCard}>
               <div style={styles.trackHeader}>
-                <h2 style={styles.sectionTitle}>Track Form Status</h2>
+                <h2 style={styles.sectionTitle}>{texts.trackForms}</h2>
 
                <div style={{ display: "flex", gap: "8px" }}>
                   <select
-                    style={styles.sortSelect}
+                    
+                  style={{
+                    ...styles.sortSelect,
+                    textAlign: isHebrew ? "right" : "left",
+                  }}
+
                     value={sortDir}
                     onChange={(e) => setSortDir(e.target.value)}
                   >
-                    <option value="desc">Newest first</option>
-                    <option value="asc">Oldest first</option>
+                    <option value="desc">{texts.newest}</option>
+                    <option value="asc">{texts.oldest}</option>
                   </select>
 
                   <select
-                    style={styles.sortSelect}
+                    
+                  style={{
+                    ...styles.sortSelect,
+                    textAlign: isHebrew ? "right" : "left",
+                  }}
+
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                   >
-                    <option value="all">All</option>
-                    <option value="sent">Sent</option>
-                    <option value="submitted">Submitted</option>
-                    <option value="expired">Expired</option>
+                    <option value="all">{texts.all}</option>
+                    <option value="sent">{isHebrew ? "נשלח" : "Sent"}</option>
+                    <option value="submitted">{isHebrew ? "הוגש" : "Submitted"}</option>
+                    <option value="expired">{isHebrew ? "פג תוקף" : "Expired"}</option>
                   </select>
                 </div>
               </div>
 
               {sortedForms.length === 0 ? (
-                <p style={styles.emptyText}>No forms sent yet.</p>
+                <p style={styles.emptyText}>{texts.noForms}</p>
               ) : (
                 <div style={styles.tableWrapper}>
                   <div style={styles.tableScroll}>
-                    <table style={styles.table}>
+                    <table
+                      style={{
+                        ...styles.table,
+                        direction: isHebrew ? "rtl" : "ltr",
+                        textAlign: isHebrew ? "right" : "left",
+                      }}
+                    >
+
                       <thead>
                         <tr>
-                          <th style={styles.th}>Date</th>
-                          <th style={styles.th}>Phone</th>
-                          {isAdmin && <th style={styles.th}>Coordinator</th>}
-                          <th style={styles.th}>Status</th>
+                          <th style={styles.th}>{texts.date}</th>
+                          <th style={styles.th}>{texts.phone}</th>
+                          {isAdmin && <th style={styles.th}>{texts.coordinator}</th>}
+                          <th style={styles.th}>{texts.status}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -310,7 +392,7 @@ const sortedForms = useMemo(() => {
                                     color: sc.color,
                                   }}
                                 >
-                                  {statusLabel(form.status)}
+                                  {statusLabel(form.status, isHebrew)}
                                 </span>
                               </td>
                             </tr>
@@ -418,6 +500,15 @@ const styles = {
     color: "#e85d04",
   },
 
+languageButton: {
+  padding: "13px",
+  borderRadius: "14px",
+  border: "1px solid #eadfd2",
+  background: "#fffaf4",
+  color: "#2b160c",
+  fontWeight: "800",
+  cursor: "pointer",
+},
   logoutButton: {
     marginTop: "auto",
     padding: "13px",
@@ -429,6 +520,12 @@ const styles = {
     cursor: "pointer",
   },
 
+  bottomSection: {
+  marginTop: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+},
   main: {
     padding: "18px",
     boxSizing: "border-box",
@@ -556,7 +653,7 @@ mapBox: {
   },
 
   th: {
-    textAlign: "left",
+    textAlign: "inherit",
     padding: "8px 10px",
     color: "#6b625c",
     fontWeight: "800",
@@ -569,6 +666,7 @@ mapBox: {
     color: "#2b160c",
     borderBottom: "1px solid #f8f4f0",
     verticalAlign: "middle",
+     textAlign: "inherit",
   },
 
   tr: {

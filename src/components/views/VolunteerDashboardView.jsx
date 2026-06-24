@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import "./VolunteerDashboard.css";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 
 function VolunteerDashboardView({
@@ -17,6 +18,51 @@ function VolunteerDashboardView({
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { language, setLanguage } = useLanguage();
+  const isHebrew = language === "he";
+
+  const t = {
+  dashboard: isHebrew ? "דשבורד" : "Dashboard",
+  myCases: isHebrew ? "המקרים שלי" : "My Cases",
+  profile: isHebrew ? "פרופיל" : "Profile",
+  logout: isHebrew ? "התנתק" : "Logout",
+
+  welcome: isHebrew ? "ברוך הבא" : "Welcome back,",
+  volunteer: isHebrew ? "מתנדב" : "Volunteer",
+
+  loading: isHebrew ? "טוען..." : "Loading your dashboard...",
+
+  noCase: isHebrew
+    ? "אין מקרה משובץ לך כרגע"
+    : "No assigned case at the moment",
+
+  noCaseDesc: isHebrew
+    ? "תקבל עדכון כאשר יוקצה לך מקרה"
+    : "You'll be notified by a coordinator when you're assigned to a case.",
+
+  activeCase: isHebrew
+    ? "יש לך מקרה פעיל"
+    : "You have an active case",
+
+  unknownLocation: isHebrew
+    ? "מיקום לא ידוע"
+    : "Unknown location",
+
+  complexity: isHebrew ? "מורכבות" : "Complexity",
+
+  notSpecified: isHebrew ? "לא צוין" : "Not specified",
+
+  tapHint: isHebrew
+    ? "לחץ לצפייה במקרה"
+    : "Tap to view your case →",
+
+  completedCases: isHebrew ? "מקרים שהושלמו" : "Completed Cases",
+  viewHistory: isHebrew ? "צפה בהיסטוריה" : "View history",
+
+  yourArea: isHebrew ? "האזור שלך" : "Your Area",
+
+  notSet: isHebrew ? "לא הוגדר" : "Not set",
+};
 
   const goTo = (path) => {
     setMenuOpen(false);
@@ -27,7 +73,7 @@ function VolunteerDashboardView({
     userProfile?.city ||
     userProfile?.area ||
     userProfile?.region ||
-    "Not set";
+    t.notSet;
 
   return (
     <div className="volunteer-page" style={styles.page}>
@@ -54,21 +100,30 @@ function VolunteerDashboardView({
             style={{ ...styles.navItem, ...styles.navItemActive }}
             onClick={() => goTo("/dashboard")}
           >
-            Dashboard
+            {t.dashboard}
           </button>
 
           <button style={styles.navItem} onClick={() => goTo("/my-cases")}>
-            My Cases
+            {t.myCases}
           </button>
 
           <button style={styles.navItem} onClick={() => goTo("/profile")}>
-            Profile
+            {t.profile}
           </button>
         </nav>
 
-        <button style={styles.logoutButton} onClick={handleLogout}>
-          Logout
-        </button>
+<div style={styles.bottomSection}>
+  <button
+    style={styles.languageButton}
+    onClick={() => setLanguage(isHebrew ? "en" : "he")}
+  >
+    {isHebrew ? "English 🌐" : "עברית 🌐"}
+  </button>
+
+  <button style={styles.logoutButton} onClick={handleLogout}>
+    {t.logout}
+  </button>
+</div>
       </aside>
 
       <main className="volunteer-main" style={styles.main}>
@@ -90,18 +145,29 @@ function VolunteerDashboardView({
 
         <section className="content-card" style={styles.contentCard}>
           <header style={styles.header}>
-            <h1 style={styles.title}>
-              Welcome back,
+            <h1
+              style={{
+                ...styles.title,
+                textAlign: isHebrew ? "right" : "left",
+              }}
+            >
+
+              {t.welcome}
             </h1>
 
-            <h2 style={styles.bigName}>
-              {userProfile?.full_name || "Volunteer"}
+            <h2
+              style={{
+                ...styles.bigName,
+                textAlign: isHebrew ? "right" : "left",
+              }}
+            >
+              {userProfile?.full_name || t.volunteer}
             </h2>
           </header>
 
           {error && <div style={styles.errorBox}>{error}</div>}
 {loading ? (
-  <div style={styles.loading}>Loading your dashboard...</div>
+  <div style={styles.loading}> {t.loading}</div>
 ) : (
   <>
     {/* PRIMARY CARD */}
@@ -113,15 +179,15 @@ function VolunteerDashboardView({
     {/* SECONDARY GRID */}
     <div className="dashboard-grid" style={styles.cardGrid}>
       <ClickableCard
-        title="Completed Cases"
+        title={t.completedCases}
         value={completedCount}
         valueColor="#15803d"
-        subtitle="View history"
+        subtitle={t.viewHistory}
         onClick={onHistoryClick}
       />
 
       <InfoCard
-        title="Your Area"
+        title={t.yourArea}
         value={`${volunteerArea}`}
         valueColor="#6598ad"
       />
@@ -137,7 +203,29 @@ function VolunteerDashboardView({
 // ─── Active Case Card ─────────────────────────────────────────────────────────
 
 function ActiveCaseCard({ activeCase, onClick }) {
+
+const { language } = useLanguage();
+const isHebrew = language === "he";
+
   const hasCase = !!activeCase;
+
+
+
+const t = {
+  activeCase: isHebrew ? "יש לך מקרה פעיל" : "You have an active case",
+  noCase: isHebrew ? "אין מקרה משובץ לך כרגע" : "No assigned case at the moment",
+  noCaseDesc: isHebrew
+    ? "תקבל עדכון כאשר יוקצה לך מקרה"
+    : "You'll be notified by a coordinator when you're assigned to a case.",
+  unknownLocation: isHebrew
+    ? "מיקום לא ידוע"
+    : "Unknown location",
+  complexity: isHebrew ? "מורכבות" : "Complexity",
+  notSpecified: isHebrew ? "לא צוין" : "Not specified",
+  tapHint: isHebrew
+    ? "לחץ לצפייה במקרה"
+    : "Tap to view your case →",
+};
 
   return (
     <div
@@ -152,7 +240,14 @@ function ActiveCaseCard({ activeCase, onClick }) {
       onClick={hasCase ? onClick : undefined}
       title={hasCase ? "Click to view case details" : undefined}
     >
-      <div style={styles.cardIconRow}>
+      <div
+  style={{
+    ...styles.cardIconRow,
+    flexDirection: isHebrew ? "row-reverse" : "row",
+    justifyContent: isHebrew ? "flex-start" : "flex-start",
+    width: "100%",
+  }}
+>
         <span
           style={{
             ...styles.dot,
@@ -163,17 +258,16 @@ function ActiveCaseCard({ activeCase, onClick }) {
           style={{
             ...styles.cardLabel,
             color: hasCase ? "#d97706" : "#6b625c",
+            textAlign: isHebrew ? "right" : "left",
           }}
         >
-          {hasCase
-            ? "You have an active case"
-            : "No assigned case at the moment"}
+          {hasCase ? t.activeCase : t.noCase}
         </span>
       </div>
 
         {!hasCase && (
-          <p style={{ ...styles.caseDesc, textAlign: "left" }}>
-            You'll be notified by a coordinator when you're assigned to a case.
+          <p style={{ ...styles.caseDesc, textAlign: isHebrew ? "right" : "left" }}>
+            {t.noCaseDesc}
           </p>
         )}
 
@@ -181,15 +275,15 @@ function ActiveCaseCard({ activeCase, onClick }) {
       {hasCase && (
         <div style={styles.caseSnippet}>
           <p style={styles.caseCity}>
-            {activeCase.city || "Unknown location"}
+            {activeCase.city || t.unknownLocation}
           </p>
           <p style={styles.caseDesc}>
             {activeCase.case_complexity
-              ? `Complexity: ${activeCase.case_complexity.charAt(0).toUpperCase() + activeCase.case_complexity.slice(1)}`
-              : "Complexity: Not specified"}
+              ? `${t.complexity}: ${activeCase.case_complexity.charAt(0).toUpperCase() + activeCase.case_complexity.slice(1)}`
+              : `${t.complexity}: ${t.notSpecified}`}
           </p>
           <span style={styles.tapHint}>
-              Tap to view your case →
+              {t.tapHint}
             </span>
         </div>
       )}
@@ -200,11 +294,15 @@ function ActiveCaseCard({ activeCase, onClick }) {
 // ─── Clickable stat card ──────────────────────────────────────────────────────
 
 function ClickableCard({ title, value, valueColor, subtitle, onClick }) {
+  
+ const { language } = useLanguage();
+  const isHebrew = language === "he";
+
   return (
     <div style={{ ...styles.card, cursor: "pointer" }} onClick={onClick}>
       <p style={styles.cardTitle}>{title}</p>
       <p style={{ ...styles.cardValue, color: valueColor }}>
-        {value} cases
+        {value} {isHebrew ? "מקרים" : "cases"}
       </p>
       {subtitle && <p style={styles.cardSubtitle}>{subtitle} →</p>}
     </div>
@@ -289,7 +387,6 @@ const styles = {
   color: "#2b160c",
   fontSize: "26px",
   fontWeight: "800",
-  textAlign: "left",   
 },
   
   userName: { color: "#ff6f0f" },
@@ -313,6 +410,9 @@ card: {
     alignItems: "center",
     gap: "10px",
     marginBottom: "12px",
+    flexDirection: "row", // default
+    width: "100%",
+
   },
 
 bigName: {
@@ -320,11 +420,10 @@ bigName: {
   fontSize: "36px",
   fontWeight: "900",
   color: "#ff6f0f",
-  textAlign: "left",   
 },
 
   dot: { width: "10px", height: "10px", borderRadius: "50%", flexShrink: 0 },
-  cardLabel: { fontSize: "14px", fontWeight: "800", margin: 0 },
+  cardLabel: { fontSize: "20px", fontWeight: "1000", margin: 0 },
   caseSnippet: { marginTop: "4px" },
   caseCity: { margin: "0 0 4px", color: "#2b160c", fontSize: "18px", fontWeight: "900" },
   caseDesc: { margin: "0 0 10px", color: "#6b625c", fontSize: "13px", lineHeight: 1.5 },
@@ -341,6 +440,22 @@ bigName: {
     marginBottom: "16px",
     fontSize: "14px",
   },
+  bottomSection: {
+  marginTop: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+},
+
+languageButton: {
+  padding: "13px",
+  borderRadius: "14px",
+  border: "1px solid #eadfd2",
+  background: "#fffaf4",
+  color: "#2b160c",
+  fontWeight: "800",
+  cursor: "pointer",
+},
 };
 
 export default VolunteerDashboardView;
