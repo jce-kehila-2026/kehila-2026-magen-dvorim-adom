@@ -266,13 +266,20 @@ export default function CasesView({
       {/* ── MAIN ── */}
       <main style={styles.main} className="cases-main">
         <section style={styles.contentCard} className="cases-content-card">
-          <header style={styles.header}>
+          <header style={{  ...styles.header,  textAlign: isHe ? "right" : "left" }}>
             <h1 style={styles.title}>{t.manageCases}</h1>
-            <p style={styles.subtitle}>{subtitle}</p>
-          </header>
+          <p
+            style={{
+              ...styles.subtitle,
+              textAlign: isHe ? "right" : "left"
+            }}
+          >
+            {subtitle}
+          </p>
+         </header>
 
           {/* Filter pills */}
-          <div style={styles.filters} className="cases-filters">
+          <div style={{ ...styles.filters,  flexDirection: isHe ? "row-reverse" : "row" }} className="cases-filters">
             {[
               { key: "all", label: t.all, count: cases.length },
               { key: "open", label: t.open, count: openCaseCount },
@@ -320,9 +327,13 @@ export default function CasesView({
                 return (
                   <div key={caseItem.id} style={{ ...styles.accordionCard, background: rowIndex % 2 === 0 ? "#fff" : "#fdf8f0" }}>
                     {/* Row trigger */}
-                    <button type="button" className="case-row-trigger"
-                      onClick={() => setExpandedCaseId(isExpanded ? null : caseItem.id)}
-                      style={styles.rowTrigger}>
+                    
+                      <div
+                        className="case-row-trigger"
+                        onClick={() => setExpandedCaseId(isExpanded ? null : caseItem.id)}
+                        style={styles.rowTrigger}
+                      >
+
                       <span className="col-name" style={styles.colName}>
                         {caseItem.requester_first_name} {caseItem.requester_last_name}
                       </span>
@@ -346,7 +357,7 @@ export default function CasesView({
                         )}
                       </span>
                       <span className={`row-chevron ${isExpanded ? "chevron-up" : "chevron-down"}`} />
-                    </button>
+                    </div>
 
                     {/* Accordion body */}
                     {isExpanded && (
@@ -608,7 +619,7 @@ const styles = {
   subtitle: { margin: 0, color: "#6b4f00", fontSize: "13px" },
   filters: { display: "flex", gap: "8px", marginBottom: "14px", flexWrap: "wrap" },
   filterButton: { display: "flex", alignItems: "center", gap: "6px", border: "1.5px solid #f3c49a", background: "white", color: "#3d332b", borderRadius: "20px", padding: "7px 14px", fontWeight: "800", fontSize: "13px", cursor: "pointer", whiteSpace: "nowrap" },
-  filterActive: { background: "#fff1df", color: "#e85d04", borderColor: "#e85d04" },
+  filterActive: { background: "#fff1df", color: "#e85d04" },
   filterCount: { background: "#f0e5d8", color: "#7a5c44", borderRadius: "10px", padding: "1px 7px", fontSize: "11px", fontWeight: "900" },
   filterCountActive: { background: "#ffd6b0", color: "#a83600" },
   toolbar: { display: "flex", gap: "12px", marginBottom: "14px" },

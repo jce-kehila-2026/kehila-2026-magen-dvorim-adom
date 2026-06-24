@@ -12,6 +12,9 @@ import {
   subscribeToAllIntakeForms,
   subscribeToCoordinatorIntakeForms,
 } from "../services/intakeFormService";
+import { getDocs, collection, query, where } from "firebase/firestore";
+import { db } from "../firebase";
+
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -100,18 +103,29 @@ function Dashboard() {
     }
   }
 
-  async function loadCoordinatorNames() {
-    try {
-      const coordinators = await getUsersByRole(USER_ROLES.COORDINATOR);
-      const nameMap = {};
-      coordinators.forEach((c) => {
-        nameMap[c.uid] = c.full_name || c.email || c.id;
-      });
-      setCoordinatorNames(nameMap);
-    } catch (err) {
-      console.error("Failed to load coordinator names:", err);
-    }
+
+async function loadCoordinatorNames() {
+  try {
+    const usersRef = collection(db, "users");
+
+    const q = query(
+      usersRef,
+      where("role", "in", [USER_ROLES.COORDINATOR, USER_ROLES.ADMIN]) // ✅ FIX
+    );
+
+    const snapshot = await getDocs(q);
+
+    const nameMap = {};
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      nameMap[doc.id] = data.full_name || data.email || doc.id;
+    });
+
+    setCoordinatorNames(nameMap);
+  } catch (err) {
+    console.error("Failed to load coordinator names:", err);
   }
+}
 
   const handleLogout = async () => {
     try {

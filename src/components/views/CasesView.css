@@ -176,7 +176,30 @@
     font-size: 16px;
   }
 
-  /* Detail sub-tables: allow horizontal scroll */
+  /* Detail sub-tables: allow horizontal scroll inside wrapper instead of full page */
+  .cases-main {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  .cases-content-card {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .detail-table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #eadfd2;
+    border-radius: 8px;
+    padding-bottom: 2px;
+  }
+
+  .detail-table-wrapper > div {
+    min-width: 540px; /* Ensure wide grids don't squish too much and cause horizontal scroll inside the wrapper */
+  }
+
   .cases-content-card .cases-list {
     overflow-x: hidden;
   }

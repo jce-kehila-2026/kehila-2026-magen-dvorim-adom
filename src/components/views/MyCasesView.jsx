@@ -3,6 +3,109 @@ import { useNavigate } from "react-router-dom";
 import { USER_ROLES } from "../../services/userSchema";
 import logo from "../../assets/logo.png";
 import "./MyCasesView.css";
+import { useLanguage } from "../../contexts/LanguageContext";
+
+const T = {
+  en: {
+    dashboard: "Dashboard",
+    cases: "Cases",
+    users: "Users",
+    backup: "Backup",
+    profile: "Profile",
+    logout: "Logout",
+
+    myCases: "My Cases",
+    myAssigned: "My Assigned Cases",
+    subtitleVolunteer: "View your assigned rescue cases and submit results when completed.",
+    subtitleDefault: "Cases currently assigned and being handled.",
+
+    loading: "Loading your cases…",
+    noCases: "No cases assigned yet",
+    noCasesDesc: "When a coordinator assigns you a case, it will appear here automatically.",
+
+    activeCases: "Active Cases",
+    completedCases: "Completed Cases",
+
+    phone: "Phone",
+    city: "City",
+    street: "Street",
+    urgency: "Urgency",
+    opened: "Opened",
+    status: "Status",
+    coordinator: "Coordinator",
+    description: "Description",
+
+    submitResults: "Submit Results",
+    collapse: "Collapse",
+    viewDetails: "View Details",
+
+    closedAt: "Closed",
+    result: "Result",
+    closingNotes: "Closing Notes",
+
+    modalTitle: "Submit Case Results",
+    resultStatus: "Result Status",
+    notes: "Closing Notes",
+    cancel: "Cancel",
+    submitting: "Submitting...",
+
+    height: "Height",
+    floor: "Floor",
+    complexity: "Complexity",
+    location: "Location",
+    notesPlaceholder: "Describe what happened during this rescue operation..."
+  },
+
+  he: {
+    dashboard: "דשבורד",
+    cases: "מקרים",
+    users: "משתמשים",
+    backup: "גיבוי",
+    profile: "פרופיל",
+    logout: "התנתק",
+
+    myCases: "המקרים שלי",
+    myAssigned: "המקרים שלי",
+    subtitleVolunteer: "צפה במקרים שהוקצו לך ושלח תוצאות לאחר סיום.",
+    subtitleDefault: "מקרים שמטופלים כרגע.",
+
+    loading: "טוען מקרים…",
+    noCases: "אין מקרים",
+    noCasesDesc: "כאשר יוקצה לך מקרה, הוא יופיע כאן.",
+
+    activeCases: "מקרים פעילים",
+    completedCases: "מקרים שהושלמו",
+
+    phone: "טלפון",
+    city: "עיר",
+    street: "רחוב",
+    urgency: "דחיפות",
+    opened: "נפתח",
+    status: "סטטוס",
+    coordinator: "רכז",
+    description: "תיאור",
+
+    submitResults: "שלח תוצאות",
+    collapse: "סגור",
+    viewDetails: "פרטים",
+
+    closedAt: "נסגר",
+    result: "תוצאה",
+    closingNotes: "הערות",
+
+    modalTitle: "שליחת תוצאות",
+    resultStatus: "תוצאת סיום",
+    notes: "הערות",
+    cancel: "ביטול",
+    submitting: "שולח...",
+
+    height: "גובה",
+    floor: "קומה",
+    complexity: "מורכבות",
+    location: "מיקום",
+    notesPlaceholder: "תאר מה קרה במהלך פעולת החילוץ..."
+  },
+};
 
 function MyCasesView({
   userProfile,
@@ -35,6 +138,18 @@ function MyCasesView({
 
   const assignedCases = cases.filter((c) => c.status !== "closed");
   const closedCases = cases.filter((c) => c.status === "closed");
+  const { language, setLanguage } = useLanguage();
+  const t = T[language] || T.en;
+  const isHe = language === "he";
+
+  const statusLabel = (s) => {
+    if (language === "he") {
+      if (s === "assigned") return "משויך";
+      if (s === "closed") return "סגור";
+      if (s === "open") return "פתוח";
+    }
+    return s;
+  };
 
   return (
     <div className="my-cases-page" style={styles.page}>
@@ -59,39 +174,50 @@ function MyCasesView({
 
         <nav style={styles.nav}>
           <button style={styles.navItem} onClick={() => goTo("/dashboard")}>
-            Dashboard
+            {t.dashboard}
           </button>
 
           {!isVolunteer && (
             <>
               <button style={styles.navItem} onClick={() => goTo("/cases")}>
-                Cases
+                {t.cases}
               </button>
 
               <button style={styles.navItem} onClick={() => goTo("/users")}>
-                Users
+                {t.users}
               </button>
 
               {userProfile?.role === USER_ROLES.ADMIN && (
                 <button style={styles.navItem} onClick={() => goTo("/backup")}>
-                  Backup
+                  {t.backup}
                 </button>
               )}
             </>
           )}
 
           <button style={{ ...styles.navItem, ...styles.navItemActive }}>
-            My Cases
+            {t.myCases}
           </button>
 
           <button style={styles.navItem} onClick={() => goTo("/profile")}>
-            Profile
+            {t.profile}
           </button>
         </nav>
 
-        <button style={styles.logoutButton} onClick={() => goTo("/")}>
-          Logout
-        </button>
+        <div style={styles.bottomSection}>
+          <button
+            style={styles.languageButton}
+            onClick={() =>
+              setLanguage(language === "he" ? "en" : "he")
+            }
+          >
+            {language === "he" ? "English 🌐" : "עברית 🌐"}
+          </button>
+
+          <button style={styles.logoutButton} onClick={() => goTo("/")}>
+            {t.logout}
+          </button>
+        </div>
       </aside>
 
       <main className="my-cases-main" style={styles.main}>
@@ -104,59 +230,78 @@ function MyCasesView({
             ☰
           </button>
 
-          <span className="my-cases-mobile-title">My Cases</span>
+          <span className="my-cases-mobile-title">{t.myCases}</span>
         </div>
 
         <section className="my-cases-card" style={styles.contentCard}>
-          <div className="my-cases-header" style={styles.header}>
-            <div>
-              <h1 className="my-cases-title" style={styles.title}>
-                {isVolunteer ? "My Assigned Cases" : "My Cases"}
-              </h1>
-              <p className="my-cases-subtitle" style={styles.subtitle}>
-                {isVolunteer
-                  ? "View your assigned rescue cases and submit results when completed."
-                  : "Cases currently assigned and being handled."}
-              </p>
-            </div>
+          <div
+            className="my-cases-header"
+            style={{
+              ...styles.header,
+              flexDirection: isHe ? "row-reverse" : "row",
+            }}
+          >
 
-            <div className="my-cases-meta" style={styles.metaBox}>
-              <span>{userProfile?.full_name || "User"}</span>
-              <strong>{userProfile?.role}</strong>
-            </div>
+<div
+  style={{
+    width: "100%",                // ✅ VERY IMPORTANT
+    textAlign: isHe ? "right" : "left",
+  }}
+>
+  <h1 className="my-cases-title" style={styles.title}>
+    {isVolunteer ? t.myAssigned : t.myCases}
+  </h1>
+
+  <p className="my-cases-subtitle" style={styles.subtitle}>
+    {isVolunteer ? t.subtitleVolunteer : t.subtitleDefault}
+  </p>
+</div>
+
+
           </div>
 
           {error && <div style={styles.errorBox}>{error}</div>}
-          {loading && <div style={styles.loading}>Loading your cases…</div>}
+          {loading && <div style={styles.loading}> {t.loading}</div>}
 
           {!loading && !error && cases.length === 0 && (
             <div style={styles.emptyState}>
               <div style={styles.emptyIcon}>📁</div>
-              <h2>No cases assigned yet</h2>
+              <h2> {t.noCases}</h2>
               <p>
-                When a coordinator assigns you a case, it will appear here
-                automatically.
+                {t.noCasesDesc}
               </p>
             </div>
           )}
 
           {!loading && cases.length > 0 && (
             <>
-              <section className="my-cases-summary" style={styles.summaryBar}>
+              <section
+                className="my-cases-summary"
+                style={{
+                  ...styles.summaryBar,
+                  direction: isHe ? "rtl" : "ltr",
+                }}
+              >
+
                 <div style={styles.summaryCard}>
-                  <span>Active Cases</span>
+                  <span>{t.activeCases}</span>
                   <strong>{assignedCases.length}</strong>
                 </div>
 
                 <div style={styles.summaryCard}>
-                  <span>Completed Cases</span>
+                  <span>{t.completedCases}</span>
                   <strong>{closedCases.length}</strong>
                 </div>
               </section>
 
               {assignedCases.length > 0 && (
                 <section style={styles.section}>
-                  <h2 style={styles.sectionTitle}>Active Cases</h2>
+                  <h2
+                    style={{
+                      ...styles.sectionTitle,
+                      textAlign: isHe ? "right" : "left",
+                    }}
+                  >{t.activeCases}</h2>
 
                   <div style={styles.caseList}>
                     {assignedCases.map((c) => {
@@ -166,7 +311,12 @@ function MyCasesView({
                       return (
                         <div key={c.id} style={styles.accordionCase}>
                           <button
-                            style={styles.accordionHeader}
+                           
+                          style={{
+                              ...styles.accordionHeader,
+                              flexDirection: isHe ? "row-reverse" : "row",
+                            }}
+
                             onClick={() => toggleExpand(c.id)}
                           >
                             <div>
@@ -176,8 +326,7 @@ function MyCasesView({
                               </strong>
 
                               <p style={styles.caseMeta}>
-                                {c.city || "Unknown city"} ·{" "}
-                                {c.status || "assigned"}
+                                {c.city || t.city} · {statusLabel(c.status)}
                               </p>
                             </div>
 
@@ -193,44 +342,41 @@ function MyCasesView({
                                 style={styles.detailsGrid}
                               >
                                 <p>
-                                  <strong>Phone:</strong>{" "}
+                                  <strong>{t.phone}:</strong>{" "}
                                   {c.requester_phone || "—"}
                                 </p>
 
                                 <p>
-                                  <strong>City:</strong> {c.city || "—"}
+                                  <strong>{t.city}:</strong> {c.city || "—"}
                                 </p>
 
                                 <p>
-                                  <strong>Street:</strong> {c.street}{" "}
+                                  <strong>{t.street}:</strong> {c.street}{" "}
                                   {c.house_number || ""}
                                 </p>
 
-                                <p>
-                                  <strong>Urgency:</strong>{" "}
-                                  {c.urgency || "normal"}
-                                </p>
+
 
                                 <p>
-                                  <strong>Opened:</strong>{" "}
+                                  <strong>{t.opened}:</strong>{" "}
                                   {formatDate(c.opened_at)}
                                 </p>
 
                                 <p>
-                                  <strong>Status:</strong>{" "}
+                                  <strong>{t.status}:</strong>{" "}
                                   {c.status || "assigned"}
                                 </p>
 
                                 {coordinator && (
                                   <p style={{ gridColumn: "1 / -1" }}>
-                                    <strong>Coordinator:</strong>{" "}
+                                    <strong>{t.coordinator}:</strong>{" "}
                                     {coordinator.full_name || "—"} ·{" "}
                                     {coordinator.phone || "—"}
                                   </p>
                                 )}
 
                                 <p style={{ gridColumn: "1 / -1" }}>
-                                  <strong>Description:</strong>{" "}
+                                  <strong>{t.description}:</strong>{" "}
                                   {c.location_description ||
                                     c.description ||
                                     "—"}
@@ -242,7 +388,7 @@ function MyCasesView({
                                   style={styles.submitButtonSmall}
                                   onClick={() => handleCloseCase(c)}
                                 >
-                                  Submit Results
+                                  {t.submitResults}
                                 </button>
                               </div>
                             </div>
@@ -256,7 +402,15 @@ function MyCasesView({
 
               {closedCases.length > 0 && (
                 <section style={styles.section}>
-                  <h2 style={styles.sectionTitle}>Completed Cases</h2>
+                  <h2
+                    style={{
+                      ...styles.sectionTitle,
+                      textAlign: isHe ? "right" : "left",
+                      width: "100%", // ✅ THIS fixes the empty gap
+                    }}
+                  >
+                    {t.completedCases}
+                  </h2>
 
                   <div style={styles.caseList}>
                     {closedCases.map((c) => {
@@ -264,7 +418,8 @@ function MyCasesView({
 
                       return (
                         <div key={c.id} style={styles.closedItem}>
-                          <div style={styles.closedTop}>
+                         <div style={styles.closedTop}>
+
                             <div>
                               <h3 style={styles.caseTitle}>
                                 {c.requester_first_name}{" "}
@@ -272,11 +427,11 @@ function MyCasesView({
                               </h3>
 
                               <p style={styles.caseMeta}>
-                                Closed: {formatDate(c.closed_at)}
+                                {t.closedAt}: {formatDate(c.closed_at)}
                               </p>
 
                               <p style={styles.caseMeta}>
-                                Result: {c.result_status || "completed"}
+                                {t.result}: {c.result_status || "completed"}
                               </p>
                             </div>
 
@@ -284,14 +439,17 @@ function MyCasesView({
                               style={styles.viewButton}
                               onClick={() => toggleExpand(c.id)}
                             >
-                              {expanded ? "Collapse" : "View Details"}
+                              {expanded ? t.collapse : t.viewDetails}
                             </button>
                           </div>
 
                           {expanded && (
                             <div
                               className="my-cases-details-grid"
-                              style={styles.detailsGrid}
+                              style={{
+                                ...styles.detailsGrid,
+                                textAlign: isHe ? "right" : "left",
+                              }}
                             >
                               <p>
                                 <strong>Phone:</strong>{" "}
@@ -299,31 +457,31 @@ function MyCasesView({
                               </p>
 
                               <p>
-                                <strong>Opened:</strong>{" "}
+                                <strong>{t.opened}:</strong>{" "}
                                 {formatDate(c.opened_at)}
                               </p>
 
                               <p>
-                                <strong>Location:</strong> {c.street}{" "}
+                                <strong>{t.street}:</strong> {c.street}{" "}
                                 {c.house_number || ""}, {c.city || ""}
                               </p>
 
                               <p>
-                                <strong>Height:</strong>{" "}
+                                <strong>{t.height}:</strong>{" "}
                                 {c.height_from_ground || "—"} meters
                               </p>
 
                               <p>
-                                <strong>Floor:</strong> {c.floor || "—"}
+                                <strong>{t.floor}:</strong> {c.floor || "—"}
                               </p>
 
                               <p>
-                                <strong>Complexity:</strong>{" "}
+                                <strong>{t.complexity}:</strong>{" "}
                                 {c.case_complexity || "simple"}
                               </p>
 
                               <p style={{ gridColumn: "1 / -1" }}>
-                                <strong>Description:</strong>{" "}
+                                <strong>{t.description}:</strong>{" "}
                                 {c.location_description || "—"}
                               </p>
 
@@ -349,15 +507,15 @@ function MyCasesView({
       {closingCase && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
-            <h2 style={styles.modalTitle}>Submit Case Results</h2>
+            <h2 style={styles.modalTitle}>{t.modalTitle}</h2>
             <p style={styles.modalSubtitle}>
-              Case: {closingCase.requester_first_name}{" "}
+              {t.myCases}: {closingCase.requester_first_name}{" "}
               {closingCase.requester_last_name}
             </p>
 
             <form onSubmit={handleSubmitCloseCase}>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Result Status *</label>
+                <label style={styles.label}>{t.resultStatus} *</label>
                 <select
                   value={closingFormData.result_status}
                   onChange={(e) =>
@@ -378,7 +536,7 @@ function MyCasesView({
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>Closing Notes</label>
+                <label style={styles.label}>{t.notes}</label>
                 <textarea
                   value={closingFormData.result_notes}
                   onChange={(e) =>
@@ -387,7 +545,7 @@ function MyCasesView({
                       result_notes: e.target.value,
                     })
                   }
-                  placeholder="Describe what happened during this rescue operation..."
+                  placeholder={t.notesPlaceholder}
                   style={styles.textarea}
                   rows={4}
                 />
@@ -400,7 +558,7 @@ function MyCasesView({
                   style={styles.cancelButton}
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
 
                 <button
@@ -408,7 +566,7 @@ function MyCasesView({
                   style={styles.submitButton}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Submitting..." : "Submit Results"}
+                  {isSubmitting ? t.submitting : t.submitResults}
                 </button>
               </div>
             </form>
@@ -787,6 +945,22 @@ const styles = {
     fontWeight: "800",
     cursor: "pointer",
   },
+  bottomSection: {
+  marginTop: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+},
+
+languageButton: {
+  padding: "13px",
+  borderRadius: "14px",
+  border: "1px solid #eadfd2",
+  background: "#fffaf4",
+  color: "#2b160c",
+  fontWeight: "800",
+  cursor: "pointer",
+},
 };
 
 export default MyCasesView;
