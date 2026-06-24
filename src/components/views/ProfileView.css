@@ -4,7 +4,6 @@
 }
 
 @media (max-width: 768px) {
-
   .profile-page {
     display: block !important;
   }
@@ -12,7 +11,6 @@
   .profile-mobile-topbar {
     display: flex;
     align-items: center;
-    gap: 12px;
     height: 58px;
     padding: 0 14px;
     background: #fff8ef;
@@ -29,23 +27,26 @@
     border-radius: 12px;
     background: #fff1df;
     color: #e85d04;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 900;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
   }
 
-  .profile-mobile-title {
-    font-size: 16px;
-    font-weight: 900;
-    color: #2b160c;
+  .profile-menu-button:hover {
+    background: #ffe4c4;
   }
 
   .profile-overlay {
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.3);
+    background: rgba(43, 22, 12, 0.4);
     z-index: 30;
+    backdrop-filter: blur(2px);
   }
 
   .profile-sidebar {
@@ -56,7 +57,9 @@
     left: 0 !important;
     z-index: 40 !important;
     transform: translateX(-100%);
-    transition: transform 0.25s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #fffdf8 !important;
+    box-shadow: 10px 0 30px rgba(43, 22, 12, 0.1);
   }
 
   .profile-sidebar.open {
@@ -64,6 +67,8 @@
   }
 
   .profile-main {
-    padding: 12px !important;
+    padding: 16px !important;
+    background-color: #fffdf8;
+    min-height: calc(100vh - 58px);
   }
 }
