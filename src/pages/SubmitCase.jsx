@@ -171,7 +171,7 @@ function SubmitCase() {
   const handleBlur = (name) => setTouched(prev => ({ ...prev, [name]: true }));
 
   const isRequired = (field) => {
-    const required = ["requester_first_name", "requester_last_name", "requester_phone", "city", "street", "location_description", "height_from_ground", "floor" ];
+const required = ["requester_first_name", "requester_last_name", "requester_phone", "city", "street", "location_description", "height_from_ground", "floor"];
     if (!coordinatorIdFromUrl) required.push("coordinator_phone");
     return required.includes(field);
   };
@@ -197,7 +197,7 @@ function SubmitCase() {
     e.preventDefault();
     setError("");
 
-    const allRequired = ["requester_first_name", "requester_last_name", "requester_phone", "city", "street", "location_description", "height_from_ground", "floor" ];
+const allRequired = ["requester_first_name", "requester_last_name", "requester_phone", "city", "street", "location_description", "height_from_ground", "floor"];
     if (!coordinatorIdFromUrl) allRequired.push("coordinator_phone");
 
     const newTouched = {};
@@ -211,8 +211,7 @@ function SubmitCase() {
     }));
 
 
-    const requesterPhone = normalizePhone(formData.requester_phone);
-    if (!formData.requester_first_name || !formData.requester_last_name || !requesterPhone || !formData.city || !formData.street || !formData.location_description || !formData.height_from_ground || !formData.floor ) {
+    const requesterPhone = normalizePhone(formData.requester_phone);if (!formData.requester_first_name || !formData.requester_last_name || !requesterPhone || !formData.city || !formData.street || !formData.location_description || !formData.height_from_ground || !formData.floor) {
       setError(t.errorFillAll);
       return;
     }
@@ -504,7 +503,6 @@ function SubmitCase() {
 
               <h2 style={styles.sectionTitle}>{t.aboutBees}</h2>
             </div>
-            
             <div style={styles.fieldGroup}>
               <label style={styles.label}>{t.firstSeen}</label>
               <select 

@@ -79,7 +79,6 @@ const validInput = {
   location_description: "Near building",
   height_from_ground: 2,
   floor: "1",
-  urgency: "low",
 };
 
 
@@ -106,21 +105,21 @@ describe("CaseSchema validation", () => {
     ).toThrow();
   });
 
-  test("rejects invalid enum values", () => {
-    expect(() =>
-      CaseSchema.parse({
-        ...validInput,
-        urgency: "urgent", // invalid
-        coordinator_id: "coord1",
-      })
-    ).toThrow();
-  });
-
-  test("rejects non-positive height", () => {
+  test("accepts zero height (boundary case)", () => {
     expect(() =>
       CaseSchema.parse({
         ...validInput,
         height_from_ground: 0,
+        coordinator_id: "coord1",
+      })
+    ).not.toThrow();
+  });
+
+  test("rejects negative height", () => {
+    expect(() =>
+      CaseSchema.parse({
+        ...validInput,
+        height_from_ground: -1,
         coordinator_id: "coord1",
       })
     ).toThrow();

@@ -1,6 +1,6 @@
 // Volunteer recommendation map.
 // Visualizes recommended volunteers based on case location and criteria.
-
+import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -24,7 +24,7 @@ function getPosition(item) {
   return null;
 }
 
-export default function VolunteerRecommendationMap({ caseData, volunteers = [] }) {
+export default function VolunteerRecommendationMap({ caseData, volunteers = [], selectedVolunteerId }) {
   const casePosition = getPosition(caseData);
   const volunteersWithLocation = volunteers
     .map((volunteer) => ({
@@ -37,6 +37,18 @@ export default function VolunteerRecommendationMap({ caseData, volunteers = [] }
     casePosition ||
     volunteersWithLocation[0]?.position ||
     CITY_COORDINATES.Jerusalem;
+
+  const markerRefs = useRef({});
+
+  useEffect(() => {
+    if (!selectedVolunteerId) return;
+
+    const marker = markerRefs.current[selectedVolunteerId];
+
+    if (marker) {
+      marker.openPopup();
+    }
+  }, [selectedVolunteerId]);
 
   return (
     <div style={{ height: "220px", width: "100%" }}>
@@ -61,8 +73,16 @@ export default function VolunteerRecommendationMap({ caseData, volunteers = [] }
           </Marker>
         )}
 
-        {volunteersWithLocation.map((volunteer) => (
-          <Marker key={volunteer.id} position={volunteer.position}>
+      {volunteersWithLocation.map((volunteer) => (
+          <Marker
+            key={volunteer.id}
+            position={volunteer.position}
+            ref={(markerInstance) => {
+              if (markerInstance) {
+                markerRefs.current[volunteer.id] = markerInstance;
+              }
+            }}
+          >
             <Popup>
               <strong>{volunteer.full_name || volunteer.email}</strong>
               <br />

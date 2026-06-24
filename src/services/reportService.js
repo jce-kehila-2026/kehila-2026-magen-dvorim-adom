@@ -30,12 +30,11 @@ export async function getReportsStats() {
   const coordinators = users.filter((u) => u.role === "coordinator").length;
   const admins = users.filter((u) => u.role === "admin").length;
 
-  const successfulCases = cases.filter(
-    (c) =>
-      c.status === "closed" &&
-      (c.result === "evacuated" ||
-        c.result_status === "evacuated_by_volunteer")
-  ).length;
+const successfulCases = cases.filter(
+  (c) =>
+    c.status === "closed" &&
+    c.result_status === "evacuated_by_volunteer"
+).length;
 
   const successRate =
     closedCases > 0 ? Math.round((successfulCases / closedCases) * 100) : 0;
