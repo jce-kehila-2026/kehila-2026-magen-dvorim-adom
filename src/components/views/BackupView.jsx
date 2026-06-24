@@ -358,21 +358,23 @@ export default function BackupView({ userProfile, currentUserName, handleLogout 
               </div>
             </div>
 
-            <div style={styles.fieldGroup}>
-              <div style={styles.groupTitle}>Details to Include</div>
-              <div style={styles.checkboxGrid}>
-                {DETAIL_FIELDS.map((field) => (
-                  <label key={field.key} style={styles.checkboxLabel}>
-                    <input
-                      type="checkbox"
-                      checked={selectedFields.includes(field.key)}
-                      onChange={() => toggleField(field.key)}
-                    />
-                    {field.label}
-                  </label>
-                ))}
+            {(selectedTypes.includes(BACKUP_TYPES.ALL) || selectedTypes.includes(BACKUP_TYPES.USERS)) && (
+              <div style={styles.fieldGroup}>
+                <div style={styles.groupTitle}>Details to Include</div>
+                <div style={styles.checkboxGrid}>
+                  {DETAIL_FIELDS.map((field) => (
+                    <label key={field.key} style={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={selectedFields.includes(field.key)}
+                        onChange={() => toggleField(field.key)}
+                      />
+                      {field.label}
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <button
               type="button"
