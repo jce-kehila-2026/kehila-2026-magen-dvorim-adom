@@ -669,7 +669,7 @@ const styles = {
 
   brandTitle: {
     margin: 0,
-    color: "#2b160c",
+    color: "#4a3f35",
     fontSize: "16px",
     fontWeight: "900",
     lineHeight: 1.1,
@@ -690,7 +690,7 @@ const styles = {
   navItem: {
     border: "none",
     background: "transparent",
-    color: "#3d332b",
+    color: "#4a3f35",
     padding: "14px 16px",
     borderRadius: "14px",
     textAlign: "left",
@@ -731,14 +731,14 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     gap: "18px",
-    alignItems: "flex-start",
+    alignItems: "center",
     flexWrap: "wrap",
     marginBottom: "20px",
   },
 
   title: {
     margin: 0,
-    color: "#f57c00",
+    color: "#4a3f35",
     fontSize: "32px",
     fontWeight: "900",
   },
@@ -752,7 +752,7 @@ const styles = {
   filterButton: {
     border: "1px solid #f3c49a",
     background: "white",
-    color: "#3d332b",
+    color: "#4a3f35",
     borderRadius: "12px",
     padding: "10px 16px",
     fontWeight: "800",
@@ -818,8 +818,8 @@ const styles = {
     background: "#fffdf8",
     fontSize: "14px",
     
-    color: "#2b160c",      
-    caretColor: "#2b160c",  
+    color: "#4a3f35",      
+    caretColor: "#4a3f35",  
 
   },
 
@@ -829,7 +829,7 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "white",
     fontWeight: "800",
-    color: "#3d332b",
+    color: "#4a3f35",
   },
 
   usersList: {
@@ -845,7 +845,7 @@ const styles = {
     gap: "10px",
     padding: "12px 14px",
     background: "#fff8ef",
-    color: "#51443a",
+    color: "#4a3f35",
     fontWeight: "900",
     fontSize: "13px",
   },
@@ -858,13 +858,13 @@ const styles = {
     alignItems: "center",
     padding: "14px",
     borderTop: "1px solid #f1ebe5",
-    color: "#1f2933",
+    color: "#4a3f35",
     fontSize: "13px",
   },
 
   userName: {
     fontWeight: "800",
-    color: "#2b160c",
+    color: "#4a3f35",
   },
 
   badge: {
@@ -982,14 +982,14 @@ const styles = {
 
   modalTitle: {
     margin: 0,
-    color: "#2b160c",
+    color: "#4a3f35",
     fontSize: "22px",
     fontWeight: "900",
   },
 
   modalSubtitle: {
     margin: "4px 0 0",
-    color: "#6b625c",
+    color: "#4a3f35",
     fontSize: "13px",
   },
 
@@ -1012,7 +1012,7 @@ const styles = {
   field: {
     display: "grid",
     gap: "6px",
-    color: "#2b160c",
+    color: "#4a3f35",
     fontWeight: "800",
   },
 
@@ -1023,8 +1023,8 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     boxSizing: "border-box",
-    color: "#2b160c",       
-    caretColor: "#2b160c",  
+    color: "#4a3f35",       
+    caretColor: "#4a3f35",  
 
   },
 
@@ -1037,7 +1037,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    color: "#2b160c",
+    color: "#4a3f35",
     fontWeight: "700",
   },
 
@@ -1058,7 +1058,7 @@ const styles = {
   dropdownItem: {
     padding: "11px 14px",
     cursor: "pointer",
-    color: "#2b160c",
+    color: "#4a3f35",
   },
 
   modalActions: {
