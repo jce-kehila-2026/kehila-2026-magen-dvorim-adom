@@ -221,33 +221,38 @@ const goTo = (path) => {
           {message && <div style={styles.successBox}>{message}</div>}
           {error && <div style={styles.errorBox}>{error}</div>}
 
-          <div style={styles.toolbar} className="users-toolbar">
-            <input
-              placeholder="Search by name, phone, email or city..."
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              style={styles.searchInput}
-            />
+          <div style={styles.controlPanel} className="users-control-panel">
+            <div style={styles.searchWrap}>
+              <span style={styles.searchIcon}>🔍</span>
+              <input
+                placeholder="Search by name, phone, email or city..."
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
 
-            <select
-              value={roleFilter}
-              onChange={(event) => setRoleFilter(event.target.value)}
-              style={styles.selectInput}
-            >
-              <option value="all">All roles</option>
-              <option value={USER_ROLES.ADMIN}>Admins</option>
-              <option value={USER_ROLES.COORDINATOR}>Coordinators</option>
-              <option value={USER_ROLES.VOLUNTEER}>Volunteers</option>
-            </select>
+            <div style={styles.filtersRow}>
+              <select
+                value={roleFilter}
+                onChange={(event) => setRoleFilter(event.target.value)}
+                style={styles.selectInput}
+              >
+                <option value="all">All roles</option>
+                <option value={USER_ROLES.ADMIN}>Admins</option>
+                <option value={USER_ROLES.COORDINATOR}>Coordinators</option>
+                <option value={USER_ROLES.VOLUNTEER}>Volunteers</option>
+              </select>
 
-            <select
-              value={sortMode}
-              onChange={(event) => setSortMode(event.target.value)}
-              style={styles.selectInput}
-            >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-            </select>
+              <select
+                value={sortMode}
+                onChange={(event) => setSortMode(event.target.value)}
+                style={styles.selectInput}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+              </select>
+            </div>
           </div>
          <div className="users-table-scroll">
           <div style={styles.usersList}>
@@ -810,9 +815,40 @@ const styles = {
     marginBottom: "14px",
   },
 
+  controlPanel: {
+    display: "flex",
+    gap: "16px",
+    alignItems: "center",
+    marginBottom: "18px",
+    background: "#fff8ef",
+    padding: "12px",
+    borderRadius: "14px",
+    border: "1px solid #f0e5d8",
+  },
+
+  searchWrap: {
+    position: "relative",
+    flex: 1,
+  },
+
+  searchIcon: {
+    position: "absolute",
+    left: "12px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "#6b625c",
+    fontSize: "14px",
+  },
+
+  filtersRow: {
+    display: "flex",
+    gap: "12px",
+    alignItems: "center",
+  },
+
   searchInput: {
     flex: 1,
-    padding: "12px 14px",
+    padding: "12px 14px 12px 40px",
     borderRadius: "12px",
     border: "1px solid #eadfd2",
     background: "#fffdf8",
@@ -827,7 +863,7 @@ const styles = {
     padding: "12px 14px",
     borderRadius: "12px",
     border: "1px solid #eadfd2",
-    background: "white",
+    background: "#fffdf8",
     fontWeight: "800",
     color: "#4a3f35",
   },
