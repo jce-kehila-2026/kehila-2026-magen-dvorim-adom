@@ -51,6 +51,15 @@ const validAssignmentPayload = {
   notes: "Bring extra gloves",
 };
 
+const REOPEN_RESET_FIELDS = {
+  result_status: null,
+  result_notes: null,
+  closed_by: null,
+  closed_at: null,
+  feedback_token: null,
+  feedback_submitted: false,
+};
+
 describe("AssignmentSchema", () => {
   test("accepts a fully valid assignment payload", () => {
     expect(() =>
@@ -193,7 +202,7 @@ describe("assignUserToCase", () => {
 });
 
 describe("removeAssignment", () => {
-  test("reopens the case when the last assignment is removed", async () => {
+ test("reopens the case when the last assignment is removed", async () => {
     deleteDoc.mockResolvedValueOnce();
     getDocs.mockResolvedValueOnce({ empty: true, docs: [] });
 
@@ -202,7 +211,6 @@ describe("removeAssignment", () => {
     expect(deleteDoc).toHaveBeenCalled();
     expect(updateCaseStatus).toHaveBeenCalledWith("case-123", "open");
   });
-
   test("keeps the case assigned when other assignments still exist", async () => {
     deleteDoc.mockResolvedValueOnce();
     getDocs.mockResolvedValueOnce({
@@ -230,7 +238,11 @@ describe("reopenCaseAndCleanConflicts", () => {
 
     expect(result).toEqual([]);
     expect(deleteDoc).not.toHaveBeenCalled();
-    expect(updateCaseStatus).toHaveBeenCalledWith("case-123", "open", {});
+    expect(updateCaseStatus).toHaveBeenCalledWith(
+      "case-123",
+      "open",
+      REOPEN_RESET_FIELDS
+    );
   });
 
   test("removes all assignments and reopens the case", async () => {
@@ -250,7 +262,11 @@ describe("reopenCaseAndCleanConflicts", () => {
       { user_id: "vol-456", assignmentId: "assignment-reopen" },
     ]);
     expect(deleteDoc).toHaveBeenCalled();
-    expect(updateCaseStatus).toHaveBeenCalledWith("case-123", "open", {});
+    expect(updateCaseStatus).toHaveBeenCalledWith(
+      "case-123",
+      "open",
+      REOPEN_RESET_FIELDS
+    );
   });
 });
 
@@ -329,6 +345,10 @@ describe("assignment workflow integration", () => {
       { user_id: "vol-456", assignmentId: "assignment-int-1" },
     ]);
     expect(deleteDoc).toHaveBeenCalled();
-    expect(updateCaseStatus).toHaveBeenCalledWith("case-123", "open", {});
+    expect(updateCaseStatus).toHaveBeenCalledWith(
+      "case-123",
+      "open",
+      REOPEN_RESET_FIELDS
+    );
   });
 });

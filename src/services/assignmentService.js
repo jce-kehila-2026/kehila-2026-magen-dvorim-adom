@@ -213,7 +213,14 @@ export async function reopenCaseAndCleanConflicts(caseId) {
     }
   }
 
-  await updateCaseStatus(caseId, "open", {});
+  await updateCaseStatus(caseId, "open", {
+    result_status: null,
+    result_notes: null,
+    closed_by: null,
+    closed_at: null,
+    feedback_token: null,
+    feedback_submitted: false,
+  });
 
   return removed;
 }

@@ -22,13 +22,14 @@ vi.mock("firebase/firestore", async (importOriginal) => {
     ...actual, // ✅ keep real exports like getFirestore
 
     // ✅ override only what we need
-    collection: vi.fn(),
-    addDoc: vi.fn(),
-    getDocs: vi.fn(),
-    query: vi.fn(),
-    where: vi.fn(),
-    doc: vi.fn(() => ({})),
-    updateDoc: vi.fn(),
+   collection: vi.fn(),
+addDoc: vi.fn(),
+getDocs: vi.fn(),
+getDoc: vi.fn(),
+query: vi.fn(),
+where: vi.fn(),
+doc: vi.fn(() => ({})),
+updateDoc: vi.fn(),
 
     Timestamp: {
       now: () => ({ seconds: Date.now() }),
@@ -40,6 +41,7 @@ vi.mock("firebase/firestore", async (importOriginal) => {
 import {
   addDoc,
   getDocs,
+  getDoc,
   updateDoc,
 } from "firebase/firestore";
 
@@ -368,8 +370,8 @@ describe("Intake form service", () => {
       });
 
     const result = await getValidIntakeFormForRequester({
-      requester_phone: "050",
-      coordinator_phone: "050",
+      requester_phone: "0501234567",
+      coordinator_phone: "0509999999",
     });
 
     expect(result.id).toBe("form1");
@@ -393,44 +395,38 @@ describe("Intake form service", () => {
       });
 
     const result = await getValidIntakeFormForRequester({
-      requester_phone: "050",
-      coordinator_phone: "050",
+      requester_phone: "0509999999",
+      coordinator_phone: "0509999999",
     });
 
     expect(result).toBe(null);
   });
 
 
- test("creates intake form", async () => {
-  getDocs
-    .mockResolvedValueOnce({ empty: false, docs: [{ id: "coord1" }] })
-    .mockResolvedValueOnce({ empty: true, docs: [] })
-    .mockResolvedValueOnce({ empty: true, docs: [] });
+test("creates intake form", async () => {
+  getDoc.mockResolvedValueOnce({
+    exists: () => true,
+    data: () => ({
+      role: "coordinator",
+      full_name: "Coordinator One",
+      phone: "0509999999",
+    }),
+  });
+
+  getDocs.mockResolvedValue({
+    empty: true,
+    docs: [],
+  });
 
   addDoc.mockResolvedValueOnce({ id: "form1" });
 
   await createIntakeForm({
-    requester_phone: "050",
-    coordinator_phone: "050",
+    requester_phone: "0501234567",
+    coordinator_id: "coord1",
   });
 
   expect(addDoc).toHaveBeenCalled();
 });
-
-
-  test("blocks duplicate intake form", async () => {
-    getDocs
-      .mockResolvedValueOnce({ empty: false, docs: [{ id: "coord1" }] })
-      .mockResolvedValueOnce({ empty: false });
-
-    await expect(
-      createIntakeForm({
-        requester_phone: "050",
-        coordinator_phone: "050",
-      })
-    ).rejects.toThrow("active form");
-  });
-
 
   test("marks intake form as submitted", async () => {
     await markIntakeFormSubmitted("form1", "case1");

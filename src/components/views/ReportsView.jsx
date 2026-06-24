@@ -1,58 +1,55 @@
 // Reports and analytics dashboard.
 // Displays system statistics, charts, and performance insights.
+
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { USER_ROLES } from "../../services/userSchema";
 import logo from "../../assets/logo.png";
+import { USER_ROLES } from "../../services/userSchema";
+import { logoutUser } from "../../services/authService";
 import "./ReportsView.css";
+
+const CITY_COLORS = ["#ea580c", "#f59e0b", "#16a34a", "#374151", "#8b5cf6", "#dc2626", "#0ea5e9", "#a855f7"];
 
 function ReportsView({ userProfile, stats, loading, error }) {
   const navigate = useNavigate();
 
-  const [menuOpen, setMenuOpen] = useState(false);
-
-const goTo = (path) => {
-  setMenuOpen(false);
-  navigate(path);
-};
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
   const [modalType, setModalType] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const cases = stats?.casesList || [];
   const users = stats?.usersList || [];
 
-  const latestFeedbacks = stats?.latestFeedbacks || [];
-  const ratingBreakdown = stats?.ratingBreakdown || [];
+  const handleLogout = async () => {
+    await logoutUser();
+  };
 
-  console.log("REPORT STATS:", stats);
-  console.log("REPORT CASES:", cases);
-  
   const getCaseYear = (caseItem) => {
-  const value =
-    caseItem.opened_at ||
-    caseItem.created_at ||
-    caseItem.closed_at;
+    const value =
+      caseItem.opened_at ||
+      caseItem.created_at ||
+      caseItem.closed_at;
 
-  if (!value) return null;
+    if (!value) return null;
 
-  if (value.toDate) {
-    return value.toDate().getFullYear();
-  }
+    if (value.toDate) {
+      return value.toDate().getFullYear();
+    }
 
-  const date = new Date(value);
+    const date = new Date(value);
 
-  if (Number.isNaN(date.getFullYear())) {
-    return null;
-  }
+    if (Number.isNaN(date.getFullYear())) {
+      return null;
+    }
 
-  return date.getFullYear();
-};
+    return date.getFullYear();
+  };
 
   const years = [
-  ...new Set(cases.map((caseItem) => getCaseYear(caseItem)).filter(Boolean)),
-].sort((a, b) => b - a);
+    ...new Set(cases.map((caseItem) => getCaseYear(caseItem)).filter(Boolean)),
+  ].sort((a, b) => b - a);
 
   const filteredCases = useMemo(() => {
     return cases.filter((c) => {
@@ -112,36 +109,37 @@ const goTo = (path) => {
     return Object.values(result).sort((a, b) => b.total - a.total);
   }, [filteredCases]);
 
-  const statusChart = [
-    { label: "Open", value: filteredStats.openCases, color: "#f59e0b" },
-    { label: "Assigned", value: filteredStats.assignedCases, color: "#16a34a" },
-    { label: "Closed", value: filteredStats.closedCases, color: "#374151" },
-  ];
-
   if (loading) {
-  return (
-    <div style={styles.page}>
-      <main className="reports-main" style={styles.main}>
-        <div style={styles.loading}>
-          Loading reports...
-        </div>
-      </main>
-    </div>
-  );
-}
+    return (
+      <div style={styles.page}>
+        <main style={styles.main}>
+          <div style={styles.loading}>Loading reports...</div>
+        </main>
+      </div>
+    );
+  }
 
   return (
-    <div className="reports-page" style={styles.page}>
-  {menuOpen && (
-    <div
-      className="reports-overlay"
-      onClick={() => setMenuOpen(false)}
-    />
-  )}
+    <div style={styles.page} className="reports-page">
+      <button
+        type="button"
+        className="mobile-menu-button print-hide"
+        onClick={() => setMobileMenuOpen(true)}
+      >
+        ☰
+      </button>
+
+      {mobileMenuOpen && (
+        <div
+          className="mobile-menu-backdrop"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       <aside
-  className={`reports-sidebar ${menuOpen ? "open" : ""}`}
-  style={styles.sidebar}
->
+        style={styles.sidebar}
+        className={`reports-sidebar print-hide ${mobileMenuOpen ? "mobile-open" : ""}`}
+      >
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
 
@@ -152,15 +150,33 @@ const goTo = (path) => {
         </div>
 
         <nav style={styles.nav}>
-          <button style={styles.navItem} onClick={() => goTo("/dashboard")}>
+          <button
+            style={styles.navItem}
+            onClick={() => {
+              navigate("/dashboard");
+              setMobileMenuOpen(false);
+            }}
+          >
             Dashboard
           </button>
 
-          <button style={styles.navItem} onClick={() => goTo("/cases")}>
+          <button
+            style={styles.navItem}
+            onClick={() => {
+              navigate("/cases");
+              setMobileMenuOpen(false);
+            }}
+          >
             Cases
           </button>
 
-          <button style={styles.navItem} onClick={() => goTo("/users")}>
+          <button
+            style={styles.navItem}
+            onClick={() => {
+              navigate("/users");
+              setMobileMenuOpen(false);
+            }}
+          >
             Users
           </button>
 
@@ -169,38 +185,62 @@ const goTo = (path) => {
           </button>
 
           {userProfile?.role === USER_ROLES.ADMIN && (
-            <button style={styles.navItem} onClick={() => goTo("/backup")}>
+            <button
+              style={styles.navItem}
+              onClick={() => {
+                navigate("/backup");
+                setMobileMenuOpen(false);
+              }}
+            >
               Backup
             </button>
           )}
 
-          <button style={styles.navItem} onClick={() => goTo("/profile")}>
+          <button
+            style={styles.navItem}
+            onClick={() => {
+              navigate("/profile");
+              setMobileMenuOpen(false);
+            }}
+          >
             Profile
           </button>
         </nav>
+
+        <button
+          style={styles.logoutButton}
+          onClick={() => {
+            setMobileMenuOpen(false);
+            handleLogout();
+          }}
+        >
+          Logout
+        </button>
       </aside>
 
-      <main className="reports-main" style={styles.main}>
-
-  <div className="reports-mobile-topbar">
-    <button
-      className="reports-menu-button"
-      onClick={() => setMenuOpen(true)}
-    >
-      ☰
-    </button>
-
-    <span className="reports-mobile-title">
-      Reports
-    </span>
-  </div>
+      <main style={styles.main} className="reports-main">
         <header style={styles.header}>
-          <h1 style={styles.title}>Reports & Statistics</h1>
+          <div style={styles.headerRow} className="reports-header-row">
+            <div />
+            <div>
+              <h1 style={styles.title}>Reports & Statistics</h1>
+              <p style={styles.subtitle}>
+                Analyze rescue activity, users, cities, urgency, and yearly trends.
+              </p>
+            </div>
+            <button
+              className="print-hide reports-print-button"
+              style={styles.printButton}
+              onClick={() => window.print()}
+            >
+              Print / Export PDF
+            </button>
+          </div>
         </header>
 
         {error && <div style={styles.errorBox}>{error}</div>}
 
-       <section className="reports-filters" style={styles.filtersBar}>
+        <section style={styles.filtersBar} className="print-hide reports-filters">
           <input
             placeholder="Search by requester, city, status..."
             value={search}
@@ -234,128 +274,209 @@ const goTo = (path) => {
           </select>
         </section>
 
-        <section className="reports-feedback-cards" style={styles.feedbackCards}>
-  <StatCard
-    title="Average Rating"
-    value={`${stats?.averageRating || "0.0"} / 5`}
-    color="#f59e0b"
-  />
+        {/* ───────────────── Feedback & Satisfaction (primary focus) ───────────────── */}
 
-  <StatCard
-    title="Total Feedbacks"
-    value={stats?.totalFeedbacks || 0}
-    color="#ea580c"
-  />
+        <section style={styles.sectionHeader}>
+          <h2 style={styles.sectionHeadingTitle}>Feedback & Satisfaction</h2>
+        </section>
 
-  <StatCard
-    title="Positive Feedback"
-    value={`${stats?.positiveRate || 0}%`}
-    color="#16a34a"
-  />
+        <section style={styles.cards} className="reports-cards">
+          <StatCard
+            title="Average Rating"
+            value={`${stats?.averageRating || 0} / 4`}
+            color="#f59e0b"
+          />
+          <StatCard
+            title="Total Feedbacks"
+            value={stats?.totalFeedbacks || 0}
+            color="#ea580c"
+          />
+          <StatCard
+            title="Positive Feedback"
+            value={`${stats?.positiveFeedbackRate || 0}%`}
+            color="#16a34a"
+          />
+          <StatCard
+            title="Low Ratings"
+            value={stats?.negativeFeedbackCount || 0}
+            color="#dc2626"
+          />
+          <StatCard
+            title="Response Rate"
+            value={`${stats?.responseRate || 0}%`}
+            color="#8b5cf6"
+            note="% of closed cases that received feedback"
+          />
+        </section>
 
-  <StatCard
-    title="Success Rate"
-    value={`${stats?.successRate || 0}%`}
-    color="#8b5cf6"
-  />
-</section>
-<section className="reports-feedback-section" style={styles.feedbackSection}>
-  <div style={styles.feedbackMainPanel}>
-    <h2 style={styles.panelTitle}>Latest Feedback</h2>
+        <section style={styles.analyticsGrid} className="reports-analytics-grid">
+          <div style={styles.chartPanel}>
+            <h2 style={styles.panelTitle}>Rating Breakdown</h2>
 
-    {!latestFeedbacks.length ? (
-      <p style={styles.emptyText}>No feedback submitted yet.</p>
-    ) : (
-      latestFeedbacks.map((item) => (
-        <div key={item.id} style={styles.feedbackCard}>
-          <div style={styles.feedbackStars}>
-            {"★".repeat(Number(item.rating || 0))}
-            {"☆".repeat(5 - Number(item.rating || 0))}
+            {!stats?.totalFeedbacks ? (
+              <p style={styles.emptyText}>No feedback submitted yet.</p>
+            ) : (
+              (stats?.ratingBreakdown || []).map((item) => (
+                <StarBreakdownRow
+                  key={item.star}
+                  star={item.star}
+                  count={item.count}
+                  total={stats?.totalFeedbacks || 0}
+                />
+              ))
+            )}
           </div>
 
-          <p style={styles.feedbackText}>
-            {item.comment || item.message || "No comment provided."}
-          </p>
+          <div
+            style={{
+              ...styles.chartPanel,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <h2 style={{ ...styles.panelTitle, alignSelf: "flex-start" }}>
+              Positive vs Low Rating
+            </h2>
 
-          <span style={styles.feedbackMeta}>
-            {item.city || "Unknown city"} · {item.requester_name || "Requester"}
-          </span>
-        </div>
-      ))
-    )}
-  </div>
+            {!stats?.totalFeedbacks ? (
+              <p style={styles.emptyText}>No feedback submitted yet.</p>
+            ) : (
+              <>
+                <DonutChart
+                  positive={stats?.positiveFeedbackCount || 0}
+                  negative={stats?.negativeFeedbackCount || 0}
+                />
 
-  <div style={styles.feedbackSidePanel}>
-    <h2 style={styles.panelTitle}>Rating Breakdown</h2>
-
-    {ratingBreakdown.map((item) => (
-      <BarRow
-        key={item.rating}
-        label={`${item.rating} Stars`}
-        value={item.count}
-        total={stats?.totalFeedbacks || 0}
-        color="#f59e0b"
-      />
-    ))}
-  </div>
-</section>
-
-        <section className="reports-analytics-grid" style={styles.analyticsGrid}>
-          <div style={styles.chartPanel}>
-            <h2 style={styles.panelTitle}>Cases by Status</h2>
-
-            {statusChart.map((item) => (
-              <BarRow
-                key={item.label}
-                label={item.label}
-                value={item.value}
-                total={filteredStats.totalCases}
-                color={item.color}
-              />
-            ))}
+                <div style={styles.donutLegend}>
+                  <span>
+                    <span style={{ ...styles.legendDot, background: "#16a34a" }} />
+                    Positive ({stats?.positiveFeedbackCount || 0})
+                  </span>
+                  <span>
+                    <span style={{ ...styles.legendDot, background: "#e7e1d9" }} />
+                    Low rating ({stats?.negativeFeedbackCount || 0})
+                  </span>
+                </div>
+              </>
+            )}
           </div>
+        </section>
 
-          <div style={styles.chartPanel}>
+        <section style={styles.chartPanel}>
+          <h2 style={styles.panelTitle}>Latest Feedback</h2>
+
+          {!stats?.recentFeedbacks?.length ? (
+            <p style={styles.emptyText}>No feedback submitted yet.</p>
+          ) : (
+            <div style={styles.feedbackScroll} className="feedback-scroll">
+             
+              {stats.recentFeedbacks.map((feedback) => (
+                <div key={feedback.id} style={styles.feedbackCard}>
+                  <div style={styles.starsLine}>
+                    {"★".repeat(feedback.overallRating)}
+                    {"☆".repeat(4 - feedback.overallRating)}
+                  </div>
+
+                  <p style={styles.feedbackComment}>
+                    {feedback.comments || "No comment provided."}
+                  </p>
+
+                  <p style={styles.feedbackMeta}>
+                    {feedback.caseCity} · {feedback.caseRequesterName}
+                    {feedback.closureRound > 1 && ` · Round ${feedback.closureRound}`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ───────────────── Case Overview (secondary) ───────────────── */}
+
+        <section style={styles.sectionHeader}>
+          <h2 style={styles.sectionHeadingTitle}>Case Overview</h2>
+        </section>
+
+        <section style={styles.cards} className="reports-cards">
+          <StatCard title="Total Cases" value={filteredStats.totalCases} />
+          <StatCard
+            title="Open Cases"
+            value={filteredStats.openCases}
+            color="#f59e0b"
+          />
+          <StatCard
+            title="Assigned Cases"
+            value={filteredStats.assignedCases}
+            color="#16a34a"
+          />
+          <StatCard
+            title="Closed Cases"
+            value={filteredStats.closedCases}
+            color="#374151"
+          />
+          <StatCard
+            title="Urgent Cases"
+            value={filteredStats.urgentCases}
+            color="#dc2626"
+          />
+          <StatCard
+            title="Success Rate"
+            value={`${stats?.successRate || 0}%`}
+            color="#8b5cf6"
+            note="% of closed cases with a successful rescue outcome"
+          />
+        </section>
+
+        <section style={styles.grid} className="reports-grid">
+          <button
+            style={styles.panelButton}
+            onClick={() => setModalType("cities")}
+          >
             <h2 style={styles.panelTitle}>Cases by City</h2>
 
             {!filteredCityStats.length ? (
               <p style={styles.emptyText}>No city data available.</p>
             ) : (
-              filteredCityStats.slice(0, 5).map((item) => (
-                <BarRow
-                  key={item.city}
-                  label={item.city}
-                  value={item.total}
-                  total={filteredStats.totalCases}
-                  color="#ea580c"
-                />
-              ))
-            )}
-          </div>
-        </section>
+              <div style={styles.pieRow}>
+                <CityPieChart data={filteredCityStats} />
 
-        <section className="reports-grid" style={styles.grid}>
-          <button style={styles.panelButton} onClick={() => setModalType("users")}>
-            <h2 style={styles.panelTitle}>Users Summary</h2>
-            <p style={styles.panelText}>
-              Admins: {stats?.admins || 0} · Coordinators:{" "}
-              {stats?.coordinators || 0} · Volunteers: {stats?.volunteers || 0}
-            </p>
-            <span style={styles.clickHint}>Click to view full users table →</span>
+                <div style={styles.pieLegend}>
+                  {filteredCityStats.slice(0, 5).map((item, index) => (
+                    <span key={item.city} style={styles.pieLegendItem}>
+                      <span
+                        style={{
+                          ...styles.legendDot,
+                          background: CITY_COLORS[index % CITY_COLORS.length],
+                        }}
+                      />
+                      {item.city} ({item.total})
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <span style={styles.clickHint} className="print-hide">
+              Click to view full breakdown →
+            </span>
           </button>
 
-          <button style={styles.panelButton} onClick={() => setModalType("cities")}>
-            <h2 style={styles.panelTitle}>Detailed Cases by City</h2>
+          <button
+            style={styles.panelButton}
+            onClick={() => setModalType("users")}
+          >
+            <h2 style={styles.panelTitle}>Users Summary</h2>
 
-            {!filteredCityStats.length ? (
-              <p style={styles.emptyText}>No city data available.</p>
-            ) : (
-              filteredCityStats.slice(0, 4).map((item) => (
-                <ReportRow key={item.city} label={item.city} value={item.total} />
-              ))
-            )}
+            <UsersSummaryBar
+              admins={stats?.admins || 0}
+              coordinators={stats?.coordinators || 0}
+              volunteers={stats?.volunteers || 0}
+            />
 
-            <span style={styles.clickHint}>Click to view full city table →</span>
+            <span style={styles.clickHint} className="print-hide">
+              Click to view full users table →
+            </span>
           </button>
         </section>
       </main>
@@ -428,32 +549,27 @@ const goTo = (path) => {
   );
 }
 
-function StatCard({ title, value, color = "#ea580c" }) {
+function StatCard({ title, value, color = "#ea580c", note }) {
   return (
     <div style={styles.statCard}>
       <p style={styles.statTitle}>{title}</p>
       <h2 style={{ ...styles.statValue, color }}>{value}</h2>
+      {note && <p style={styles.statNote}>{note}</p>}
     </div>
   );
 }
 
-function ReportRow({ label, value }) {
-  return (
-    <div style={styles.reportRow}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function BarRow({ label, value, total, color }) {
-  const width = total > 0 ? Math.round((value / total) * 100) : 0;
+function StarBreakdownRow({ star, count, total }) {
+  const width = total > 0 ? Math.round((count / total) * 100) : 0;
 
   return (
     <div style={styles.barRow}>
       <div style={styles.barTop}>
-        <span>{label}</span>
-        <strong>{value}</strong>
+        <span style={{ color: "#f59e0b", letterSpacing: "1px" }}>
+          {"★".repeat(star)}
+          {"☆".repeat(4 - star)}
+        </span>
+        <strong>{count}</strong>
       </div>
 
       <div style={styles.barTrack}>
@@ -461,9 +577,120 @@ function BarRow({ label, value, total, color }) {
           style={{
             ...styles.barFill,
             width: `${width}%`,
-            background: color,
+            background: "#f59e0b",
           }}
         />
+      </div>
+    </div>
+  );
+}
+
+function DonutChart({ positive, negative }) {
+  const total = positive + negative;
+  const positivePercent = total > 0 ? (positive / total) * 100 : 0;
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  const positiveLength = (positivePercent / 100) * circumference;
+
+  return (
+    <svg width="140" height="140" viewBox="0 0 140 140">
+      <circle cx="70" cy="70" r={radius} fill="none" stroke="#e7e1d9" strokeWidth="16" />
+      <circle
+        cx="70"
+        cy="70"
+        r={radius}
+        fill="none"
+        stroke="#16a34a"
+        strokeWidth="16"
+        strokeDasharray={`${positiveLength} ${circumference}`}
+        strokeLinecap="round"
+        transform="rotate(-90 70 70)"
+      />
+      <text
+        x="70"
+        y="70"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        style={{ fontSize: "20px", fontWeight: "900", fill: "#2b160c" }}
+      >
+        {Math.round(positivePercent)}%
+      </text>
+    </svg>
+  );
+}
+
+function CityPieChart({ data }) {
+  const total = data.reduce((sum, item) => sum + item.total, 0);
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  let cumulative = 0;
+
+  return (
+    <svg width="120" height="120" viewBox="0 0 140 140">
+      {total === 0 ? (
+        <circle cx="70" cy="70" r={radius} fill="none" stroke="#e7e1d9" strokeWidth="16" />
+      ) : (
+        data.map((item, index) => {
+          const sliceLength = (item.total / total) * circumference;
+          const offset = cumulative;
+          cumulative += sliceLength;
+
+          return (
+            <circle
+              key={item.city}
+              cx="70"
+              cy="70"
+              r={radius}
+              fill="none"
+              stroke={CITY_COLORS[index % CITY_COLORS.length]}
+              strokeWidth="16"
+              strokeDasharray={`${sliceLength} ${circumference - sliceLength}`}
+              strokeDashoffset={-offset}
+              transform="rotate(-90 70 70)"
+            />
+          );
+        })
+      )}
+    </svg>
+  );
+}
+
+function UsersSummaryBar({ admins, coordinators, volunteers }) {
+  const total = admins + coordinators + volunteers;
+
+  const segments = [
+    { label: "Admins", value: admins, color: "#8b5cf6" },
+    { label: "Coordinators", value: coordinators, color: "#16a34a" },
+    { label: "Volunteers", value: volunteers, color: "#ea580c" },
+  ];
+
+  return (
+    <div>
+      <div style={styles.stackedBarTrack}>
+        {segments.map((segment) => {
+          const width = total > 0 ? (segment.value / total) * 100 : 0;
+          if (width === 0) return null;
+
+          return (
+            <div
+              key={segment.label}
+              style={{
+                ...styles.stackedBarSegment,
+                width: `${width}%`,
+                background: segment.color,
+              }}
+            />
+          );
+        })}
+      </div>
+
+      <div style={styles.pieLegend}>
+        {segments.map((segment) => (
+          <span key={segment.label} style={styles.pieLegendItem}>
+            <span style={{ ...styles.legendDot, background: segment.color }} />
+            {segment.label} ({segment.value})
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -501,7 +728,7 @@ const styles = {
   },
   brandTitle: {
     margin: 0,
-    color: "#2b160c",
+    color: "#6a2300",
     fontSize: "16px",
     fontWeight: "900",
   },
@@ -527,132 +754,161 @@ const styles = {
   },
   navItemActive: {
     background: "#fff1df",
-    color: "#e85d04",
+    color: "#6a2300",
+  },
+  logoutButton: {
+    marginTop: "auto",
+    border: "none",
+    background: "#6a2300",
+    color: "white",
+    borderRadius: "6px",
+    padding: "12px",
+    fontSize: "13px",
+    fontWeight: "800",
+    cursor: "pointer",
   },
   main: {
-    padding: "34px",
+    padding: "26px 30px",
     boxSizing: "border-box",
   },
   header: {
-    textAlign: "center",
-    marginBottom: "26px",
+    marginBottom: "18px",
+  },
+  headerRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr auto 1fr",
+    alignItems: "center",
+    gap: "12px",
   },
   title: {
     margin: 0,
-    color: "#2b160c",
-    fontSize: "34px",
+    color: "#6a2300",
+    fontSize: "28px",
     fontWeight: "900",
+    textAlign: "center",
   },
   subtitle: {
-    margin: "8px 0 0",
+    margin: "6px 0 0",
     color: "#6b625c",
-    fontSize: "15px",
+    fontSize: "14px",
+    textAlign: "center",
+  },
+  printButton: {
+    justifySelf: "end",
+    border: "1px solid #6a2300",
+    background: "white",
+    color: "#6a2300",
+    borderRadius: "8px",
+    padding: "9px 14px",
+    fontWeight: "800",
+    fontSize: "13px",
+    cursor: "pointer",
+    whiteSpace: "nowrap",
   },
   filtersBar: {
     display: "grid",
     gridTemplateColumns: "1fr 180px 160px",
-    gap: "12px",
-    marginBottom: "22px",
+    gap: "10px",
+    marginBottom: "16px",
   },
   searchInput: {
-    padding: "13px 16px",
-    borderRadius: "14px",
+    padding: "11px 14px",
+    borderRadius: "12px",
     border: "1px solid #eadfd2",
     background: "white",
-    fontSize: "14px",
-    color: "#2b160c",        
-    caretColor: "#2b160c",   
-
+    fontSize: "13px",
   },
   select: {
-    padding: "13px 16px",
-    borderRadius: "14px",
+    padding: "11px 14px",
+    borderRadius: "12px",
     border: "1px solid #eadfd2",
     background: "white",
     fontWeight: "800",
+    fontSize: "13px",
     color: "#3d332b",
+  },
+  cards: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+    gap: "10px",
+    marginBottom: "14px",
   },
   statCard: {
     background: "white",
     border: "1px solid #f0e5d8",
-    borderRadius: "18px",
-    padding: "20px",
+    borderRadius: "14px",
+    padding: "14px",
     textAlign: "center",
   },
   statTitle: {
     margin: 0,
     color: "#6b625c",
-    fontSize: "14px",
+    fontSize: "12px",
     fontWeight: "800",
   },
   statValue: {
-    margin: "10px 0 0",
-    fontSize: "34px",
+    margin: "6px 0 0",
+    fontSize: "26px",
     fontWeight: "900",
+  },
+  statNote: {
+    margin: "6px 0 0",
+    color: "#9a8f86",
+    fontSize: "10px",
+    lineHeight: "1.4",
   },
   analyticsGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: "18px",
-    marginBottom: "18px",
+    gap: "12px",
+    marginBottom: "14px",
   },
   chartPanel: {
     background: "white",
     border: "1px solid #f0e5d8",
-    borderRadius: "20px",
-    padding: "22px",
+    borderRadius: "16px",
+    padding: "16px",
+    marginBottom: "14px",
   },
   grid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: "18px",
+    gap: "14px",
   },
   panelButton: {
     background: "white",
     border: "1px solid #f0e5d8",
-    borderRadius: "20px",
-    padding: "22px",
+    borderRadius: "16px",
+    padding: "16px",
     textAlign: "left",
     cursor: "pointer",
   },
   panelTitle: {
-    margin: "0 0 16px",
+    margin: "0 0 10px",
     color: "#2b160c",
-    fontSize: "20px",
+    fontSize: "16px",
     fontWeight: "900",
-  },
-  panelText: {
-    color: "#6b625c",
-    fontSize: "14px",
   },
   clickHint: {
     display: "inline-block",
-    marginTop: "12px",
-    color: "#ea580c",
+    marginTop: "10px",
+    color: "#6a2300",
     fontWeight: "900",
-    fontSize: "13px",
-  },
-  reportRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: "10px 0",
-    borderBottom: "1px solid #f1ebe5",
-    color: "#3d332b",
-    fontSize: "14px",
+    fontSize: "12px",
   },
   barRow: {
-    marginBottom: "16px",
+    marginBottom: "10px",
   },
   barTop: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: "7px",
+    marginBottom: "5px",
     color: "#3d332b",
-    fontSize: "14px",
+    fontSize: "13px",
     fontWeight: "800",
   },
   barTrack: {
-    height: "10px",
+    height: "8px",
     background: "#f3eee8",
     borderRadius: "999px",
     overflow: "hidden",
@@ -663,6 +919,7 @@ const styles = {
   },
   emptyText: {
     color: "#6b625c",
+    fontSize: "13px",
   },
   errorBox: {
     padding: "12px",
@@ -670,12 +927,96 @@ const styles = {
     backgroundColor: "#fde8e8",
     color: "#b42318",
     fontSize: "14px",
-    marginBottom: "18px",
+    marginBottom: "16px",
   },
   loading: {
     padding: "30px",
     color: "#6b625c",
     fontWeight: "800",
+  },
+  sectionHeader: {
+    marginTop: "4px",
+    marginBottom: "8px",
+  },
+  sectionHeadingTitle: {
+    margin: 0,
+    color: "#2b160c",
+    fontSize: "18px",
+    fontWeight: "900",
+  },
+  donutLegend: {
+    display: "flex",
+    gap: "14px",
+    marginTop: "10px",
+    fontSize: "12px",
+    color: "#3d332b",
+    fontWeight: "700",
+  },
+  legendDot: {
+    display: "inline-block",
+    width: "9px",
+    height: "9px",
+    borderRadius: "50%",
+    marginRight: "5px",
+  },
+  pieRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    flexWrap: "wrap",
+  },
+  pieLegend: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    marginTop: "10px",
+  },
+  pieLegendItem: {
+    fontSize: "12px",
+    color: "#3d332b",
+    fontWeight: "700",
+    display: "flex",
+    alignItems: "center",
+  },
+  stackedBarTrack: {
+    display: "flex",
+    height: "14px",
+    borderRadius: "999px",
+    overflow: "hidden",
+    background: "#f3eee8",
+    marginBottom: "4px",
+  },
+  stackedBarSegment: {
+    height: "100%",
+  },
+  feedbackScroll: {
+    display: "flex",
+    gap: "12px",
+    overflowX: "auto",
+    paddingBottom: "6px",
+  },
+  feedbackCard: {
+    flex: "0 0 260px",
+    background: "#fff8ef",
+    border: "1px solid #f0e5d8",
+    borderRadius: "14px",
+    padding: "14px",
+  },
+  starsLine: {
+    color: "#f59e0b",
+    fontSize: "18px",
+    letterSpacing: "2px",
+    marginBottom: "6px",
+  },
+  feedbackComment: {
+    margin: "0 0 8px",
+    color: "#2b160c",
+    fontSize: "14px",
+  },
+  feedbackMeta: {
+    margin: 0,
+    color: "#6b625c",
+    fontSize: "12px",
   },
   modalOverlay: {
     position: "fixed",
@@ -702,7 +1043,7 @@ const styles = {
     right: "16px",
     border: "none",
     background: "#fff1df",
-    color: "#ea580c",
+    color: "#6a2300",
     borderRadius: "10px",
     width: "34px",
     height: "34px",
@@ -753,61 +1094,6 @@ const styles = {
     color: "#3d332b",
     fontSize: "14px",
   },
-  feedbackCards: {
-  display: "grid",
-  gridTemplateColumns: "repeat(4, minmax(160px, 1fr))",
-  gap: "14px",
-  marginBottom: "22px",
-},
-
-feedbackSection: {
-  display: "grid",
-  gridTemplateColumns: "1.4fr 1fr",
-  gap: "18px",
-  marginBottom: "22px",
-},
-
-feedbackMainPanel: {
-  background: "white",
-  border: "1px solid #f0e5d8",
-  borderRadius: "20px",
-  padding: "22px",
-},
-
-feedbackSidePanel: {
-  background: "white",
-  border: "1px solid #f0e5d8",
-  borderRadius: "20px",
-  padding: "22px",
-},
-
-feedbackCard: {
-  border: "1px solid #f1ebe5",
-  borderRadius: "14px",
-  padding: "14px",
-  marginBottom: "12px",
-  background: "#fffdf8",
-},
-
-feedbackStars: {
-  color: "#f59e0b",
-  fontSize: "18px",
-  fontWeight: "900",
-  marginBottom: "6px",
-},
-
-feedbackText: {
-  margin: "0 0 8px",
-  color: "#2b160c",
-  fontSize: "14px",
-  lineHeight: 1.5,
-},
-
-feedbackMeta: {
-  color: "#6b625c",
-  fontSize: "12px",
-  fontWeight: "700",
-},
 };
 
 export default ReportsView;
