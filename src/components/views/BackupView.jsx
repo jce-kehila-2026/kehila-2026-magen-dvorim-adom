@@ -119,7 +119,7 @@ function downloadCsvFile(rows, selectedTypes) {
   const typeLabel = selectedTypes.includes(BACKUP_TYPES.ALL) ? BACKUP_TYPES.ALL : selectedTypes.join("-");
   const filename = `magen-dvorim-adom-${typeLabel}-backup-${timestamp}.csv`;
   const csv = Papa.unparse(rows);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -231,7 +231,7 @@ export default function BackupView({ userProfile, currentUserName, handleLogout 
               </div>
             )}
             <button type="button" onClick={handleDownload} disabled={loading} style={{ ...styles.button, ...(loading ? styles.buttonDisabled : {}) }}>
-              {loading ? "Preparing..." : "Download Backup"}
+              {loading ? "Preparing..." : "Download File"}
             </button>
           </div>
         </section>
@@ -254,12 +254,12 @@ const styles = {
   page: { minHeight: "100vh", padding: "40px" },
   card: { maxWidth: "880px", margin: "0 auto", background: "#ffffff", borderRadius: "24px", padding: "32px", border: "1px solid #f0e5d8", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" },
   header: { textAlign: "left", marginBottom: "32px" },
-  title: { margin: "0 0 8px", color: "#2b160c", fontSize: "28px", fontWeight: "900" },
+  title: { margin: "0 0 8px", color: "#2b160c", fontSize: "28px", fontWeight: "900", letterSpacing: "1px" },
   subtitle: { margin: 0, color: "#8a7e75", fontSize: "15px" },
   formPanel: { maxWidth: "100%", display: "grid", gap: "24px" },
   fieldGroup: { display: "grid", gap: "16px", padding: "20px", border: "1px solid #f0e5d8", borderRadius: "16px", background: "#fffcf9" },
   groupTitle: { color: "#2b160c", fontSize: "16px", fontWeight: "900" },
-  checkboxGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "12px" },
+  checkboxGrid: { display: "flex", flexWrap: "wrap", gap: "20px", alignItems: "center" },
   checkboxLabel: { display: "flex", alignItems: "center", gap: "10px", color: "#3d332b", fontSize: "14px", fontWeight: "600", cursor: "pointer" },
   button: { border: "none", padding: "14px 28px", borderRadius: "14px", background: "#e85d04", color: "white", fontWeight: "800", cursor: "pointer", fontSize: "15px" },
   buttonDisabled: { opacity: 0.6, cursor: "not-allowed" },
