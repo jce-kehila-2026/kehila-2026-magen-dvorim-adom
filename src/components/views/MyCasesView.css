@@ -1,16 +1,16 @@
-.profile-mobile-topbar,
-.profile-overlay {
+.my-cases-mobile-topbar,
+.my-cases-overlay {
   display: none;
 }
 
 @media (max-width: 768px) {
-  .profile-layout {
+  .my-cases-page {
     display: block !important;
     min-height: 100vh !important;
     background: #fffdf8 !important;
   }
 
-  .profile-mobile-topbar {
+  .my-cases-mobile-topbar {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -23,7 +23,7 @@
     z-index: 20;
   }
 
-  .profile-menu-button {
+  .my-cases-menu-button {
     width: 40px;
     height: 40px;
     border: none;
@@ -35,13 +35,13 @@
     cursor: pointer;
   }
 
-  .profile-mobile-title {
+  .my-cases-mobile-title {
     color: #2b160c;
     font-size: 16px;
     font-weight: 900;
   }
 
-  .profile-overlay {
+  .my-cases-overlay {
     display: block;
     position: fixed;
     inset: 0;
@@ -49,7 +49,7 @@
     z-index: 30;
   }
 
-  .profile-sidebar {
+  .my-cases-sidebar {
     width: 270px !important;
     height: 100vh !important;
     position: fixed !important;
@@ -62,44 +62,62 @@
     border-right: 1px solid #f0e5d8 !important;
   }
 
-  .profile-sidebar.open {
+  .my-cases-sidebar.open {
     transform: translateX(0);
   }
 
-  .profile-main {
+  .my-cases-main {
     padding: 12px !important;
+    max-width: 100vw;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 
-  .profile-card {
+  .my-cases-card {
     padding: 16px !important;
     border-radius: 18px !important;
     box-shadow: 0 12px 28px rgba(43, 22, 12, 0.05) !important;
   }
 
-  .profile-title {
+  .my-cases-title {
     font-size: 24px !important;
   }
 
-  .profile-form-grid {
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
+  .my-cases-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
   }
 
-  .profile-availability-card {
-    align-items: flex-start !important;
+  .my-cases-meta {
+    text-align: left !important;
+  }
+
+  .my-cases-summary {
+    grid-template-columns: 1fr !important;
+  }
+
+  .my-cases-details-grid {
+    grid-template-columns: 1fr !important;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .my-cases-details-grid p {
+    grid-column: 1 / -1 !important;
   }
 }
 
 @media (max-width: 480px) {
-  .profile-main {
+  .my-cases-main {
     padding: 10px !important;
   }
 
-  .profile-card {
+  .my-cases-card {
     padding: 14px !important;
   }
 
-  .profile-title {
+  .my-cases-title {
     font-size: 22px !important;
   }
 }

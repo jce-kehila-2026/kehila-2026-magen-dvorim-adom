@@ -1,144 +1,241 @@
-.mobile-menu-button {
-  display: none;
-}
+/* ─────────────────────────────────────────
+   CasesView — responsive styles
+   ───────────────────────────────────────── */
 
-.mobile-menu-backdrop {
-  display: none;
-}
-
-.case-accordion-header {
-  text-align: left;
-}
-
-/* Mobile */
+/* ── Sidebar hidden off-screen on mobile ── */
 @media (max-width: 768px) {
   .cases-page {
-    display: block !important;
+    grid-template-columns: 1fr !important;
   }
-
+  .cases-sidebar {
+    position: fixed !important;
+    left: -260px;
+    top: 0;
+    width: 240px !important;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.25s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.12);
+  }
+  .cases-sidebar.mobile-open {
+    left: 0;
+  }
+  .mobile-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 999;
+  }
   .mobile-menu-button {
-    display: flex;
     position: fixed;
     top: 14px;
     left: 14px;
-    z-index: 11997;
-    width: 42px;
-    height: 42px;
-    border: none;
-    border-radius: 12px;
-    background: #ea580c;
+    z-index: 998;
+    background: #6a2300;
     color: white;
-    font-size: 22px;
-    font-weight: 900;
+    border: none;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex !important;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 10px 28px rgba(234, 88, 12, 0.25);
   }
-
-  .mobile-menu-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 11998;
-    background: rgba(0, 0, 0, 0.28);
-  }
-
-  .cases-sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    z-index: 11999 !important;
-    width: 240px !important;
-    height: 100vh !important;
-    transform: translateX(-105%);
-    transition: transform 0.25s ease;
-    box-shadow: 18px 0 50px rgba(0, 0, 0, 0.12);
-  }
-
-  .cases-sidebar.mobile-open {
-    transform: translateX(0);
-  }
-
   .cases-main {
-    padding: 76px 12px 16px !important;
+    padding: 62px 8px 20px !important;
   }
-
   .cases-content-card {
-    padding: 14px !important;
-    border-radius: 18px !important;
-  }
-
-  .cases-filters {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-  }
-
-  .cases-toolbar {
-    flex-direction: column !important;
-    gap: 8px !important;
-  }
-
-  .cases-toolbar input,
-  .cases-toolbar select {
-    width: 100% !important;
-  }
-
-  .case-accordion-card {
+    padding: 14px 10px !important;
     border-radius: 14px !important;
   }
+}
 
-  .case-accordion-header {
-    padding: 14px !important;
+@media (min-width: 769px) {
+  .mobile-menu-button {
+    display: none !important;
+  }
+}
+
+/* ── Prevent iOS zoom on inputs ── */
+@media (max-width: 768px) {
+  .cases-search-input {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Filter pills ── */
+@media (max-width: 420px) {
+  .cases-filters button {
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+}
+
+/* ── Desktop table header: hide on mobile ── */
+@media (max-width: 768px) {
+  .cases-desktop-header {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE ROW LAYOUT
+   The trigger becomes a flex card:
+     [Name          chevron]
+     [phone · date         ]
+     [status  assigned     ]
+     [feedback             ]  ← only for closed
+   ═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .case-row-trigger {
+    /* Override the JS inline grid */
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    padding: 12px 14px !important;
+    position: relative !important;
   }
 
-  .case-info-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 12px !important;
+  /* Row 1: Name + chevron */
+  .case-row-trigger .col-name {
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    text-align: left !important;
+    color: #2b160c !important;
+    padding-right: 28px; /* don't overlap chevron */
+    margin-bottom: 4px;
   }
 
+  /* Row 2: phone · date — inline on one line */
+  .case-row-trigger .col-phone,
+  .case-row-trigger .col-date {
+    display: inline !important;
+    font-size: 12px !important;
+    color: #6b625c !important;
+    text-align: left !important;
+  }
+
+  /* Wrap phone+date in one visual line */
+  .case-row-trigger .col-phone::after {
+    content: " · ";
+    color: #aaa;
+  }
+
+  /* We group phone+date with a wrapper div in the JSX — but since the
+     JSX outputs bare spans we fake the single-line with display:inline */
+
+  /* Row 3: status pill + assigned name side by side */
+  .case-row-trigger .col-status {
+    display: inline-flex !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    margin-top: 6px;
+    margin-right: 8px;
+  }
+
+  /* Assigned name shown below status on mobile */
+  .case-row-trigger .col-assigned {
+    font-size: 12px !important;
+    text-align: left !important;
+    color: #16803d !important;
+    margin-top: 3px;
+  }
+
+  /* Feedback — its own line */
+  .case-row-trigger .col-feedback {
+    display: flex !important;
+    justify-content: flex-start !important;
+    margin-top: 5px;
+  }
+
+  /* Chevron: absolute top-right */
+  .case-row-trigger .row-chevron {
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
+  }
+
+  /* Action buttons: full-width stacked */
   .case-inline-actions {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
   }
-
   .case-inline-actions button {
     width: 100% !important;
+    padding: 12px !important;
+    font-size: 14px !important;
+    text-align: center !important;
   }
 
+  /* Close case picker inputs */
+  .close-case-picker select,
+  .close-case-picker textarea {
+    font-size: 16px;
+  }
+
+  /* Detail sub-tables: allow horizontal scroll inside wrapper instead of full page */
+  .cases-main {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  .cases-content-card {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .detail-table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #eadfd2;
+    border-radius: 8px;
+    padding-bottom: 2px;
+  }
+
+  .detail-table-wrapper > div {
+    min-width: 540px; /* Ensure wide grids don't squish too much and cause horizontal scroll inside the wrapper */
+  }
+
+  .cases-content-card .cases-list {
+    overflow-x: hidden;
+  }
+}
+
+/* ── Assign modal ── */
+@media (max-width: 768px) {
   .assign-modal {
     width: 96vw !important;
-    height: 94vh !important;
-    overflow-y: auto !important;
+    max-height: 92vh !important;
     padding: 14px !important;
   }
-
   .assign-modal-grid {
     grid-template-columns: 1fr !important;
     height: auto !important;
   }
-
-  .assign-user-list {
-    height: 210px !important;
+  .assign-map-box {
+    display: none !important;
   }
-
   .assign-bottom-panel {
     grid-template-columns: 1fr !important;
   }
-}
-
-/* Very small phones */
-@media (max-width: 480px) {
-  .cases-content-card {
-    padding: 12px !important;
-  }
-
-  .cases-filters {
-    grid-template-columns: 1fr 1fr !important;
-  }
-
-  .case-info-grid {
-    grid-template-columns: 1fr 1fr !important;
+  .assign-user-list {
+    height: 200px !important;
   }
 }
+
+/* ── Chevron ── */
+.row-chevron {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-right: 2.5px solid #0f5f7a;
+  border-bottom: 2.5px solid #0f5f7a;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.chevron-down { transform: rotate(45deg); }
+.chevron-up   { transform: rotate(-135deg); }
