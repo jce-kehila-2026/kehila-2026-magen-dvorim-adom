@@ -16,6 +16,7 @@ import { USER_ROLES } from "./services/userSchema";
 import { getDashboardPathByRole } from "./utils/routes";
 import FeedbackPage from "./pages/FeedbackPage";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import CoordinatorRequests from "./pages/CoordinatorRequests";
 
 
 function App() {
@@ -35,33 +36,13 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              {userProfile?.role === USER_ROLES.VOLUNTEER ? (
-                <VolunteerDashboard />
-              ) : (
-                <Dashboard />
-              )}
-            </ProtectedRoute>
-          }
-        />
+
 
         <Route
-          path="/admin-dashboard"
+          path="/requests"
           element={
-            <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/coordinator-dashboard"
-          element={
-            <ProtectedRoute allowedRoles={[USER_ROLES.COORDINATOR]}>
-              <Dashboard />
+            <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.COORDINATOR]}>
+              <CoordinatorRequests />
             </ProtectedRoute>
           }
         />
@@ -84,15 +65,7 @@ function App() {
           }
         />
 
-        <Route
-          path="/cases"
-          element={
-            <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.COORDINATOR]}>
-              <CoordinatorCases />
-            </ProtectedRoute>
-          }
-        />
-
+ 
         <Route
           path="/my-cases"
           element={
@@ -126,14 +99,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/coordinator/send-form"
-          element={
-            <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.COORDINATOR]}>
-              <CoordinatorSendForm />
-            </ProtectedRoute>
-          }
-        />
+
 
         <Route path="/submit-case" element={<SubmitCase />} />
 

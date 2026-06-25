@@ -1,0 +1,275 @@
+/* ═══════════════════════════════════════════════
+   RequestsView.css — responsive styles
+   ═══════════════════════════════════════════════ */
+
+/* ── Sidebar: hidden off-screen on mobile ── */
+@media (max-width: 768px) {
+  .requests-page {
+    grid-template-columns: 1fr !important;
+  }
+
+  .requests-sidebar {
+    position: fixed !important;
+    left: -260px;
+    top: 0;
+    width: 240px !important;
+    height: 100vh;
+    z-index: 1001;
+    transition: left 0.25s ease;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.12);
+  }
+
+  .requests-sidebar.mobile-open {
+    left: 0;
+  }
+
+  /* RTL: sidebar slides in from right */
+  [dir="rtl"] .requests-sidebar {
+    left: auto;
+    right: -260px;
+    transition: right 0.25s ease;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
+  }
+
+  [dir="rtl"] .requests-sidebar.mobile-open {
+    right: 0;
+  }
+
+  .requests-mobile-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  .requests-mobile-menu-btn {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 998;
+    background: #6a2300;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  [dir="rtl"] .requests-mobile-menu-btn {
+    left: auto;
+    right: 14px;
+  }
+
+  .requests-main {
+    padding: 62px 8px 24px !important;
+  }
+
+  .requests-card {
+    padding: 14px 12px !important;
+    border-radius: 14px !important;
+  }
+}
+
+/* ── Hide mobile button on desktop ── */
+@media (min-width: 769px) {
+  .requests-mobile-menu-btn {
+    display: none !important;
+  }
+}
+
+/* ── Prevent iOS zoom on inputs ── */
+@media (max-width: 768px) {
+  .requests-search-input {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Top row: stack on mobile ── */
+@media (max-width: 860px) {
+  .requests-top-row {
+    flex-direction: column !important;
+  }
+
+  .requests-top-left,
+  .requests-top-right {
+    flex: none !important;
+    width: 100% !important;
+  }
+}
+
+/* ── Send form + instructions: already stacked inside card, no extra needed ── */
+
+/* ── Filter pills: smaller on tiny screens ── */
+@media (max-width: 420px) {
+  .requests-filters button {
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+}
+
+/* ── Hide desktop table header on mobile ── */
+@media (max-width: 768px) {
+  .requests-desktop-header {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   MOBILE CASE ROW LAYOUT
+   ═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .case-row-trigger {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    padding: 12px 14px !important;
+    position: relative !important;
+  }
+
+  .case-row-trigger .col-name {
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    text-align: left !important;
+    color: #2b160c !important;
+    padding-right: 28px;
+    margin-bottom: 4px;
+  }
+
+  [dir="rtl"] .case-row-trigger .col-name {
+    text-align: right !important;
+    padding-right: 0;
+    padding-left: 28px;
+  }
+
+  .case-row-trigger .col-phone,
+  .case-row-trigger .col-date {
+    display: inline !important;
+    font-size: 12px !important;
+    color: #6b625c !important;
+    text-align: left !important;
+  }
+
+  .case-row-trigger .col-phone::after {
+    content: " · ";
+    color: #aaa;
+  }
+
+  .case-row-trigger .col-status {
+    display: inline-flex !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    margin-top: 6px;
+    margin-right: 8px;
+  }
+
+  .case-row-trigger .col-assigned {
+    font-size: 12px !important;
+    text-align: left !important;
+    color: #16803d !important;
+    margin-top: 3px;
+  }
+
+  [dir="rtl"] .case-row-trigger .col-assigned {
+    text-align: right !important;
+  }
+
+  .case-row-trigger .col-feedback {
+    display: flex !important;
+    justify-content: flex-start !important;
+    margin-top: 5px;
+  }
+
+  /* Chevron: absolute corner */
+  .case-row-trigger .row-chevron {
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
+  }
+
+  [dir="rtl"] .case-row-trigger .row-chevron {
+    right: auto !important;
+    left: 14px !important;
+  }
+
+  /* Action buttons: full-width stacked */
+  .case-inline-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .case-inline-actions button {
+    width: 100% !important;
+    padding: 12px !important;
+    font-size: 14px !important;
+    text-align: center !important;
+  }
+
+  /* Close picker inputs */
+  .close-case-picker select,
+  .close-case-picker textarea {
+    font-size: 16px;
+  }
+
+  .requests-main {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+}
+
+/* ── Assign modal: stack on mobile ── */
+@media (max-width: 768px) {
+  .assign-modal {
+    width: 96vw !important;
+    max-height: 92vh !important;
+    padding: 14px !important;
+  }
+
+  .assign-modal-grid {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+  }
+
+  .assign-map-box {
+    display: none !important;
+  }
+
+  .assign-bottom-panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assign-user-list {
+    height: 200px !important;
+  }
+}
+
+/* ── Chevron ── */
+.row-chevron {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-right: 2.5px solid #0f5f7a;
+  border-bottom: 2.5px solid #0f5f7a;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.chevron-down {
+  transform: rotate(45deg);
+}
+
+.chevron-up {
+  transform: rotate(-135deg);
+}
+
+/* ── Sidebar nav text: always LTR visually inside the sidebar ── */
+.requests-sidebar .navItem,
+.requests-sidebar button {
+  text-align: start;
+}
