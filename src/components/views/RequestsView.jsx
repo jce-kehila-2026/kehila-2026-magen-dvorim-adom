@@ -397,54 +397,53 @@ export default function RequestsView({
           {/* RIGHT COL: Form Tracking */}
           <div style={styles.topRight} className="requests-top-right">
             <section style={{ ...styles.card, height: "100%", boxSizing: "border-box" }} className="requests-card">
-
 <div
   style={{
     ...styles.trackHeader,
-    flexDirection: isHe ? "row-reverse" : "row",
+    flexDirection: "row", // always normal
     justifyContent: "space-between",
   }}
 >
+  {/* TITLE */}
+  <h2
+    style={{
+      ...styles.sectionTitle,
+      margin: 0,
+      textAlign: isHe ? "right" : "left",
+    }}
+  >
+    {t.trackTitle}
+  </h2>
 
-<h2
-  style={{
-    ...styles.sectionTitle,
-    margin: 0,
-    textAlign: isHe ? "right" : "left",
-    flex: 1,
-  }}
->
+  {/* FILTERS */}
+  <div
+    style={{
+      ...styles.trackControls,
+      marginLeft: isHe ? 0 : "auto",  // push right in EN
+      marginRight: isHe ? "auto" : 0, // push left in HE
+    }}
+  >
+    <select
+      style={styles.sortSelect}
+      value={formSortDir}
+      onChange={(e) => setFormSortDir(e.target.value)}
+    >
+      <option value="desc">{t.newest}</option>
+      <option value="asc">{t.oldest}</option>
+    </select>
 
-                  {t.trackTitle}
-                </h2>
-                
-   <div
-  style={{
-    ...styles.trackControls,
-    flexShrink: 0,
-  }}
->
-
-                  <select
-                    style={styles.sortSelect}
-                    value={formSortDir}
-                    onChange={(e) => setFormSortDir(e.target.value)}
-                  >
-                    <option value="desc">{t.newest}</option>
-                    <option value="asc">{t.oldest}</option>
-                  </select>
-                  <select
-                    style={styles.sortSelect}
-                    value={formStatusFilter}
-                    onChange={(e) => setFormStatusFilter(e.target.value)}
-                  >
-                    <option value="all">{t.all}</option>
-                    <option value="sent">{t.sent}</option>
-                    <option value="returned">{t.returned}</option>
-                    <option value="expired">{t.expired}</option>
-                  </select>
-                </div>
-              </div>
+    <select
+      style={styles.sortSelect}
+      value={formStatusFilter}
+      onChange={(e) => setFormStatusFilter(e.target.value)}
+    >
+      <option value="all">{t.all}</option>
+      <option value="sent">{t.sent}</option>
+      <option value="returned">{t.returned}</option>
+      <option value="expired">{t.expired}</option>
+    </select>
+  </div>
+</div>
 
               {sortedForms.length === 0 ? (
                 <p style={styles.emptyText}>{t.noForms}</p>
@@ -608,7 +607,7 @@ export default function RequestsView({
                                   style={styles.inlineSelect}
                                 >
                                   {coordinatorOptions.map((u) => (
-                                    <option key={u.uid} value={u.uid}>{u.full_name || u.email}</option>
+                                    <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
                                   ))}
                                 </select>
                               ) : (
