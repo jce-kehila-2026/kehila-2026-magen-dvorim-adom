@@ -14,6 +14,28 @@ export default function LoginView({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const texts = {
+  en: {
+    welcome: "Welcome back",
+    subtitle: "Sign in to manage rescue cases, volunteers, and field activity.",
+    email: "Enter email address",
+    password: "Enter password",
+    login: "Login",
+    checking: "Checking...",
+    forgot: "Forgot password?"
+  },
+  he: {
+    welcome: "ברוך שובך",
+    subtitle: "התחבר לניהול קריאות חילוץ, מתנדבים ופעילות בשטח.",
+    email: "הכנס אימייל",
+    password: "הכנס סיסמה",
+    login: "התחבר",
+    checking: "בודק...",
+    forgot: "שכחת סיסמה?"
+  }
+};
+
+const t = texts[language];
   return (
     <div style={styles.page}>
       <img src={creativeImage} alt="Background" style={styles.bgImage} />
@@ -28,25 +50,73 @@ export default function LoginView({
           </div>
         </div>
 
-        <h1 style={styles.title}>Welcome back</h1>
-        <p style={styles.subtitle}>Sign in to manage rescue cases, volunteers, and field activity.</p>
+        <h1 style={{
+          ...styles.title,
+          direction: language === "he" ? "rtl" : "ltr",
+          textAlign: language === "he" ? "right" : "left"
+        }}>
+          {t.welcome}
+        </h1>
+        
+        <p style={{
+          ...styles.subtitle,
+          direction: language === "he" ? "rtl" : "ltr",
+          textAlign: language === "he" ? "right" : "left"
+        }}>
+          {t.subtitle}
+        </p>
+
 
         {message && (
-          <div style={{ ...styles.message, ...(messageType === "success" ? styles.success : styles.error) }}>
-            {message}
-          </div>
+         <div
+          style={{
+            ...styles.message,
+            ...(messageType === "success" ? styles.success : styles.error),
+            direction: language === "he" ? "rtl" : "ltr",
+            textAlign: language === "he" ? "right" : "left",
+            backdropFilter: "blur(10px)",
+            background: "rgba(255,255,255,0.25)",
+            border: "1px solid rgba(255,255,255,0.3)"
+          }}
+        >
+          <>
+            <div>
+              {language === "he" ? message?.he : message?.en}
+            </div>
+          </>
+        </div>
         )}
 
         <form onSubmit={handleLogin}>
-          <input type="email" placeholder="Enter email address" value={email} disabled={loading} onChange={(e) => setEmail(e.target.value)} style={styles.input} />
-          <input type="password" placeholder="Enter password" value={password} disabled={loading} onChange={(e) => setPassword(e.target.value)} style={styles.input} />
+          <input type="email" placeholder={t.email} value={email} disabled={loading} onChange={(e) => setEmail(e.target.value)}style={{
+  ...styles.input,
+  textAlign: language === "he" ? "right" : "left"
+}}
+ />
+          <input type="password" placeholder={t.password} value={password} disabled={loading} onChange={(e) => setPassword(e.target.value)} style={{
+  ...styles.input,
+  textAlign: language === "he" ? "right" : "left"
+}} />
           <button type="submit" disabled={loading} style={styles.loginButton}>
-            {loading ? "Checking..." : "Login"}
+            {loading ? t.checking : t.login}
           </button>
         </form>
 
-        <button type="button" onClick={handleForgotPassword} style={styles.forgotButton}>Forgot password?</button>
-        
+
+<button
+  type="button"
+  onClick={handleForgotPassword}
+  style={{
+    ...styles.forgotButton,
+    textAlign: "center",
+    width: "100%",
+    direction: language === "he" ? "rtl" : "ltr"
+  }}
+>
+  {t.forgot}
+</button>
+
+
         <div style={styles.languageRow}>
           <button onClick={() => setLanguage("en")} style={{ ...styles.langButton, ...(language === "en" ? styles.langActive : {}) }}>EN</button>
           <button onClick={() => setLanguage("he")} style={{ ...styles.langButton, ...(language === "he" ? styles.langActive : {}) }}>HE</button>
@@ -101,6 +171,7 @@ const styles = {
   loginButton: { width: "100%", padding: "15px", borderRadius: "12px", border: "none", background: "#2b160c", color: "white", cursor: "pointer", fontSize: "18px" },
   forgotButton: { background: "none", border: "none", color: "#f97316", fontWeight: "bold", cursor: "pointer", marginTop: "10px" },
   message: { padding: "10px", borderRadius: "8px", marginBottom: "15px" },
-  success: { background: "rgba(220, 252, 231, 0.8)", color: "#166534" },
-  error: { background: "rgba(254, 226, 226, 0.8)", color: "#b91c1c" }
+ success: { color: "#166534" },
+error: { color: "#b91c1c" }
+
 };
