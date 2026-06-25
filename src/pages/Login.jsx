@@ -15,6 +15,7 @@ function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [language, setLanguage] = useState("en");
 
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
@@ -106,6 +107,8 @@ function Login() {
       loading={loading}
       handleLogin={handleLogin}
       handleForgotPassword={handleForgotPassword}
+      language={language}
+      setLanguage={setLanguage}
     />
   );
 }
