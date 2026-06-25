@@ -182,15 +182,14 @@ export default function BackupView({ userProfile, currentUserName, handleLogout 
 
   const { language, setLanguage } = useLanguage();
   const isHebrew = language === "he";
-  const navTexts = {
-    dashboard: "Dashboard",
-    cases: "Cases",
-    users: "Users",
-    reports: "Reports",
-    backup: "Backup",
-    profile: "Profile",
-    logout: "Logout",
-  };
+const navTexts = {
+  requests: isHebrew ? "פניות" : "Requests",
+  users: isHebrew ? "משתמשים" : "Users",
+  reports: isHebrew ? "דוחות" : "Reports",
+  backup: isHebrew ? "גיבוי" : "Backup",
+  profile: isHebrew ? "פרופיל" : "Profile",
+  logout: isHebrew ? "התנתק" : "Logout",
+};
 
   return (
     <div className="profile-layout" style={styles.layout}>
@@ -198,8 +197,13 @@ export default function BackupView({ userProfile, currentUserName, handleLogout 
       <aside className={`profile-sidebar ${menuOpen ? "open" : ""}`} style={styles.sidebar}>
         <div style={styles.brand}><img src={logo} alt="Magen Dvorim Adom" style={styles.logo} /><div><h2 style={styles.brandTitle}>Magen Dvorim Adom</h2><p style={styles.brandSub}>{currentUserName}</p></div></div>
         <nav style={styles.nav}>
-          <button style={styles.navItem} onClick={() => goTo("/dashboard")}>{navTexts.dashboard}</button>
-          <button style={styles.navItem} onClick={() => goTo("/cases")}>{navTexts.cases}</button>
+<button
+  style={styles.navItem}
+  onClick={() => goTo("/requests")}
+>
+  {navTexts.requests}
+</button>
+
           <button style={styles.navItem} onClick={() => goTo("/users")}>{navTexts.users}</button>
           <button style={styles.navItem} onClick={() => goTo("/reports")}>{navTexts.reports}</button>
           {userProfile?.role === USER_ROLES.ADMIN && <button style={{ ...styles.navItem, ...styles.navItemActive }}>{navTexts.backup}</button>}

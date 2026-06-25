@@ -27,8 +27,8 @@ function ReportsView({ userProfile, stats, loading, error }) {
 const isHebrew = language === "he";
 
 const navTexts = {
-  dashboard: isHebrew ? "דשבורד" : "Dashboard",
-  cases: isHebrew ? "מקרים" : "Cases",
+requests: isHebrew ? "פניות" : "Requests",
+
   users: isHebrew ? "משתמשים" : "Users",
   reports: isHebrew ? "דוחות" : "Reports",
   backup: isHebrew ? "גיבוי" : "Backup",
@@ -165,62 +165,101 @@ const navTexts = {
         </div>
 
         <nav style={styles.nav}>
-          <button
-            style={styles.navItem}
-            onClick={() => {
-              navigate("/dashboard");
-              setMobileMenuOpen(false);
-            }}
-          >
-          {navTexts.dashboard}
-          </button>
 
-          <button
-            style={styles.navItem}
-            onClick={() => {
-              navigate("/cases");
-              setMobileMenuOpen(false);
-            }}
-          >
-            {navTexts.cases}
-          </button>
+  {/* ✅ ADMIN */}
+  {userProfile?.role === USER_ROLES.ADMIN && (
+    <>
+      <button
+        style={styles.navItem}
+        onClick={() => {
+          navigate("/requests");
+          setMobileMenuOpen(false);
+        }}
+      >
+        {navTexts.requests}
+      </button>
 
-          <button
-            style={styles.navItem}
-            onClick={() => {
-              navigate("/users");
-              setMobileMenuOpen(false);
-            }}
-          >
-            {navTexts.users}
-          </button>
+      <button
+        style={styles.navItem}
+        onClick={() => {
+          navigate("/users");
+          setMobileMenuOpen(false);
+        }}
+      >
+        {navTexts.users}
+      </button>
 
-          <button style={{ ...styles.navItem, ...styles.navItemActive }}>
-            {navTexts.reports}
-          </button>
+      <button style={{ ...styles.navItem, ...styles.navItemActive }}>
+        {navTexts.reports}
+      </button>
 
-          {userProfile?.role === USER_ROLES.ADMIN && (
-            <button
-              style={styles.navItem}
-              onClick={() => {
-                navigate("/backup");
-                setMobileMenuOpen(false);
-              }}
-            >
-              {navTexts.backup}
-            </button>
-          )}
+      <button
+        style={styles.navItem}
+        onClick={() => {
+          navigate("/backup");
+          setMobileMenuOpen(false);
+        }}
+      >
+        {navTexts.backup}
+      </button>
+    </>
+  )}
 
-          <button
-            style={styles.navItem}
-            onClick={() => {
-              navigate("/profile");
-              setMobileMenuOpen(false);
-            }}
-          >
-            {navTexts.profile}
-          </button>
-        </nav>
+  {/* ✅ COORDINATOR */}
+  {userProfile?.role === USER_ROLES.COORDINATOR && (
+    <>
+      <button
+        style={styles.navItem}
+        onClick={() => {
+          navigate("/requests");
+          setMobileMenuOpen(false);
+        }}
+      >
+        {navTexts.requests}
+      </button>
+
+      <button
+        style={styles.navItem}
+        onClick={() => {
+          navigate("/users");
+          setMobileMenuOpen(false);
+        }}
+      >
+        {navTexts.users}
+      </button>
+
+      <button style={{ ...styles.navItem, ...styles.navItemActive }}>
+        {navTexts.reports}
+      </button>
+    </>
+  )}
+
+  {/* ✅ VOLUNTEER (unchanged) */}
+  {userProfile?.role === USER_ROLES.VOLUNTEER && (
+    <>
+      <button
+        style={styles.navItem}
+        onClick={() => {
+          navigate("/dashboard");
+          setMobileMenuOpen(false);
+        }}
+      >
+        {navTexts.dashboard}
+      </button>
+    </>
+  )}
+
+  {/* PROFILE (always visible) */}
+  <button
+    style={styles.navItem}
+    onClick={() => {
+      navigate("/profile");
+      setMobileMenuOpen(false);
+    }}
+  >
+    {navTexts.profile}
+  </button>
+</nav>
 
 <div style={styles.bottomSection}>
   <button
