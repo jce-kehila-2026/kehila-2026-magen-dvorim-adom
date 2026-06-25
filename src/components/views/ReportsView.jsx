@@ -7,6 +7,7 @@ import logo from "../../assets/logo.png";
 import { USER_ROLES } from "../../services/userSchema";
 import { logoutUser } from "../../services/authService";
 import "./ReportsView.css";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const CITY_COLORS = ["#ea580c", "#f59e0b", "#16a34a", "#374151", "#8b5cf6", "#dc2626", "#0ea5e9", "#a855f7"];
 
@@ -21,6 +22,20 @@ function ReportsView({ userProfile, stats, loading, error }) {
 
   const cases = stats?.casesList || [];
   const users = stats?.usersList || [];
+
+  const { language, setLanguage } = useLanguage();
+const isHebrew = language === "he";
+
+const navTexts = {
+  dashboard: isHebrew ? "דשבורד" : "Dashboard",
+  cases: isHebrew ? "מקרים" : "Cases",
+  users: isHebrew ? "משתמשים" : "Users",
+  reports: isHebrew ? "דוחות" : "Reports",
+  backup: isHebrew ? "גיבוי" : "Backup",
+  profile: isHebrew ? "פרופיל" : "Profile",
+  logout: isHebrew ? "התנתק" : "Logout",
+};
+
 
   const handleLogout = async () => {
     await logoutUser();
@@ -157,7 +172,7 @@ function ReportsView({ userProfile, stats, loading, error }) {
               setMobileMenuOpen(false);
             }}
           >
-            Dashboard
+          {navTexts.dashboard}
           </button>
 
           <button
@@ -167,7 +182,7 @@ function ReportsView({ userProfile, stats, loading, error }) {
               setMobileMenuOpen(false);
             }}
           >
-            Cases
+            {navTexts.cases}
           </button>
 
           <button
@@ -177,11 +192,11 @@ function ReportsView({ userProfile, stats, loading, error }) {
               setMobileMenuOpen(false);
             }}
           >
-            Users
+            {navTexts.users}
           </button>
 
           <button style={{ ...styles.navItem, ...styles.navItemActive }}>
-            Reports
+            {navTexts.reports}
           </button>
 
           {userProfile?.role === USER_ROLES.ADMIN && (
@@ -192,7 +207,7 @@ function ReportsView({ userProfile, stats, loading, error }) {
                 setMobileMenuOpen(false);
               }}
             >
-              Backup
+              {navTexts.backup}
             </button>
           )}
 
@@ -203,19 +218,30 @@ function ReportsView({ userProfile, stats, loading, error }) {
               setMobileMenuOpen(false);
             }}
           >
-            Profile
+            {navTexts.profile}
           </button>
         </nav>
 
-        <button
-          style={styles.logoutButton}
-          onClick={() => {
-            setMobileMenuOpen(false);
-            handleLogout();
-          }}
-        >
-          Logout
-        </button>
+<div style={styles.bottomSection}>
+  <button
+    style={styles.languageButton}
+    onClick={() =>
+      setLanguage(language === "he" ? "en" : "he")
+    }
+  >
+    {language === "he" ? "English 🌐" : "עברית 🌐"}
+  </button>
+
+  <button
+    style={styles.logoutButton}
+    onClick={() => {
+      setMobileMenuOpen(false);
+      handleLogout();
+    }}
+  >
+    {navTexts.logout}
+  </button>
+</div>
       </aside>
 
       <main style={styles.main} className="reports-main">
@@ -1094,6 +1120,22 @@ const styles = {
     color: "#3d332b",
     fontSize: "14px",
   },
+  bottomSection: {
+  marginTop: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+},
+
+languageButton: {
+  padding: "13px",
+  borderRadius: "14px",
+  border: "1px solid #eadfd2",
+  background: "#fffaf4",
+  color: "#2b160c",
+  fontWeight: "800",
+  cursor: "pointer",
+},
 };
 
 export default ReportsView;
