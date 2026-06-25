@@ -14,7 +14,7 @@
     height: 58px;
     padding: 0 14px;
     background: #fff8ef;
-    border-bottom: 1px solid #f0e5d8;
+    border-bottom: 1px solid #f3e9da;
     position: sticky;
     top: 0;
     z-index: 20;
@@ -24,9 +24,9 @@
     width: 40px;
     height: 40px;
     border: none;
-    border-radius: 12px;
+    border-radius: 6px;
     background: #fff1df;
-    color: #e85d04;
+    color: #6a2300;
     font-size: 24px;
     font-weight: 900;
     cursor: pointer;
@@ -58,7 +58,7 @@
     z-index: 40 !important;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: #fffdf8 !important;
+    background: #fff8ef !important;
     box-shadow: 10px 0 30px rgba(43, 22, 12, 0.1);
   }
 
@@ -70,5 +70,29 @@
     padding: 16px !important;
     background-color: #fffdf8;
     min-height: calc(100vh - 58px);
+  }
+
+  .profile-mobile-title {
+    margin-left: 10px;
+    font-weight: 800;
+    color: #2b160c;
+    font-size: 15px;
+  }
+
+  .profile-card {
+    padding: 18px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 20px rgba(43, 22, 12, 0.08) !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .profile-title {
+    font-size: 26px !important;
+    margin: 0 0 4px !important;
+  }
+
+  .profile-form-grid {
+    grid-template-columns: 1fr !important;
   }
 }

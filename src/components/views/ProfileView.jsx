@@ -31,7 +31,6 @@ export default function ProfileView({
   openPasswordModal,
   closePasswordModal,
   handleLogout,
-  handlePhotoChange,
   ISRAELI_CITIES,
 }) {
   const navigate = useNavigate();
@@ -46,9 +45,8 @@ export default function ProfileView({
     return <div>Loading...</div>;
   }
 
-  const profileImage = formData.photo_url;
   const initials = (currentUserName || "U").charAt(0).toUpperCase();
-  
+
 const { language, setLanguage } = useLanguage();
 const isHebrew = language === "he";
 const t = {
@@ -79,9 +77,6 @@ const t = {
   availabilityDesc: isHebrew
     ? "אפשר לרכזים לשבץ אותך למקרים"
     : "Control whether coordinators can assign you to active cases.",
-
-  changePhoto: isHebrew ? "שנה תמונה" : "Change Photo",
-  remove: isHebrew ? "הסר" : "Remove",
 
   changePassword: isHebrew ? "שינוי סיסמה" : "Change Password",
   save: isHebrew ? "שמור שינויים" : "Save Changes",
@@ -299,11 +294,7 @@ const t = {
 
             <div style={styles.profileTop}>
               <div style={styles.avatarContainer}>
-                {profileImage ? (
-                  <img src={profileImage} alt="Profile" style={styles.avatarImage} />
-                ) : (
-                  <div style={styles.avatarFallback}>{initials}</div>
-                )}
+                <div style={styles.avatarFallback}>{initials}</div>
 
                 <span
                   style={{
@@ -316,34 +307,6 @@ const t = {
               </div>
 
               <div style={styles.userName}>{currentUserName}</div>
-
-              <div style={styles.photoActions}>
-                <label style={styles.photoButton}>
-                  {t.changePhoto}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    style={{ display: "none" }}
-                  />
-                </label>
-
-                {profileImage && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        photo_url: "",
-                        photo_file: null,
-                      }))
-                    }
-                    style={styles.removePhotoButton}
-                  >
-                    {t.remove}
-                  </button>
-                )}
-              </div>
             </div>
           </div>
 
@@ -498,7 +461,7 @@ const styles = {
     position: "sticky",
     top: 0,
     background: "#fff8ef",
-    borderRight: "1px solid #f0e5d8",
+    borderRight: "1px solid #f3e9da",
     padding: "28px 20px",
     boxSizing: "border-box",
     display: "flex",
@@ -520,7 +483,7 @@ const styles = {
 
   brandTitle: {
     margin: 0,
-    color: "#2b160c",
+    color: "#6a2300",
     fontSize: "16px",
     fontWeight: "900",
     lineHeight: 1.1,
@@ -543,7 +506,7 @@ const styles = {
     background: "transparent",
     color: "#3d332b",
     padding: "14px 16px",
-    borderRadius: "14px",
+    borderRadius: "6px",
     textAlign: "left",
     fontWeight: "800",
     cursor: "pointer",
@@ -551,15 +514,15 @@ const styles = {
 
   navItemActive: {
     background: "#fff1df",
-    color: "#e85d04",
+    color: "#6a2300",
   },
 
   logoutButton: {
     marginTop: "auto",
     border: "none",
-    background: "#f97316",
+    background: "#6a2300",
     color: "white",
-    borderRadius: "14px",
+    borderRadius: "6px",
     padding: "14px",
     fontWeight: "800",
     cursor: "pointer",
@@ -575,9 +538,9 @@ const styles = {
     maxWidth: "880px",
     margin: "0 auto",
     background: "white",
-    borderRadius: "26px",
+    borderRadius: "16px",
     padding: "30px",
-    boxShadow: "0 20px 70px rgba(43, 22, 12, 0.06)",
+    boxShadow: "0 16px 40px rgba(43, 22, 12, 0.08)",
     border: "1px solid #f2e7dc",
   },
 
@@ -591,7 +554,7 @@ const styles = {
 
   title: {
     margin: "0 0 4px",
-    color: "#173b2f",
+    color: "#6a2300",
     fontSize: "34px",
     fontWeight: "900",
   },
@@ -610,14 +573,6 @@ const styles = {
     height: "96px",
   },
 
-  avatarImage: {
-    width: "96px",
-    height: "96px",
-    borderRadius: "50%",
-    objectFit: "cover",
-    border: "1px solid #f0e5d8",
-  },
-
   avatarFallback: {
     width: "96px",
     height: "96px",
@@ -625,10 +580,11 @@ const styles = {
     display: "grid",
     placeItems: "center",
     background: "#fff1df",
-    color: "#e85d04",
+    color: "#6a2300",
     fontSize: "38px",
     fontWeight: "900",
-    border: "1px solid #f3c49a",
+    border: "2px solid #f3c49a",
+    boxShadow: "0 8px 20px rgba(106, 35, 0, 0.12)",
   },
 
   availabilityDot: {
@@ -654,28 +610,6 @@ const styles = {
     fontSize: "16px",
     fontWeight: "700",
     color: "#2b160c",
-  },
-
-  photoActions: {
-    display: "flex",
-    gap: "10px",
-    alignItems: "center",
-  },
-
-  photoButton: {
-    fontSize: "13px",
-    fontWeight: "800",
-    color: "#e85d04",
-    cursor: "pointer",
-  },
-
-  removePhotoButton: {
-    border: "none",
-    background: "transparent",
-    color: "#dc2626",
-    fontSize: "13px",
-    fontWeight: "700",
-    cursor: "pointer",
   },
 
   sectionTitle: {
@@ -704,12 +638,12 @@ const styles = {
     width: "100%",
     boxSizing: "border-box",
     padding: "12px 14px",
-    borderRadius: "12px",
+    borderRadius: "6px",
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     fontSize: "14px",
-    color: "#2b160c",        
-    caretColor: "#2b160c",   
+    color: "#2b160c",
+    caretColor: "#2b160c",
 
   },
 
@@ -717,10 +651,10 @@ const styles = {
     width: "100%",
     boxSizing: "border-box",
     padding: "12px 14px",
-    borderRadius: "12px",
-    border: "1px solid #e5e7eb",
-    background: "#f8fafc",
-    color: "#6b7280",
+    borderRadius: "6px",
+    border: "1px solid #e5ded2",
+    background: "#f4f0ea",
+    color: "#8a7f72",
     fontSize: "14px",
   },
 
@@ -731,11 +665,11 @@ const styles = {
     right: 0,
     background: "white",
     border: "1px solid #eadfd2",
-    borderRadius: "12px",
+    borderRadius: "8px",
     maxHeight: "200px",
     overflowY: "auto",
     zIndex: 10,
-    boxShadow: "0 12px 25px rgba(43, 22, 12, 0.08)",
+    boxShadow: "0 12px 25px rgba(43, 22, 12, 0.1)",
   },
 
   dropdownItem: {
@@ -747,7 +681,7 @@ const styles = {
   availabilityCard: {
     marginTop: "10px",
     padding: "16px",
-    borderRadius: "18px",
+    borderRadius: "10px",
     border: "1px solid #f0e5d8",
     background: "#fffdf8",
     display: "flex",
@@ -811,19 +745,19 @@ const styles = {
   button: {
     border: "none",
     padding: "13px 24px",
-    borderRadius: "14px",
-    background: "#f97316",
+    borderRadius: "6px",
+    background: "#6a2300",
     color: "white",
     fontWeight: "800",
     cursor: "pointer",
   },
 
   secondaryButton: {
-    border: "1px solid #f0c49d",
+    border: "1px solid #6a2300",
     padding: "13px 24px",
-    borderRadius: "14px",
-    background: "#fff8ef",
-    color: "#e85d04",
+    borderRadius: "6px",
+    background: "#fffdf8",
+    color: "#6a2300",
     fontWeight: "800",
     cursor: "pointer",
   },
@@ -832,7 +766,7 @@ const styles = {
     background: "#dcfce7",
     color: "#166534",
     padding: "12px",
-    borderRadius: "12px",
+    borderRadius: "8px",
     marginBottom: "16px",
   },
 
@@ -840,7 +774,7 @@ const styles = {
     background: "#fee2e2",
     color: "#991b1b",
     padding: "12px",
-    borderRadius: "12px",
+    borderRadius: "8px",
     marginBottom: "16px",
   },
 
@@ -858,9 +792,9 @@ const styles = {
     width: "100%",
     maxWidth: "460px",
     background: "white",
-    borderRadius: "24px",
+    borderRadius: "16px",
     padding: "26px",
-    boxShadow: "0 24px 80px rgba(43, 22, 12, 0.18)",
+    boxShadow: "0 24px 70px rgba(43, 22, 12, 0.16)",
     border: "1px solid #f2e7dc",
     boxSizing: "border-box",
   },
@@ -875,7 +809,7 @@ const styles = {
 
   modalTitle: {
     margin: 0,
-    color: "#173b2f",
+    color: "#6a2300",
     fontSize: "24px",
     fontWeight: "900",
   },
@@ -891,9 +825,9 @@ const styles = {
     width: "34px",
     height: "34px",
     border: "none",
-    borderRadius: "12px",
+    borderRadius: "6px",
     background: "#fff1df",
-    color: "#e85d04",
+    color: "#6a2300",
     fontSize: "18px",
     fontWeight: "900",
     cursor: "pointer",
@@ -915,10 +849,10 @@ const styles = {
 
 languageButton: {
   padding: "13px",
-  borderRadius: "14px",
+  borderRadius: "6px",
   border: "1px solid #eadfd2",
-  background: "#fffaf4",
-  color: "#2b160c",
+  background: "#fffdf8",
+  color: "#3d332b",
   fontWeight: "800",
   cursor: "pointer",
 },

@@ -1,4 +1,4 @@
-// User management interface.
+  // User management interface.
 // Allows viewing, creating, editing, deleting, and restoring users.
 
 import { useState } from "react";
@@ -700,7 +700,7 @@ const styles = {
 
   brandTitle: {
     margin: 0,
-    color: "#2b160c",
+    color: "#6a2300",
     fontSize: "16px",
     fontWeight: "900",
     lineHeight: 1.1,
@@ -723,7 +723,7 @@ const styles = {
     background: "transparent",
     color: "#3d332b",
     padding: "14px 16px",
-    borderRadius: "14px",
+    borderRadius: "6px",
     textAlign: "left",
     fontWeight: "800",
     cursor: "pointer",
@@ -731,15 +731,15 @@ const styles = {
 
   activeNav: {
     background: "#fff1df",
-    color: "#e85d04",
+    color: "#6a2300",
   },
 
   logoutButton: {
     marginTop: "auto",
     border: "none",
-    background: "#f97316",
+    background: "#6a2300",
     color: "white",
-    borderRadius: "14px",
+    borderRadius: "6px",
     padding: "14px",
     fontWeight: "800",
     cursor: "pointer",
@@ -752,7 +752,7 @@ const styles = {
 
   contentCard: {
     background: "white",
-    borderRadius: "22px",
+    borderRadius: "16px",
     padding: "24px",
     boxShadow: "0 16px 50px rgba(43, 22, 12, 0.06)",
     border: "1px solid #f2e7dc",
@@ -769,8 +769,8 @@ const styles = {
 
   title: {
     margin: 0,
-    color: "#f57c00",
-    fontSize: "32px",
+    color: "#6a2300",
+    fontSize: "28px",
     fontWeight: "900",
   },
 
@@ -781,27 +781,30 @@ const styles = {
   },
 
   filterButton: {
-    border: "1px solid #f3c49a",
+    border: "1px solid #eadfd2",
     background: "white",
     color: "#3d332b",
-    borderRadius: "12px",
-    padding: "10px 16px",
-    fontWeight: "800",
+    borderRadius: "999px",
+    padding: "7px 14px",
+    fontWeight: "700",
+    fontSize: "13px",
     cursor: "pointer",
   },
 
   filterActive: {
     background: "#fff1df",
     color: "#e85d04",
+    borderColor: "#f3c49a",
   },
 
   addButton: {
     border: "none",
-    background: "#f97316",
+    background: "#6a2300",
     color: "white",
-    borderRadius: "12px",
-    padding: "10px 16px",
-    fontWeight: "800",
+    borderRadius: "6px",
+    padding: "9px 16px",
+    fontWeight: "700",
+    fontSize: "13.5px",
     cursor: "pointer",
   },
 
@@ -816,7 +819,7 @@ const styles = {
     minWidth: "180px",
     background: "white",
     border: "1px solid #eadfd2",
-    borderRadius: "12px",
+    borderRadius: "8px",
     boxShadow: "0 12px 25px rgba(43, 22, 12, 0.12)",
     padding: "6px",
     zIndex: 20,
@@ -828,7 +831,7 @@ const styles = {
     background: "transparent",
     color: "#3d332b",
     padding: "10px 12px",
-    borderRadius: "10px",
+    borderRadius: "6px",
     textAlign: "left",
     fontWeight: "800",
     cursor: "pointer",
@@ -844,7 +847,7 @@ const styles = {
   searchInput: {
     flex: 1,
     padding: "12px 14px",
-    borderRadius: "12px",
+    borderRadius: "6px",
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     fontSize: "14px",
@@ -856,7 +859,7 @@ const styles = {
 
   selectInput: {
     padding: "12px 14px",
-    borderRadius: "12px",
+    borderRadius: "6px",
     border: "1px solid #eadfd2",
     background: "white",
     fontWeight: "800",
@@ -865,7 +868,7 @@ const styles = {
 
   usersList: {
     border: "1px solid #eee2d8",
-    borderRadius: "16px",
+    borderRadius: "12px",
     overflow: "hidden",
   },
 
@@ -929,7 +932,7 @@ const styles = {
   iconButton: {
     border: "1px solid #eadfd2",
     background: "white",
-    borderRadius: "10px",
+    borderRadius: "6px",
     width: "34px",
     height: "34px",
     cursor: "pointer",
@@ -944,7 +947,7 @@ const styles = {
     border: "1px solid #bbf7d0",
     background: "#f0fdf4",
     color: "#16a34a",
-    borderRadius: "10px",
+    borderRadius: "6px",
     padding: "8px 12px",
     fontWeight: "800",
     cursor: "pointer",
@@ -954,7 +957,7 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "white",
     color: "#3d332b",
-    borderRadius: "10px",
+    borderRadius: "6px",
     padding: "8px 12px",
     fontWeight: "800",
     cursor: "default",
@@ -970,7 +973,7 @@ const styles = {
     background: "#dcfce7",
     color: "#166534",
     padding: "12px",
-    borderRadius: "12px",
+    borderRadius: "8px",
     marginBottom: "14px",
   },
 
@@ -978,14 +981,14 @@ const styles = {
     background: "#fee2e2",
     color: "#991b1b",
     padding: "12px",
-    borderRadius: "12px",
+    borderRadius: "8px",
     marginBottom: "14px",
   },
 
   modalOverlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.35)",
+    background: "rgba(43, 22, 12, 0.35)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -999,7 +1002,7 @@ const styles = {
     maxHeight: "90vh",
     overflowY: "auto",
     background: "white",
-    borderRadius: "22px",
+    borderRadius: "16px",
     padding: "24px",
     border: "1px solid #f0e5d8",
   },
@@ -1013,7 +1016,7 @@ const styles = {
 
   modalTitle: {
     margin: 0,
-    color: "#2b160c",
+    color: "#6a2300",
     fontSize: "22px",
     fontWeight: "900",
   },
@@ -1026,9 +1029,9 @@ const styles = {
 
   closeButton: {
     border: "none",
-    background: "#fff8ef",
-    color: "#d95f00",
-    borderRadius: "10px",
+    background: "#fff1df",
+    color: "#6a2300",
+    borderRadius: "6px",
     width: "34px",
     height: "34px",
     fontSize: "22px",
@@ -1050,7 +1053,7 @@ const styles = {
   input: {
     width: "100%",
     padding: "12px 14px",
-    borderRadius: "12px",
+    borderRadius: "6px",
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     boxSizing: "border-box",
@@ -1079,7 +1082,7 @@ const styles = {
     right: 0,
     background: "white",
     border: "1px solid #eadfd2",
-    borderRadius: "12px",
+    borderRadius: "8px",
     maxHeight: "180px",
     overflowY: "auto",
     zIndex: 300,
@@ -1102,9 +1105,9 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "white",
     color: "#3d332b",
-    borderRadius: "12px",
-    padding: "10px 16px",
-    fontWeight: "800",
+    borderRadius: "6px",
+    padding: "9px 16px",
+    fontWeight: "700",
     cursor: "pointer",
   },
   sortHeader: {
@@ -1127,7 +1130,7 @@ bottomSection: {
 
 languageButton: {
   padding: "13px",
-  borderRadius: "14px",
+  borderRadius: "6px",
   border: "1px solid #eadfd2",
   background: "#fffaf4",
   color: "#2b160c",

@@ -94,7 +94,7 @@ function CoordinatorSendForm() {
         onChange={handlePhoneChange}
         style={{
           ...s.input,
-          borderColor: phoneError ? "#b42318" : "#ddd0c4",
+          borderColor: phoneError ? "#b42318" : "#eadfd2",
             textAlign: isHebrew ? "right" : "left"
         }}
  
@@ -116,7 +116,7 @@ function CoordinatorSendForm() {
       </div>
 
       {msg && (
-        <p style={{ ...s.msg, color: msgIsError ? "#b42318" : "#15803d" }}>
+        <p style={{ ...s.msg, color: msgIsError ? "#b42318" : "#c2410c" }}>
           {msg}
         </p>
       )}
@@ -140,11 +140,11 @@ const s = {
   input: {
     padding: 10,
     border: "1px solid",
-    borderRadius: 10,
+    borderRadius: 6,
     fontSize: 13,
     width: "100%",
     boxSizing: "border-box",
-    background: "#ffffff",
+    background: "#fffdf8",
     color: "#2b160c",
     outline: "none",
   },
@@ -160,24 +160,24 @@ const s = {
     marginTop: 2,
   },
   createBtn: {
-    background: "#ea580c",
+    background: "#6a2300",
     color: "white",
     border: "none",
-    padding: "9px 6px",
-    borderRadius: 10,
+    padding: "10px 10px",
+    borderRadius: 6,
     cursor: "pointer",
-    fontWeight: 900,
-    fontSize: 12,
+    fontWeight: 700,
+    fontSize: 12.5,
   },
   linkBtn: {
-    background: "#15803d",
-    color: "white",
-    border: "none",
-    padding: "9px 6px",
-    borderRadius: 10,
+    background: "#fffdf8",
+    color: "#6a2300",
+    border: "1px solid #6a2300",
+    padding: "10px 10px",
+    borderRadius: 6,
     cursor: "pointer",
-    fontWeight: 900,
-    fontSize: 12,
+    fontWeight: 700,
+    fontSize: 12.5,
   },
   msg: {
     marginTop: 4,

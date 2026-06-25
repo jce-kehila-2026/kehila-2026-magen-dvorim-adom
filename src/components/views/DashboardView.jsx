@@ -489,7 +489,7 @@ const styles = {
 
   brandTitle: {
     margin: 0,
-    color: "#2b160c",
+    color: "#6a2300",
     fontSize: "16px",
     fontWeight: "900",
   },
@@ -512,7 +512,7 @@ const styles = {
     background: "transparent",
     color: "#3d332b",
     padding: "13px 16px",
-    borderRadius: "14px",
+    borderRadius: "6px",
     textAlign: "left",
     fontWeight: "800",
     cursor: "pointer",
@@ -520,12 +520,12 @@ const styles = {
 
   navItemActive: {
     background: "#fff1df",
-    color: "#e85d04",
+    color: "#6a2300",
   },
 
 languageButton: {
   padding: "13px",
-  borderRadius: "14px",
+  borderRadius: "6px",
   border: "1px solid #eadfd2",
   background: "#fffaf4",
   color: "#2b160c",
@@ -535,9 +535,9 @@ languageButton: {
   logoutButton: {
     marginTop: "auto",
     padding: "13px",
-    borderRadius: "14px",
+    borderRadius: "6px",
     border: "none",
-    background: "#ea580c",
+    background: "#6a2300",
     color: "white",
     fontWeight: "800",
     cursor: "pointer",
@@ -560,7 +560,7 @@ languageButton: {
 
   errorBox: {
     padding: "12px",
-    borderRadius: "12px",
+    borderRadius: "10px",
     backgroundColor: "#fde8e8",
     color: "#b42318",
     fontSize: "14px",
@@ -570,47 +570,47 @@ languageButton: {
   mapSection: {
     background: "white",
     border: "1px solid #f0e5d8",
-    borderRadius: "20px",
-    padding: "16px",
+    borderRadius: "16px",
+    padding: "20px",
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "14px",
     height: "100%",    
   },
 
   sectionTitle: {
     margin: 0,
-    color: "#2b160c",
+    color: "#6a2300",
     fontSize: "18px",
     fontWeight: "900",
   },
 
   filterRow: {
     display: "flex",
-    gap: "10px",
+    gap: "8px",
     flexWrap: "wrap",
   },
 
   filterButton: {
-    border: "1px solid #f3c49a",
-    background: "#fffaf4",
-    color: "#2b160c",
+    border: "1px solid #eadfd2",
+    background: "#ffffff",
+    color: "#3d332b",
     borderRadius: "999px",
-    padding: "8px 16px",
-    fontWeight: "900",
-    fontSize: "13px",
+    padding: "6px 14px",
+    fontWeight: "700",
+    fontSize: "12.5px",
     cursor: "pointer",
   },
 
   filterButtonActive: {
-    background: "#ea580c",
-    color: "white",
-    borderColor: "#ea580c",
+    background: "#fff1df",
+    color: "#e85d04",
+    borderColor: "#f3c49a",
   },
 
 mapBox: {
   height: window.innerWidth <= 900 ? "280px" : "520px",
-  borderRadius: "16px",
+  borderRadius: "12px",
   overflow: "hidden",
   border: "1px solid #eadfd2",
 },
@@ -630,21 +630,21 @@ mapBox: {
   formCard: {
     background: "white",
     border: "1px solid #f0e5d8",
-    borderRadius: "20px",
-    padding: "16px",
+    borderRadius: "16px",
+    padding: "20px",
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "14px",
   },
 
   trackCard: {
     background: "white",
     border: "1px solid #f0e5d8",
-    borderRadius: "20px",
-    padding: "16px",
+    borderRadius: "16px",
+    padding: "20px",
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "14px",
   },
 
   trackHeader: {
@@ -656,8 +656,8 @@ mapBox: {
 
   sortSelect: {
     padding: "7px 10px",
-    borderRadius: "10px",
-    border: "1px solid #d8d2ca",
+    borderRadius: "6px",
+    border: "1px solid #eadfd2",
     background: "#ffffff",
     color: "#2b160c",
     fontSize: "13px",
