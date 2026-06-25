@@ -7,6 +7,8 @@ import { getAllCases } from "../../services/caseService";
 import { getReportsStats } from "../../services/reportService";
 import logo from "../../assets/logo.png";
 import "./ProfileView.css";
+import { useLanguage } from "../../contexts/LanguageContext";
+
 
 const BACKUP_TYPES = {
   ALL: "all",
@@ -179,20 +181,50 @@ export default function BackupView({ userProfile, currentUserName, handleLogout 
     } catch (err) { setError(err.message || "Failed to create backup."); } finally { setLoading(false); }
   };
 
+  const { language, setLanguage } = useLanguage();
+const isHebrew = language === "he";
+const navTexts = {
+  dashboard: isHebrew ? "דשבורד" : "Dashboard",
+  cases: isHebrew ? "מקרים" : "Cases",
+  users: isHebrew ? "משתמשים" : "Users",
+  reports: isHebrew ? "דוחות" : "Reports",
+  backup: isHebrew ? "גיבוי" : "Backup",
+  profile: isHebrew ? "פרופיל" : "Profile",
+  logout: isHebrew ? "התנתק" : "Logout",
+};
+
+
   return (
     <div className="profile-layout" style={styles.layout}>
       {menuOpen && <div className="profile-overlay" onClick={() => setMenuOpen(false)} />}
       <aside className={`profile-sidebar ${menuOpen ? "open" : ""}`} style={styles.sidebar}>
         <div style={styles.brand}><img src={logo} alt="Magen Dvorim Adom" style={styles.logo} /><div><h2 style={styles.brandTitle}>Magen Dvorim Adom</h2><p style={styles.brandSub}>{currentUserName}</p></div></div>
         <nav style={styles.nav}>
-          <button style={styles.navItem} onClick={() => goTo("/dashboard")}>Dashboard</button>
-          <button style={styles.navItem} onClick={() => goTo("/cases")}>Cases</button>
-          <button style={styles.navItem} onClick={() => goTo("/users")}>Users</button>
-          <button style={styles.navItem} onClick={() => goTo("/reports")}>Reports</button>
-          {userProfile?.role === USER_ROLES.ADMIN && <button style={{ ...styles.navItem, ...styles.navItemActive }}>Backup</button>}
-          <button style={styles.navItem} onClick={() => goTo("/profile")}>Profile</button>
+          <button style={styles.navItem} onClick={() => goTo("/dashboard")}>{navTexts.dashboard}</button>
+          <button style={styles.navItem} onClick={() => goTo("/cases")}>{navTexts.cases}</button>
+          <button style={styles.navItem} onClick={() => goTo("/users")}>{navTexts.users}</button>
+          <button style={styles.navItem} onClick={() => goTo("/reports")}>{navTexts.reports}</button>
+          {userProfile?.role === USER_ROLES.ADMIN && <button style={{ ...styles.navItem, ...styles.navItemActive }}>{navTexts.backup}</button>}
+          <button style={styles.navItem} onClick={() => goTo("/profile")}>{navTexts.profile}</button>
         </nav>
-        <button style={styles.logoutButton} onClick={handleLogout}>Logout</button>
+<div style={styles.bottomSection}>
+  <button
+    style={styles.languageButton}
+    onClick={() =>
+      setLanguage(language === "he" ? "en" : "he")
+    }
+  >
+    {language === "he" ? "English 🌐" : "עברית 🌐"}
+  </button>
+
+  <button
+    style={styles.logoutButton}
+    onClick={handleLogout}
+  >
+    {navTexts.logout}
+  </button>
+</div>
+
       </aside>
       <main className="profile-main" style={styles.page}>
         <div className="profile-mobile-topbar">
@@ -264,5 +296,21 @@ const styles = {
   button: { border: "none", padding: "14px 28px", borderRadius: "14px", background: "#e85d04", color: "white", fontWeight: "800", cursor: "pointer", fontSize: "15px" },
   buttonDisabled: { opacity: 0.6, cursor: "not-allowed" },
   successBox: { background: "#f0fdf4", color: "#166534", padding: "12px 16px", borderRadius: "12px", marginBottom: "16px", border: "1px solid #bbf7d0" },
-  errorBox: { background: "#fef2f2", color: "#991b1b", padding: "12px 16px", borderRadius: "12px", marginBottom: "16px", border: "1px solid #fecaca" }
+  errorBox: { background: "#fef2f2", color: "#991b1b", padding: "12px 16px", borderRadius: "12px", marginBottom: "16px", border: "1px solid #fecaca" },
+  bottomSection: {
+    Top: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+},
+
+languageButton: {
+  padding: "13px",
+  borderRadius: "14px",
+  border: "1px solid #eadfd2",
+  background: "#fffaf4",
+  color: "#2b160c",
+  fontWeight: "800",
+  cursor: "pointer",
+}
 };

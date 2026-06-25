@@ -295,15 +295,38 @@ const sortedForms = useMemo(() => {
           {/* RIGHT SIDE */}
           <div style={styles.rightCol}>
             {/* Send Form */}
-            <section style={styles.formCard}>
-              <h2 style={styles.sectionTitle}>{texts.sendForm}</h2>
-              <CoordinatorSendForm />
-            </section>
+            <section
+  style={{
+    ...styles.formCard,
+    direction: isHebrew ? "rtl" : "ltr",
+    textAlign: isHebrew ? "right" : "left",
+  }}
+>
+  <h2
+    style={{
+      ...styles.sectionTitle,
+      textAlign: isHebrew ? "right" : "left",
+    }}
+  >
+    {texts.sendForm}
+  </h2>
+
+  <CoordinatorSendForm isHebrew={isHebrew} />
+</section>
 
             {/* Track Form Status */}
-            <section style={styles.trackCard}>
-              <div style={styles.trackHeader}>
-                <h2 style={styles.sectionTitle}>{texts.trackForms}</h2>
+<section style={styles.trackCard} dir={isHebrew ? "rtl" : "ltr"}>
+  <div style={styles.trackHeader}>
+                
+<h2
+  style={{
+    ...styles.sectionTitle,
+    textAlign: isHebrew ? "right" : "left",
+  }}
+>
+  {texts.trackForms}
+</h2>
+
 
                <div style={{ display: "flex", gap: "8px" }}>
                   <select

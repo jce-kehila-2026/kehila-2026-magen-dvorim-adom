@@ -6,6 +6,7 @@ import "./AdminUsersView.css";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import BulkImportModal from "../bulk-import/BulkImportModal";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 
 // Returns the visual badge style and label based on the user's role.
@@ -71,6 +72,19 @@ function AdminUsersView({
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
+
+const { language, setLanguage } = useLanguage();
+const isHebrew = language === "he";
+
+const navTexts = {
+  dashboard: isHebrew ? "דשבורד" : "Dashboard",
+  cases: isHebrew ? "מקרים" : "Cases",
+  users: isHebrew ? "משתמשים" : "Users",
+  reports: isHebrew ? "דוחות" : "Reports",
+  backup: isHebrew ? "גיבוי" : "Backup",
+  profile: isHebrew ? "פרופיל" : "Profile",
+  logout: isHebrew ? "התנתק" : "Logout",
+};
 const goTo = (path) => {
   setMenuOpen(false);
   navigate(path);
@@ -101,40 +115,57 @@ const goTo = (path) => {
             style={styles.navItem}
             onClick={() => goTo("/dashboard")}
           >
-            Dashboard
+            {navTexts.dashboard}
           </button>
 
         <button style={styles.navItem} onClick={() => goTo("/cases")}>
-          Cases
+          {navTexts.cases}
         </button>
 
-        <button style={{ ...styles.navItem, ...styles.activeNav }}>
-          Users
-        </button>
+<button
+  style={{
+    ...styles.navItem,
+    ...styles.activeNav,
+  }}
+>
+  {navTexts.users}
+</button>
 
         {canManageUsers && (
           <button
             style={styles.navItem}
             onClick={() => goTo("/reports")}
           >
-            Reports
+            {navTexts.reports}
           </button>
         )}
 
         {userProfile?.role === USER_ROLES.ADMIN && (
           <button style={styles.navItem} onClick={() => goTo("/backup")}>
-            Backup
+            {navTexts.backup}
           </button>
         )}
 
           <button style={styles.navItem} onClick={() => goTo("/profile")}>
-            Profile
+            {navTexts.profile}
           </button>
         </nav>
+<div style={styles.bottomSection}>
+  <button
+    style={styles.languageButton}
+    onClick={() =>
+      setLanguage(language === "he" ? "en" : "he")
+    }
+  >
+    {language === "he" ? "English 🌐" : "עברית 🌐"}
+  </button>
 
-        <button style={styles.logoutButton} onClick={handleLogout}>
-          Logout
-        </button>
+  <button style={styles.logoutButton} onClick={handleLogout}>
+    {navTexts.logout}
+  </button>
+</div>
+
+
       </aside>
 
      <main style={styles.page} className="users-main">
@@ -1086,6 +1117,24 @@ const styles = {
   padding: 0,
   fontSize: "13px",
 },
+
+bottomSection: {
+  marginTop: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+},
+
+languageButton: {
+  padding: "13px",
+  borderRadius: "14px",
+  border: "1px solid #eadfd2",
+  background: "#fffaf4",
+  color: "#2b160c",
+  fontWeight: "800",
+  cursor: "pointer",
+},
+
   
 };
 
