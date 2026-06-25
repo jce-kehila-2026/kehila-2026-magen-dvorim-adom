@@ -102,6 +102,7 @@ const t = {
 
   return (
     <div className="profile-layout" style={styles.layout}>
+      
       {passwordModalOpen && (
         <div style={styles.modalOverlay} onClick={closePasswordModal}>
           <div style={styles.modal} onClick={(event) => event.stopPropagation()}>
@@ -351,11 +352,30 @@ const t = {
           {success && <div style={styles.successBox}>{success}</div>}
 
           <form onSubmit={handleSubmit}>
-            <div style={styles.sectionTitle}>{t.personalInfo}</div>
+            <div
+            style={{
+              ...styles.sectionTitle,
+              direction: isHebrew ? "rtl" : "ltr"
+            }}
+          >
+            {t.personalInfo}
+          </div>
 
             <div className="profile-form-grid" style={styles.grid}>
               <div style={styles.field}>
-                <label>{t.fullName}</label>
+                <label
+                  
+                style={{
+                  direction: isHebrew ? "rtl" : "ltr",
+                  textAlign: isHebrew ? "right" : "left",
+                  display: "block",
+                  width: "100%"
+                }}
+
+                >
+                  {t.fullName}
+                </label>
+
                 <input
                   value={formData.full_name}
                   onChange={(e) =>
@@ -366,12 +386,36 @@ const t = {
               </div>
 
               <div style={styles.field}>
-                <label>{t.email}</label>
+                <label
+                  
+              style={{
+                direction: isHebrew ? "rtl" : "ltr",
+                textAlign: isHebrew ? "right" : "left",
+                display: "block",
+                width: "100%"
+              }}
+
+                >
+                  {t.email}
+                </label>
+
                 <input value={userProfile.email || ""} disabled style={styles.disabledInput} />
               </div>
 
               <div style={styles.field}>
-                <label>{t.phone}</label>
+                <label
+  
+                  style={{
+                    direction: isHebrew ? "rtl" : "ltr",
+                    textAlign: isHebrew ? "right" : "left",
+                    display: "block",
+                    width: "100%"
+                  }}
+
+                >
+                  {t.phone}
+                </label>
+
                 <input
                   value={formData.phone}
                   onChange={(e) =>
@@ -382,15 +426,46 @@ const t = {
               </div>
 
               <div style={styles.field}>
-                <label>{t.role}</label>
+                <label
+  
+                  style={{
+                    direction: isHebrew ? "rtl" : "ltr",
+                    textAlign: isHebrew ? "right" : "left",
+                    display: "block",
+                    width: "100%"
+                  }}
+
+                >
+                  {t.role}
+                </label>
+
                 <input value={userProfile.role || ""} disabled style={styles.disabledInput} />
               </div>
             </div>
 
-            <div style={styles.sectionTitle}>{t.location}</div>
+            <div
+              style={{
+                ...styles.sectionTitle,
+                direction: isHebrew ? "rtl" : "ltr"
+              }}
+            >
+              {t.location}
+            </div>
 
             <div style={styles.field}>
-              <label>{t.city}</label>
+              <label
+                
+  style={{
+    direction: isHebrew ? "rtl" : "ltr",
+    textAlign: isHebrew ? "right" : "left",
+    display: "block",
+    width: "100%"
+  }}
+
+              >
+                {t.city}
+              </label>
+
               <div style={{ position: "relative" }}>
                 <input
                   value={citySearch || formData.city}
@@ -426,12 +501,35 @@ const t = {
               </div>
             </div>
 
-            <div className="profile-availability-card" style={styles.availabilityCard}>
-              <div>
-                <strong>{t.availability}</strong>
-                <p style={styles.smallText}>
-                 {t.availabilityDesc}
 
+              <div
+                className="profile-availability-card"
+                style={{
+                  ...styles.availabilityCard,
+                  flexDirection: isHebrew ? "row-reverse" : "row"
+                }}
+              >
+
+              <div>
+                <strong
+                  style={{
+                    direction: isHebrew ? "rtl" : "ltr",
+                    textAlign: isHebrew ? "right" : "left",
+                    display: "block",
+                    width: "100%"
+                  }}
+                >
+                  {t.availability}
+                </strong>
+
+                <p
+                  style={{
+                    ...styles.smallText,
+                    direction: isHebrew ? "rtl" : "ltr",
+                    textAlign: isHebrew ? "right" : "left"
+                  }}
+                >
+                  {t.availabilityDesc}
                 </p>
               </div>
 
@@ -681,7 +779,7 @@ const styles = {
   sectionTitle: {
     margin: "22px 0 14px",
     color: "#2b160c",
-    fontSize: "16px",
+    fontSize: "24px",
     fontWeight: "900",
   },
 
