@@ -9,7 +9,6 @@ import logo from "../../assets/logo.png";
 import "./ProfileView.css";
 import { useLanguage } from "../../contexts/LanguageContext";
 
-
 const BACKUP_TYPES = {
   ALL: "all",
   USERS: "users",
@@ -182,17 +181,16 @@ export default function BackupView({ userProfile, currentUserName, handleLogout 
   };
 
   const { language, setLanguage } = useLanguage();
-const isHebrew = language === "he";
-const navTexts = {
-  dashboard: isHebrew ? "דשבורד" : "Dashboard",
-  cases: isHebrew ? "מקרים" : "Cases",
-  users: isHebrew ? "משתמשים" : "Users",
-  reports: isHebrew ? "דוחות" : "Reports",
-  backup: isHebrew ? "גיבוי" : "Backup",
-  profile: isHebrew ? "פרופיל" : "Profile",
-  logout: isHebrew ? "התנתק" : "Logout",
-};
-
+  const isHebrew = language === "he";
+  const navTexts = {
+    dashboard: "Dashboard",
+    cases: "Cases",
+    users: "Users",
+    reports: "Reports",
+    backup: "Backup",
+    profile: "Profile",
+    logout: "Logout",
+  };
 
   return (
     <div className="profile-layout" style={styles.layout}>
@@ -207,24 +205,12 @@ const navTexts = {
           {userProfile?.role === USER_ROLES.ADMIN && <button style={{ ...styles.navItem, ...styles.navItemActive }}>{navTexts.backup}</button>}
           <button style={styles.navItem} onClick={() => goTo("/profile")}>{navTexts.profile}</button>
         </nav>
-<div style={styles.bottomSection}>
-  <button
-    style={styles.languageButton}
-    onClick={() =>
-      setLanguage(language === "he" ? "en" : "he")
-    }
-  >
-    {language === "he" ? "English 🌐" : "עברית 🌐"}
-  </button>
-
-  <button
-    style={styles.logoutButton}
-    onClick={handleLogout}
-  >
-    {navTexts.logout}
-  </button>
-</div>
-
+        <div style={styles.bottomSection}>
+          <button style={styles.languageButton} onClick={() => setLanguage(language === "he" ? "en" : "he")}>
+            {language === "he" ? "English 🌐" : "עברית 🌐"}
+          </button>
+          <button style={styles.logoutButton} onClick={handleLogout}>{navTexts.logout}</button>
+        </div>
       </aside>
       <main className="profile-main" style={styles.page}>
         <div className="profile-mobile-topbar">
@@ -263,7 +249,7 @@ const navTexts = {
               </div>
             )}
             <button type="button" onClick={handleDownload} disabled={loading} style={{ ...styles.button, ...(loading ? styles.buttonDisabled : {}) }}>
-              {loading ? "Preparing..." : "Download File"}
+              {loading ? "Preparing..." : "Download File (.csv)"}
             </button>
           </div>
         </section>
@@ -297,20 +283,6 @@ const styles = {
   buttonDisabled: { opacity: 0.6, cursor: "not-allowed" },
   successBox: { background: "#f0fdf4", color: "#166534", padding: "12px 16px", borderRadius: "8px", marginBottom: "16px", border: "1px solid #bbf7d0" },
   errorBox: { background: "#fef2f2", color: "#991b1b", padding: "12px 16px", borderRadius: "8px", marginBottom: "16px", border: "1px solid #fecaca" },
-  bottomSection: {
-    marginTop: "auto",
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
-},
-
-languageButton: {
-  padding: "13px",
-  borderRadius: "6px",
-  border: "1px solid #eadfd2",
-  background: "#fffaf4",
-  color: "#2b160c",
-  fontWeight: "800",
-  cursor: "pointer",
-}
+  bottomSection: { marginTop: "auto", display: "flex", flexDirection: "column", gap: "10px" },
+  languageButton: { padding: "13px", borderRadius: "6px", border: "1px solid #eadfd2", background: "#fffaf4", color: "#2b160c", fontWeight: "800", cursor: "pointer" }
 };
