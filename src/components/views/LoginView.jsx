@@ -1,259 +1,106 @@
-import creativeImage from "../../assets/creative.png";
+import { useState, useEffect } from "react";
 import logo from "../../assets/logo.png";
+import creativeImage from "../../assets/creative.png";
 
 export default function LoginView({
-  email,
-  setEmail,
-  password,
-  setPassword,
-  message,
-  messageType,
-  loading,
-  handleLogin,
-  handleForgotPassword,
+  email, setEmail, password, setPassword, message, messageType, loading, handleLogin, handleForgotPassword,
+  language, setLanguage 
 }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div style={styles.page}>
-      {/* Left Side */}
-
-      <div style={styles.left}>
+      <img src={creativeImage} alt="Background" style={styles.bgImage} />
+      
+      <div style={{ ...styles.card, padding: isMobile ? "20px" : "40px", width: isMobile ? "90%" : "500px" }}>
+        
         <div style={styles.logoRow}>
-          <img
-  src={logo}
-  alt="logo"
-  style={styles.logo}
-/>
-
+          <img src={logo} alt="logo" style={styles.logo} />
           <div>
-            <h2 style={styles.brandTitle}>
-              Magen Dvorim Adom
-            </h2>
-
-            <p style={styles.brandSubtitle}>
-              BEE RESCUE PLATFORM
-            </p>
+            <h2 style={styles.brandTitle}>Magen Dvorim Adom</h2>
+            <p style={styles.brandSubtitle}>BEE RESCUE PLATFORM</p>
           </div>
         </div>
 
         <h1 style={styles.title}>Welcome back</h1>
-
-        <p style={styles.subtitle}>
-          Sign in to manage rescue cases,
-          volunteers, and field activity.
-        </p>
+        <p style={styles.subtitle}>Sign in to manage rescue cases, volunteers, and field activity.</p>
 
         {message && (
-          <div
-            style={{
-              ...styles.message,
-              ...(messageType === "success"
-                ? styles.success
-                : styles.error),
-            }}
-          >
+          <div style={{ ...styles.message, ...(messageType === "success" ? styles.success : styles.error) }}>
             {message}
           </div>
         )}
 
         <form onSubmit={handleLogin}>
-          <input
-            type="email"
-            placeholder="Enter email address"
-            value={email}
-            disabled={loading}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-          />
-
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            disabled={loading}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-          />
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={styles.loginButton}
-          >
+          <input type="email" placeholder="Enter email address" value={email} disabled={loading} onChange={(e) => setEmail(e.target.value)} style={styles.input} />
+          <input type="password" placeholder="Enter password" value={password} disabled={loading} onChange={(e) => setPassword(e.target.value)} style={styles.input} />
+          <button type="submit" disabled={loading} style={styles.loginButton}>
             {loading ? "Checking..." : "Login"}
           </button>
         </form>
 
-        <button
-          type="button"
-          onClick={handleForgotPassword}
-          style={styles.forgotButton}
-        >
-          Forgot password?
-        </button>
+        <button type="button" onClick={handleForgotPassword} style={styles.forgotButton}>Forgot password?</button>
+        
         <div style={styles.languageRow}>
-  <button style={{ ...styles.langButton, ...styles.langActive }}>English</button>
-  <button style={styles.langButton}>עברית</button>
-  <button style={styles.langButton}>العربية</button>
-</div>
-      </div>
-    
-      {/* Right Side */}
-
-      <div style={styles.right}>
-        <img
-        src={creativeImage}
-        alt="Bee Rescue"
-        className="floating-image"
-        style={styles.sideImage}
-/>
+          <button onClick={() => setLanguage("en")} style={{ ...styles.langButton, ...(language === "en" ? styles.langActive : {}) }}>EN</button>
+          <button onClick={() => setLanguage("he")} style={{ ...styles.langButton, ...(language === "he" ? styles.langActive : {}) }}>HE</button>
+        </div>
       </div>
     </div>
   );
 }
 
 const styles = {
- page: {
-  height: "100vh",
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  background: "#fffdf8",
-  overflow: "hidden",
-},
- left: {
-  height: "100vh",
-  boxSizing: "border-box",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
-  padding: "38px 90px",
-},
-
-  right: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    background: "#fffaf0",
+  page: { 
+    position: "fixed", top: 0, left: 0, height: "100vh", width: "100vw",
+    display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden",
+    backgroundColor: "#2b160c" 
   },
-
- sideImage: {
-  width: "100%",
-  height: "100vh",
-  objectFit: "cover",
-},
-
- logoRow: {
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-  marginBottom: "28px",
-  overflow: "visible",
-},
-
-  logo: {
-    width: "110px",
-    height: "110px",
-    objectFit: "contain",
-    display: "block",
-    flexShrink: 0,
-},
-
-  brandTitle: {
-    margin: 0,
-    fontSize: "20px",
-    color: "#2b160c",
-    fontWeight: "800",
+  bgImage: {
+    position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+    objectFit: "cover", objectPosition: "center", zIndex: 0 
   },
-
-  brandSubtitle: {
-    color: "#f97316",
-    letterSpacing: "3px",
-    fontWeight: "700",
-  },
-
-  languageRow: {
-  marginTop: "18px",
-  display: "flex",
-  justifyContent: "center",
-  gap: "28px",
-},
-
-langButton: {
-  border: "none",
-  background: "transparent",
-  color: "#6b625c",
-  fontSize: "16px",
-  fontWeight: "700",
-  cursor: "pointer",
-  paddingBottom: "8px",
-},
-
-langActive: {
-  color: "#f04f0a",
-  borderBottom: "3px solid #f04f0a",
-},
-
-title: {
-  fontSize: "48px",
-  lineHeight: 1.05,
-  color: "#2b160c",
-  margin: "10px 0 14px",
-  fontWeight: "900",
-},
-
-subtitle: {
-  color: "#6b7280",
-  fontSize: "21px",
-  lineHeight: 1.45,
-  maxWidth: "440px",
-  marginBottom: "28px",
-},
-
-  input: {
-    width: "100%",
-    padding: "20px",
-    borderRadius: "18px",
-    border: "1px solid #ddd",
-    marginBottom: "20px",
-    fontSize: "18px",
-    boxSizing: "border-box",
-  },
-
-  loginButton: {
-    width: "100%",
-    padding: "18px",
-    borderRadius: "18px",
+  card: { 
+    display: "flex", flexDirection: "column", justifyContent: "center", 
+    boxSizing: "border-box", zIndex: 1,
+    backgroundColor: "transparent",
+    backdropFilter: "none",
+    borderRadius: "0",
     border: "none",
-    background: "#2b160c",
-    color: "white",
-    fontSize: "22px",
-    fontWeight: "700",
-    cursor: "pointer",
+    boxShadow: "none",
+    maxHeight: "90vh"
   },
-
-  forgotButton: {
-    marginTop: "25px",
-    background: "none",
-    border: "none",
-    color: "#f97316",
-    fontWeight: "700",
-    cursor: "pointer",
-    fontSize: "18px",
+  logoRow: { display: "flex", alignItems: "center", gap: "15px", marginBottom: "20px" },
+  logo: { 
+    width: "80px", height: "80px", borderRadius: "15px", 
+    borderWidth: "1px", borderStyle: "solid", borderColor: "#2b160c", 
+    flexShrink: 0 
   },
-
-  message: {
-    padding: "14px",
-    borderRadius: "12px",
-    marginBottom: "20px",
+  brandTitle: { margin: 0, fontSize: "18px", color: "#2b160c", textShadow: "0 0 5px rgba(255,255,255,0.5)" },
+  brandSubtitle: { margin: 0, color: "#f97316", fontWeight: "700", fontSize: "12px", letterSpacing: "2px" },
+  languageRow: { marginTop: "20px", display: "flex", gap: "10px", justifyContent: "center" },
+  langButton: { 
+    padding: "5px 15px", borderRadius: "20px", 
+    borderWidth: "1px", borderStyle: "solid", borderColor: "#2b160c", 
+    background: "none", cursor: "pointer", fontWeight: "bold", color: "#2b160c" 
   },
-
-  success: {
-    background: "#dcfce7",
-    color: "#166534",
+  langActive: { borderColor: "#f04f0a", color: "#f04f0a", background: "rgba(255,255,255,0.3)" },
+  title: { fontSize: "40px", color: "#2b160c", margin: "10px 0", textShadow: "0 0 5px rgba(255,255,255,0.5)" },
+  subtitle: { color: "#4a352a", fontSize: "18px", marginBottom: "20px", fontWeight: "500", textShadow: "0 0 5px rgba(255,255,255,0.3)" },
+  input: { 
+    width: "100%", padding: "15px", borderRadius: "12px", 
+    borderWidth: "1px", borderStyle: "solid", borderColor: "#2b160c", 
+    marginBottom: "15px", boxSizing: "border-box", backgroundColor: "rgba(255,255,255,0.3)" 
   },
-
-  error: {
-    background: "#fee2e2",
-    color: "#b91c1c",
-  },
+  loginButton: { width: "100%", padding: "15px", borderRadius: "12px", border: "none", background: "#2b160c", color: "white", cursor: "pointer", fontSize: "18px" },
+  forgotButton: { background: "none", border: "none", color: "#f97316", fontWeight: "bold", cursor: "pointer", marginTop: "10px" },
+  message: { padding: "10px", borderRadius: "8px", marginBottom: "15px" },
+  success: { background: "rgba(220, 252, 231, 0.8)", color: "#166534" },
+  error: { background: "rgba(254, 226, 226, 0.8)", color: "#b91c1c" }
 };
