@@ -22,10 +22,38 @@ function Login() {
   const [loading, setLoading] = useState(false);
 
   const showMessage = (text, type) => {
-    setMessage(text);
-    setMessageType(type);
+  const translations = {
+    "Please fill in all required fields.": {
+      en: "Please fill in all required fields.",
+      he: "אנא מלא את כל השדות הנדרשים"
+    },
+    "Login successful. Welcome back!": {
+      en: "Login successful. Welcome back!",
+      he: "התחברת בהצלחה, ברוך שובך!"
+    },
+    "Login failed. Please try again.": {
+      en: "Login failed. Please try again.",
+      he: "ההתחברות נכשלה, נסה שוב"
+    },
+    "Please enter your email first.": {
+      en: "Please enter your email first.",
+      he: "אנא הכנס אימייל קודם"
+    },
+    "Password reset email sent. Please check your inbox.": {
+      en: "Password reset email sent. Please check your inbox.",
+      he: "נשלח מייל לאיפוס סיסמה, בדוק את המייל שלך"
+    },
+    "Could not send reset email. Please try again.": {
+      en: "Could not send reset email. Please try again.",
+      he: "לא ניתן לשלוח מייל איפוס, נסה שוב"
+    }
   };
 
+  const translated = translations[text] || { en: text, he: text };
+
+  setMessage(translated);
+  setMessageType(type);
+};
   useEffect(() => {
     if (userProfile) {
       navigate(getDashboardPathByRole(userProfile.role));
@@ -58,7 +86,7 @@ function Login() {
 
     try {
       setLoading(true);
-      setMessage("");
+      setMessage(null);
 
       const { profile } = await loginUser(email, password);
 
@@ -66,7 +94,7 @@ function Login() {
       redirectByRole(profile.role);
     } catch (error) {
       console.error("Login failed:", error);
-      showMessage(error.message || "Login failed. Please try again.", "error");
+      showMessage("Login failed. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -80,7 +108,7 @@ function Login() {
 
     try {
       setLoading(true);
-      setMessage("");
+      setMessage(null);
 
       await sendPasswordResetEmail(auth, email.trim().toLowerCase());
 
