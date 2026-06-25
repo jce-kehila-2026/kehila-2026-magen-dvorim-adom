@@ -175,6 +175,11 @@ export default function CasesView({
   FINISHING_STATUSES = [],
 }) {
   const navigate = useNavigate();
+const goTo = (path) => {
+  setMobileMenuOpen(false);
+  navigate(path);
+};
+
   const [expandedCaseId, setExpandedCaseId] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [localFeedbackCopied, setLocalFeedbackCopied] = useState({});
@@ -238,10 +243,26 @@ export default function CasesView({
     <div style={ styles.page } className="cases-page">
       <button type="button" className="mobile-menu-button" onClick={() => setMobileMenuOpen(true)}>☰</button>
 
-      {mobileMenuOpen && <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)} />}
-
+      {mobileMenuOpen && (
+  <>
+    <div className="mobile-menu-backdrop" />
+    <div
+      onClick={() => setMobileMenuOpen(false)}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 998,
+        background: 'transparent',
+      }}
+    />
+  </>
+)}
       {/* ── SIDEBAR ── */}
-      <aside style={styles.sidebar} className={`cases-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}>
+      <aside
+  style={styles.sidebar}
+  className={`cases-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}
+  onClick={(e) => e.stopPropagation()}
+>
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
           <div>
@@ -249,14 +270,35 @@ export default function CasesView({
             <p style={styles.brandSub}>{currentUserName || "User"}</p>
           </div>
         </div>
-        <nav style={styles.nav}>
-          <button style={styles.navItem} onClick={() => { navigate("/dashboard"); setMobileMenuOpen(false); }}>{t.dashboard}</button>
-          <button style={{ ...styles.navItem, ...styles.navItemActive }}>{t.cases}</button>
-          <button style={styles.navItem} onClick={() => navigate("/users")}>{t.users}</button>
-          {currentUserRole === "admin" && <button style={styles.navItem} onClick={() => navigate("/reports")}>{t.reports}</button>}
-          {currentUserRole === "admin" && <button style={styles.navItem} onClick={() => { navigate("/backup"); setMobileMenuOpen(false); }}>{t.backup}</button>}
-          <button style={styles.navItem} onClick={() => navigate("/profile")}>{t.profile}</button>
-        </nav>
+<nav style={styles.nav}>
+  <button style={styles.navItem} onClick={() => goTo("/dashboard")}>
+    {t.dashboard}
+  </button>
+
+  <button style={{ ...styles.navItem, ...styles.navItemActive }}>
+    {t.cases}
+  </button>
+
+  <button style={styles.navItem} onClick={() => goTo("/users")}>
+    {t.users}
+  </button>
+
+  {currentUserRole === "admin" && (
+    <button style={styles.navItem} onClick={() => goTo("/reports")}>
+      {t.reports}
+    </button>
+  )}
+
+  {currentUserRole === "admin" && (
+    <button style={styles.navItem} onClick={() => goTo("/backup")}>
+      {t.backup}
+    </button>
+  )}
+
+  <button style={styles.navItem} onClick={() => goTo("/profile")}>
+    {t.profile}
+  </button>
+</nav>
         <div style={styles.sidebarBottom}>
           <button style={styles.langButton} onClick={() => setLanguage(isHe ? "en" : "he")}>{t.langToggle}</button>
           <button style={styles.logoutButton} onClick={() => { setMobileMenuOpen(false); handleLogout(); }}>{t.logout}</button>
