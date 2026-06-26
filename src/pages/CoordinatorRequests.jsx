@@ -380,15 +380,6 @@ function CoordinatorRequests() {
     try {
       const removed = await reopenCaseAndCleanConflicts(caseId);
       await loadCases();
-      if (removed.length) {
-        const names = removed.map((item) => {
-          const user = users.find((u) => u.id === item.user_id);
-          return user?.full_name || user?.email || item.user_id;
-        });
-        window.alert(
-          `The following volunteer(s) already have another open case and were removed from this reopened case:\n- ${names.join("\n- ")}`
-        );
-      }
     } catch (err) {
       setError(err.message || "Failed to reopen case.");
     }
@@ -517,6 +508,7 @@ function CoordinatorRequests() {
       setFormSortDir={setFormSortDir}
       formStatusFilter={formStatusFilter}
       setFormStatusFilter={setFormStatusFilter}
+      onFormCreated={loadIntakeForms}
     />
   );
 }

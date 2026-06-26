@@ -51,7 +51,7 @@ export default function VolunteerRecommendationMap({ caseData, volunteers = [], 
   }, [selectedVolunteerId]);
 
   return (
-    <div style={{ height: "220px", width: "100%" }}>
+    <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
         center={center}
         zoom={11}

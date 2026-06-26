@@ -1,67 +1,60 @@
 // RequestsView — unified page for פניות (Requests)
-// Replaces Dashboard + Cases for admin & coordinator
 import "./RequestsView.css";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import VolunteerRecommendationMap from "./VolunteerRecommendationMap";
 import CoordinatorSendForm from "../../pages/CoordinatorSendForm";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { USER_ROLES } from "../../services/userSchema";
+import { getVolunteerAssignmentStats } from "../../services/assignmentService";
 
 // ─── Translations ─────────────────────────────────────────────────────────────
 const T = {
   en: {
-    // nav
     requests: "Requests", users: "Users", reports: "Reports",
     backup: "Backup", profile: "Profile", logout: "Logout",
     langToggle: "עברית 🌐",
-    // welcome
     welcome: "Welcome",
-    // send form section
     sendFormTitle: "Send Intake Form",
     instructionsTitle: "How to send a form",
     step1: "Enter the requester's phone number.",
     step2: "Click \"Create Form\" — this logs the request.",
     step3: "Click \"Copy Link\" to copy the form URL.",
     step4: "Send the link to the requester via WhatsApp or SMS.",
-    // form tracking
     trackTitle: "Form Tracking",
     newest: "Newest first", oldest: "Oldest first",
     all: "All", sent: "Sent", returned: "Returned", expired: "Expired",
     date: "Date", phone: "Phone", coordinator: "Coordinator",
     formStatus: "Status", noForms: "No forms sent yet.",
-    // cases section
     casesTitle: "Cases",
-    open: "Open", assigned: "Assigned", closed: "Closed", myCases: "My Cases",
-    // table headers
-    name: "Name", openedCol: "Opened", statusCol: "Status",
+    open: "Open", assigned: "Assigned", closed: "Closed",
+    myCases: "Assigned to me",
+    name: "Name", openedCol: "Opened ", statusCol: "Status",
     assignedTo: "Assigned to", feedback: "Feedback",
-    // detail rows
     city: "City", street: "Street", coordinator2: "Coordinator",
     complexity: "Complexity", closedAt: "Closed at",
     result: "Result", closingNotes: "Closing notes",
-    description: "Requester notes / description",
+    description: "Requester notes",
     assignedVols: "Assigned volunteer(s)",
-    adminRating: "Admin rating", evacuationRating: "Evacuation rating",
     notes: "Notes", feedbackLink: "Feedback link",
-    // actions
     assignVolunteer: "Assign Volunteer", reassignVolunteer: "Reassign Volunteer",
     closeCase: "Close Case", reopenCase: "Reopen Case",
     confirmClose: "Confirm Close", cancel: "Cancel",
     selectResult: "Select a finishing result",
     closingNotesOpt: "Closing notes (optional)",
-    received: "✅ Received", copied: "Copied ✓", sendLink: "Send link",
-    linkCopied: "✓ Link copied — send to requester",
-    copyAgain: "Copy again", copyFeedbackLink: "Copy feedback link",
+    copyFeedbackLink: "Copy feedback link",
+    sent2: "Sent ", received: "Received ",
+    feedbackNotYet: "Feedback not yet received.",
+    copyAgain: "Copy again",
+    closedFeedbackNote: "Copy and send the feedback link to the requester.",
     noDescription: "No description provided.",
     noClosingNotes: "No closing notes.",
     noNotes: "No notes.",
     noMatch: "No cases match this view.",
     search: "Search by name, phone, city, status…",
-    // assign modal
-    assignModalTitle: "Assign volunteer",
-    assignModalSub: "Choose the best available volunteer for this case.",
+    closedTabNote: "After closing a case, copy and send the feedback link to the requester so they can rate the service.",
+    assignModalTitle: "Case Details",
     selectVolunteer: "Select volunteer",
     searchByName: "Search by name...",
     noUsers: "No users found.",
@@ -77,6 +70,21 @@ const T = {
     score: "Score",
     noPhone: "No phone", noCity: "No city",
     simple: "Simple", complex: "Complex", veryComplex: "Very Complex",
+    complexityWarning: " Set complexity before assigning a volunteer.",
+    experience: "Experience", occupation: "Occupation",
+    heightLicense: "Height work license", equipment2: "Equipment",
+    available: "Available", unavailable: "Unavailable",
+    totalRescues: "Total rescues",
+    loading: "Loading...",
+    closedBy: "Closed by",
+    adminRating: "Admin rating", evacuationRating: "Evacuation rating",
+    yes: "Yes", no: "No",
+    beginner: "Beginner", intermediate: "Intermediate", experienced: "Experienced",
+    protectiveSuit: "Protective suit", beeBox: "Bee box",
+    ladder: "Ladder", smoker: "Smoker",
+    caseDetails: "Case Details",
+    closingInfo: "Closing Information",
+    feedbackSection: "Feedback",
   },
   he: {
     requests: "פניות", users: "משתמשים", reports: "דוחות",
@@ -95,31 +103,33 @@ const T = {
     date: "תאריך", phone: "טלפון", coordinator: "רכז",
     formStatus: "סטטוס", noForms: "אין טפסים שנשלחו עדיין.",
     casesTitle: "פניות",
-    open: "פתוחים", assigned: "משויכים", closed: "סגורים", myCases: "המקרים שלי",
-    name: "שם", openedCol: "נפתח", statusCol: "סטטוס",
+    open: "פתוח", assigned: "משויך", closed: "סגור",
+    myCases: "מוקצה לי",
+    name: "שם", openedCol: "נפתח ↕", statusCol: "סטטוס",
     assignedTo: "מוקצה ל", feedback: "משוב",
     city: "עיר", street: "רחוב", coordinator2: "רכז",
     complexity: "מורכבות", closedAt: "נסגר ב",
     result: "תוצאה", closingNotes: "הערות סגירה",
-    description: "הערות המבקש / תיאור",
+    description: "הערות מבקש",
     assignedVols: "מתנדב/ים משויך/ים",
-    adminRating: "דירוג מנהלתי", evacuationRating: "דירוג פינוי",
     notes: "הערות", feedbackLink: "קישור משוב",
     assignVolunteer: "שייך מתנדב", reassignVolunteer: "שייך מחדש",
     closeCase: "סגור מקרה", reopenCase: "פתח מחדש",
     confirmClose: "אשר סגירה", cancel: "ביטול",
     selectResult: "בחר תוצאת סיום",
     closingNotesOpt: "הערות סגירה (אופציונלי)",
-    received: "✅ התקבל", copied: "הועתק ✓", sendLink: "שלח קישור",
-    linkCopied: "✓ הקישור הועתק — שלח למבקש",
-    copyAgain: "העתק שוב", copyFeedbackLink: "העתק קישור משוב",
+    copyFeedbackLink: "העתק קישור משוב",
+    sent2: "נשלח ✓", received: "התקבל ✅",
+    feedbackNotYet: "משוב טרם התקבל.",
+    copyAgain: "העתק שוב",
+    closedFeedbackNote: "העתק ושלח את קישור המשוב לפונה.",
     noDescription: "לא סופק תיאור.",
     noClosingNotes: "אין הערות סגירה.",
     noNotes: "אין הערות.",
     noMatch: "אין מקרים התואמים לתצוגה זו.",
     search: "חיפוש לפי שם, טלפון, עיר, סטטוס…",
-    assignModalTitle: "שייך מתנדב",
-    assignModalSub: "בחר את המתנדב הזמין הטוב ביותר למקרה זה.",
+    closedTabNote: "לאחר סגירת מקרה, העתק ושלח את קישור המשוב לפונה לדירוג השירות.",
+    assignModalTitle: "פרטי מקרה",
     selectVolunteer: "בחר מתנדב",
     searchByName: "חפש לפי שם...",
     noUsers: "לא נמצאו משתמשים.",
@@ -135,31 +145,52 @@ const T = {
     score: "ניקוד",
     noPhone: "אין טלפון", noCity: "אין עיר",
     simple: "פשוט", complex: "מורכב", veryComplex: "מורכב מאוד",
+    complexityWarning: " יש לקבוע מורכבות לפני שיוך מתנדב.",
+    experience: "ניסיון", occupation: "עיסוק",
+    heightLicense: "רישיון עבודה בגובה", equipment2: "ציוד",
+    available: "זמין", unavailable: "לא זמין",
+    totalRescues: "סה״כ חילוצים",
+    loading: "טוען...",
+    closedBy: "נסגר על ידי",
+    adminRating: "דירוג מנהלתי", evacuationRating: "דירוג פינוי",
+    yes: "כן", no: "לא",
+    beginner: "מתחיל", intermediate: "בינוני", experienced: "מנוסה",
+    protectiveSuit: "חליפת הגנה", beeBox: "כוורת",
+    ladder: "סולם", smoker: "מעשן",
+    caseDetails: "פרטי מקרה",
+    closingInfo: "מידע סגירה",
+    feedbackSection: "משוב",
   },
 };
 
-// ─── Form status helpers ───────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function formStatusLabel(status, t) {
   if (status === "submitted") return t.returned;
   if (status === "sent" || status === "waiting") return t.sent;
   if (status === "expired") return t.expired;
   return "—";
 }
-
 function formStatusColor(status) {
-  if (status === "sent" || status === "waiting")
-    return { bg: "#fff1df", color: "#c2410c" };
-  if (status === "submitted")
-    return { bg: "#dcfce7", color: "#15803d" };
-  if (status === "expired")
-    return { bg: "#fee2e2", color: "#b42318" };
+  if (status === "sent" || status === "waiting") return { bg: "#fff1df", color: "#c2410c" };
+  if (status === "submitted") return { bg: "#dcfce7", color: "#15803d" };
+  if (status === "expired") return { bg: "#fee2e2", color: "#b42318" };
   return { bg: "#f1f5f9", color: "#475569" };
 }
-
 function cleanDate(value) {
   if (!value) return "—";
-  return new Date(value.seconds ? value.seconds * 1000 : value)
-    .toLocaleDateString("en-GB");
+  return new Date(value.seconds ? value.seconds * 1000 : value).toLocaleDateString("en-GB");
+}
+function translateStatus(s, t) {
+  if (s === "open") return t.open;
+  if (s === "assigned") return t.assigned;
+  if (s === "closed") return t.closed;
+  return s;
+}
+function translateExperience(level, t) {
+  if (level === "beginner") return t.beginner;
+  if (level === "intermediate") return t.intermediate;
+  if (level === "experienced") return t.experienced;
+  return level || "—";
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -167,7 +198,6 @@ export default function RequestsView({
   userProfile,
   currentUserRole,
   currentUserName,
-  // cases
   cases = [],
   activeCases = [],
   closedCases = [],
@@ -212,30 +242,47 @@ export default function RequestsView({
   handleChangeCoordinator,
   feedbackByCase = {},
   handleLogout,
-  // forms
   intakeForms = [],
   coordinatorNames = {},
   formSortDir,
   setFormSortDir,
   formStatusFilter,
   setFormStatusFilter,
+  onFormCreated,
 }) {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [expandedCaseId, setExpandedCaseId] = useState(null);
   const [localFeedbackCopied, setLocalFeedbackCopied] = useState({});
+  const [drawerCase, setDrawerCase] = useState(null);
+  const [selectedVolunteerId, setSelectedVolunteerId] = useState("");
+  const [volunteerStats, setVolunteerStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   const { language, setLanguage } = useLanguage();
   const isHe = language === "he";
   const t = T[language] || T.en;
   const dir = isHe ? "rtl" : "ltr";
   const isAdmin = currentUserRole === USER_ROLES?.ADMIN || currentUserRole === "admin";
 
-  const goTo = (path) => {
-    setMobileMenuOpen(false);
-    navigate(path);
-  };
+  const goTo = (path) => { setMobileMenuOpen(false); navigate(path); };
 
-  // ── Form tracking ────────────────────────────────────────────────────────────
+  // Load volunteer stats when one is selected in the drawer
+  useEffect(() => {
+    if (!selectedVolunteerId) { setVolunteerStats(null); return; }
+    setStatsLoading(true);
+    getVolunteerAssignmentStats(selectedVolunteerId)
+      .then(setVolunteerStats)
+      .catch(() => setVolunteerStats(null))
+      .finally(() => setStatsLoading(false));
+  }, [selectedVolunteerId]);
+
+  // Close drawer on Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") closeDrawer(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // Form tracking
   const filteredForms = useMemo(() => {
     if (formStatusFilter === "all") return intakeForms;
     return intakeForms.filter((f) => {
@@ -253,8 +300,8 @@ export default function RequestsView({
     });
   }, [filteredForms, formSortDir]);
 
-  // ── Case helpers ─────────────────────────────────────────────────────────────
-  const getStatusStyle = (s) => ({
+  // Case helpers
+  const getStatusBadgeStyle = (s) => ({
     ...styles.badge,
     ...(s === "assigned" ? styles.assignedBadge : s === "closed" ? styles.closedBadge : styles.openBadge),
   });
@@ -262,27 +309,16 @@ export default function RequestsView({
   const complexityLabel = (v) =>
     v === "very_complex" ? t.veryComplex : v === "complex" ? t.complex : t.simple;
 
-  const currentModalCase = cases.find((c) => c.id === modalState.caseId);
-
   const scoreByUserId = (recommendations || []).reduce((acc, v) => {
     acc[v.id] = v.recommendationScore; return acc;
   }, {});
 
-  const closeAssignModal = () => {
-    setModalState({ open: false, caseId: null, userId: "", selected: [], other: "", notes: "" });
-    setUserSearch("");
-    setRecommendations(null);
-  };
-
-  const openAssignModal = (caseItem) => {
-    setModalState((s) => ({ ...s, open: true, caseId: caseItem.id }));
-    handleGetRecommendations(caseItem);
-  };
-
-  const handleSendFeedbackOptimistic = (caseItem) => {
-    setLocalFeedbackCopied((p) => ({ ...p, [caseItem.id]: true }));
-    handleSendFeedback(caseItem);
-  };
+  // Sort volunteers by score descending
+  const sortedVolunteers = useMemo(() => {
+    return [...filteredUsersForModal].sort((a, b) =>
+      (scoreByUserId[b.id] ?? -1) - (scoreByUserId[a.id] ?? -1)
+    );
+  }, [filteredUsersForModal, recommendations]);
 
   const getAssignedNames = (caseItem) => {
     const a = assignments[caseItem.id] || [];
@@ -293,32 +329,52 @@ export default function RequestsView({
     }).join(", ");
   };
 
-  // ── Column order for RTL ──────────────────────────────────────────────────────
-  // In Hebrew: Name on right → feedback on left
-  // gridTemplateColumns order is always: name | phone | date | status | assigned | feedback | chevron
-  // In RTL the browser flips the visual order automatically with dir="rtl"
+  const openDrawer = (caseItem) => {
+    setDrawerCase(caseItem);
+    setSelectedVolunteerId("");
+    setVolunteerStats(null);
+    handleGetRecommendations(caseItem);
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeDrawer = () => {
+    setDrawerCase(null);
+    setSelectedVolunteerId("");
+    setVolunteerStats(null);
+    cancelCloseCase();
+    document.body.style.overflow = "";
+  };
+
+  const handleSendFeedbackOptimistic = (caseItem) => {
+    setLocalFeedbackCopied((p) => ({ ...p, [caseItem.id]: true }));
+    handleSendFeedback(caseItem);
+  };
+
+  const selectedUser = sortedVolunteers.find((u) => u.id === selectedVolunteerId);
+  const drawerFeedback = drawerCase ? feedbackByCase[drawerCase.id] : null;
+  const drawerAssignedNames = drawerCase ? getAssignedNames(drawerCase) : null;
+
+  // Equipment labels
+  const equipmentLabels = {
+    protective_suit: t.protectiveSuit,
+    bee_box: t.beeBox,
+    ladder: t.ladder,
+    smoker: t.smoker,
+  };
 
   return (
     <div style={styles.page} className="requests-page">
-      {/* ── MOBILE MENU BUTTON ── */}
       <button type="button" className="requests-mobile-menu-btn" onClick={() => setMobileMenuOpen(true)}>☰</button>
 
       {mobileMenuOpen && (
         <>
           <div className="requests-mobile-backdrop" />
-          <div
-            onClick={() => setMobileMenuOpen(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 998, background: "transparent" }}
-          />
+          <div onClick={() => setMobileMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 998, background: "transparent" }} />
         </>
       )}
 
       {/* ── SIDEBAR ── */}
-      <aside
-        style={styles.sidebar}
-        className={`requests-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <aside style={styles.sidebar} className={`requests-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
           <div>
@@ -326,125 +382,64 @@ export default function RequestsView({
             <p style={styles.brandSub}>{currentUserName || "User"}</p>
           </div>
         </div>
-
         <nav style={styles.nav}>
-          <button style={{ ...styles.navItem, ...styles.navItemActive }}>
-            {t.requests}
-          </button>
-          <button style={styles.navItem} onClick={() => goTo("/users")}>
-            {t.users}
-          </button>
-          {isAdmin && (
-            <button style={styles.navItem} onClick={() => goTo("/reports")}>
-              {t.reports}
-            </button>
-          )}
-          {isAdmin && (
-            <button style={styles.navItem} onClick={() => goTo("/backup")}>
-              {t.backup}
-            </button>
-          )}
-          <button style={styles.navItem} onClick={() => goTo("/profile")}>
-            {t.profile}
-          </button>
+          <button style={{ ...styles.navItem, ...styles.navItemActive }}>{t.requests}</button>
+          <button style={styles.navItem} onClick={() => goTo("/users")}>{t.users}</button>
+          {isAdmin && <button style={styles.navItem} onClick={() => goTo("/reports")}>{t.reports}</button>}
+          {isAdmin && <button style={styles.navItem} onClick={() => goTo("/backup")}>{t.backup}</button>}
+          <button style={styles.navItem} onClick={() => goTo("/profile")}>{t.profile}</button>
         </nav>
-
         <div style={styles.sidebarBottom}>
-          <button style={styles.langButton} onClick={() => setLanguage(isHe ? "en" : "he")}>
-            {t.langToggle}
-          </button>
-          <button style={styles.logoutButton} onClick={() => { setMobileMenuOpen(false); handleLogout(); }}>
-            {t.logout}
-          </button>
+          <button style={styles.langButton} onClick={() => setLanguage(isHe ? "en" : "he")}>{t.langToggle}</button>
+          <button style={styles.logoutButton} onClick={() => { setMobileMenuOpen(false); handleLogout(); }}>{t.logout}</button>
         </div>
       </aside>
 
       {/* ── MAIN ── */}
       <main style={styles.main} className="requests-main" dir={dir}>
 
-        {/* Welcome banner */}
+        {/* Welcome */}
         <div style={{ ...styles.welcomeBanner, textAlign: isHe ? "right" : "left" }}>
-          <span style={styles.welcomeText}>
-            {t.welcome}, <strong>{currentUserName}</strong>
-          </span>
+          <span style={styles.welcomeText}>{t.welcome}, <strong>{currentUserName}</strong></span>
         </div>
 
         {error && <p style={styles.errorText}>{error}</p>}
 
-        {/* ── TOP ROW: send form (left) + form tracking (right) ── */}
-        {/* In Hebrew the columns swap via flex-direction row-reverse */}
+        {/* ── TOP ROW ── */}
         <div style={{ ...styles.topRow, flexDirection: isHe ? "row-reverse" : "row" }} className="requests-top-row">
 
-          {/* LEFT COL: Send Form + Instructions */}
+          {/* Send Form */}
           <div style={styles.topLeft} className="requests-top-left">
             <section style={styles.card} className="requests-card">
-              <h2 style={{ ...styles.sectionTitle, textAlign: isHe ? "right" : "left" }}>
-                {t.sendFormTitle}
-              </h2>
-              <CoordinatorSendForm />
+              <h2 style={{ ...styles.sectionTitle, textAlign: isHe ? "right" : "left" }}>{t.sendFormTitle}</h2>
+              <CoordinatorSendForm onFormCreated={onFormCreated} />
               <div style={{ ...styles.instructionsBox, textAlign: isHe ? "right" : "left", marginTop: "10px" }}>
                 <p style={styles.instructionsTitle}>{t.instructionsTitle}</p>
                 <ol style={styles.instructionsList}>
-                  <li>{t.step1}</li>
-                  <li>{t.step2}</li>
-                  <li>{t.step3}</li>
-                  <li>{t.step4}</li>
+                  <li>{t.step1}</li><li>{t.step2}</li><li>{t.step3}</li><li>{t.step4}</li>
                 </ol>
               </div>
             </section>
           </div>
 
-          {/* RIGHT COL: Form Tracking */}
+          {/* Form Tracking */}
           <div style={styles.topRight} className="requests-top-right">
             <section style={{ ...styles.card, height: "100%", boxSizing: "border-box" }} className="requests-card">
-<div
-  style={{
-    ...styles.trackHeader,
-    flexDirection: "row", // always normal
-    justifyContent: "space-between",
-  }}
->
-  {/* TITLE */}
-  <h2
-    style={{
-      ...styles.sectionTitle,
-      margin: 0,
-      textAlign: isHe ? "right" : "left",
-    }}
-  >
-    {t.trackTitle}
-  </h2>
-
-  {/* FILTERS */}
-  <div
-    style={{
-      ...styles.trackControls,
-      marginLeft: isHe ? 0 : "auto",  // push right in EN
-      marginRight: isHe ? "auto" : 0, // push left in HE
-    }}
-  >
-    <select
-      style={styles.sortSelect}
-      value={formSortDir}
-      onChange={(e) => setFormSortDir(e.target.value)}
-    >
-      <option value="desc">{t.newest}</option>
-      <option value="asc">{t.oldest}</option>
-    </select>
-
-    <select
-      style={styles.sortSelect}
-      value={formStatusFilter}
-      onChange={(e) => setFormStatusFilter(e.target.value)}
-    >
-      <option value="all">{t.all}</option>
-      <option value="sent">{t.sent}</option>
-      <option value="returned">{t.returned}</option>
-      <option value="expired">{t.expired}</option>
-    </select>
-  </div>
-</div>
-
+              <div style={{ ...styles.trackHeader, flexDirection: isHe ? "row-reverse" : "row" }}>
+                <h2 style={{ ...styles.sectionTitle, margin: 0, textAlign: isHe ? "right" : "left" }}>{t.trackTitle}</h2>
+                <div style={styles.trackControls}>
+                  <select style={styles.sortSelect} value={formSortDir} onChange={(e) => setFormSortDir(e.target.value)}>
+                    <option value="desc">{t.newest}</option>
+                    <option value="asc">{t.oldest}</option>
+                  </select>
+                  <select style={styles.sortSelect} value={formStatusFilter} onChange={(e) => setFormStatusFilter(e.target.value)}>
+                    <option value="all">{t.all}</option>
+                    <option value="sent">{t.sent}</option>
+                    <option value="returned">{t.returned}</option>
+                    <option value="expired">{t.expired}</option>
+                  </select>
+                </div>
+              </div>
               {sortedForms.length === 0 ? (
                 <p style={styles.emptyText}>{t.noForms}</p>
               ) : (
@@ -465,9 +460,7 @@ export default function RequestsView({
                           <tr key={form.id} style={styles.tr}>
                             <td style={styles.td}>{cleanDate(form.sent_at)}</td>
                             <td style={styles.td}>{form.requester_phone || "—"}</td>
-                            {isAdmin && (
-                              <td style={styles.td}>{coordinatorNames[form.coordinator_id] || "—"}</td>
-                            )}
+                            {isAdmin && <td style={styles.td}>{coordinatorNames[form.coordinator_id] || "—"}</td>}
                             <td style={styles.td}>
                               <span style={{ ...styles.statusPill, background: sc.bg, color: sc.color }}>
                                 {formStatusLabel(form.status, t)}
@@ -486,12 +479,10 @@ export default function RequestsView({
 
         {/* ── CASES ── */}
         <section style={styles.card} className="requests-card">
-          <h2 style={{ ...styles.sectionTitle, textAlign: isHe ? "right" : "left" }}>
-            {t.casesTitle}
-          </h2>
+          <h2 style={{ ...styles.sectionTitle, textAlign: isHe ? "right" : "left" }}>{t.casesTitle}</h2>
 
           {/* Filter pills */}
-          <div style={{ ...styles.filters, flexDirection: isHe ? "row-reverse" : "row" , justifyContent: isHe ? "flex-end" : "flex-start",}} className="requests-filters">
+          <div style={{ ...styles.filters, flexDirection: isHe ? "row-reverse" : "row", justifyContent: isHe ? "flex-end" : "flex-start" }} className="requests-filters">
             {[
               { key: "all", label: t.all, count: cases.length },
               { key: "open", label: t.open, count: openCaseCount },
@@ -499,265 +490,84 @@ export default function RequestsView({
               { key: "closed", label: t.closed, count: closedCases.length },
               { key: "my", label: t.myCases, count: myCasesCount },
             ].map(({ key, label, count }) => (
-              <button
-                key={key}
-                onClick={() => setActiveFilter(key)}
-                style={{ ...styles.filterButton, ...(activeFilter === key ? styles.filterActive : {}) }}
-              >
+              <button key={key} onClick={() => setActiveFilter(key)}
+                style={{ ...styles.filterButton, ...(activeFilter === key ? styles.filterActive : {}) }}>
                 {label}
-                <span style={{ ...styles.filterCount, ...(activeFilter === key ? styles.filterCountActive : {}) }}>
-                  {count}
-                </span>
+                <span style={{ ...styles.filterCount, ...(activeFilter === key ? styles.filterCountActive : {}) }}>{count}</span>
               </button>
             ))}
           </div>
 
+          {/* Closed tab note */}
+          {activeFilter === "closed" && (
+            <div style={{ ...styles.closedNote, textAlign: isHe ? "right" : "left" }}>
+              ℹ️ {t.closedTabNote}
+            </div>
+          )}
+
           <div style={styles.toolbar}>
-            <input
-              placeholder={t.search}
-              value={caseSearch}
-              onChange={(e) => setCaseSearch(e.target.value)}
-              style={{ ...styles.searchInput, textAlign: isHe ? "right" : "left" }}
-              className="requests-search-input"
-            />
+            <input placeholder={t.search} value={caseSearch} onChange={(e) => setCaseSearch(e.target.value)}
+              style={{ ...styles.searchInput, textAlign: isHe ? "right" : "left" }} className="requests-search-input" />
           </div>
 
           {activeCases.length === 0 ? (
             <div style={styles.emptyState}>{t.noMatch}</div>
           ) : (
             <div style={styles.casesList}>
-              {/* Desktop header — column order flips via dir="rtl" on parent */}
+              {/* Desktop header */}
               <div style={styles.desktopHeader} className="requests-desktop-header" dir={dir}>
                 <span onClick={() => handleSortClick("name")} style={styles.thCell}>
-                  {t.name} {sortColumn === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+                  {t.name} {sortColumn === "name" ? (sortDirection === "asc" ? "↑" : "↓") : <span style={styles.sortHint}>↕</span>}
                 </span>
                 <span onClick={() => handleSortClick("phone")} style={styles.thCell}>
-                  {t.phone} {sortColumn === "phone" && (sortDirection === "asc" ? "↑" : "↓")}
+                  {t.phone} {sortColumn === "phone" ? (sortDirection === "asc" ? "↑" : "↓") : <span style={styles.sortHint}>↕</span>}
                 </span>
                 <span onClick={() => handleSortClick("opened_at")} style={styles.thCell}>
-                  {t.openedCol} {sortColumn === "opened_at" && (sortDirection === "asc" ? "↑" : "↓")}
+                  {t.openedCol} {sortColumn === "opened_at" ? (sortDirection === "asc" ? "↑" : "↓") : <span style={styles.sortHint}>↕</span>}
                 </span>
                 <span style={{ ...styles.thCell, cursor: "default" }}>{t.statusCol}</span>
                 <span style={{ ...styles.thCell, cursor: "default" }}>{t.assignedTo}</span>
                 <span style={{ ...styles.thCell, cursor: "default" }}>{t.feedback}</span>
-                <span />
+              
               </div>
 
               {activeCases.map((caseItem, rowIndex) => {
-                const isExpanded = expandedCaseId === caseItem.id;
                 const assignedNames = getAssignedNames(caseItem);
                 const feedbackSubmitted = caseItem.feedback_submitted;
                 const feedbackCopied = localFeedbackCopied[caseItem.id] || !!caseItem.feedback_token;
-                const feedbackData = feedbackByCase[caseItem.id];
 
                 return (
-                  <div
-                    key={caseItem.id}
-                    style={{ ...styles.accordionCard, background: rowIndex % 2 === 0 ? "#fff" : "#fdf8f0" }}
+                  <div key={caseItem.id}
+                    style={{ ...styles.caseRow, background: "#fff" }}
                     dir={dir}
                   >
-                    <div
-                      className="case-row-trigger"
-                      onClick={() => setExpandedCaseId(isExpanded ? null : caseItem.id)}
-                      style={styles.rowTrigger}
-                    >
+                    <div className="case-row-trigger" onClick={() => openDrawer(caseItem)} style={styles.rowTrigger}>
                       <span className="col-name" style={styles.colName}>
                         {caseItem.requester_first_name} {caseItem.requester_last_name}
                       </span>
                       <span className="col-phone" style={styles.colMeta}>{caseItem.requester_phone || "—"}</span>
                       <span className="col-date" style={styles.colMeta}>{formatDate(caseItem.opened_at)}</span>
                       <span className="col-status" style={{ display: "flex", justifyContent: "center" }}>
-                        <span style={getStatusStyle(caseItem.status)}>{caseItem.status}</span>
+                        <span style={getStatusBadgeStyle(caseItem.status)}>{translateStatus(caseItem.status, t)}</span>
                       </span>
                       <span className="col-assigned" style={styles.colAssigned}>
                         {assignedNames || <span style={{ color: "#aaa" }}>—</span>}
                       </span>
-                      <span className="col-feedback" style={{ display: "flex", justifyContent: "center" }}>
+                      <span className="col-feedback" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                         {caseItem.status !== "closed" ? (
-                          <span style={{ color: "#aaa", fontSize: "13px" }}>—</span>
+                          <span style={{ color: "#ccc", fontSize: "12px" }}>—</span>
                         ) : feedbackSubmitted ? (
                           <span style={styles.feedbackReceived}>{t.received}</span>
                         ) : feedbackCopied ? (
-                          <button onClick={(e) => { e.stopPropagation(); handleSendFeedbackOptimistic(caseItem); }} style={styles.feedbackCopiedBtn}>{t.copied}</button>
+                          <button onClick={(e) => { e.stopPropagation(); handleSendFeedbackOptimistic(caseItem); }}
+                            style={styles.feedbackSentBtn}>{t.sent2}</button>
                         ) : (
-                          <button onClick={(e) => { e.stopPropagation(); handleSendFeedbackOptimistic(caseItem); }} style={styles.feedbackSendBtn}>{t.sendLink}</button>
+                          <button onClick={(e) => { e.stopPropagation(); handleSendFeedbackOptimistic(caseItem); }}
+                            style={styles.feedbackCopyBtn}>{t.copyFeedbackLink}</button>
                         )}
                       </span>
-                      <span className={`row-chevron ${isExpanded ? "chevron-up" : "chevron-down"}`} />
+                      
                     </div>
-
-                    {/* Accordion body */}
-                    {isExpanded && (
-                      <div style={styles.accordionBody}>
-                        <div style={styles.detailTableWrapper}>
-                          {/* City / Street / Coordinator / Complexity */}
-                          <div style={{ ...styles.dtHead, gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-                            {[t.city, t.street, t.coordinator2, t.complexity].map((h) => (
-                              <div key={h} style={styles.dtHeadCell}>{h}</div>
-                            ))}
-                          </div>
-                          <div style={{ ...styles.dtRow, gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-                            <div style={styles.dtCell}>{caseItem.city || "—"}</div>
-                            <div style={styles.dtCell}>{caseItem.street || "—"} {caseItem.house_number || ""}</div>
-                            <div style={styles.dtCell}>
-                              {isAdmin && (caseItem.status === "open" || caseItem.status === "assigned") ? (
-                                <select
-                                  value={caseItem.coordinator_id || ""}
-                                  onChange={(e) => handleChangeCoordinator(caseItem.id, e.target.value)}
-                                  style={styles.inlineSelect}
-                                >
-                                  {coordinatorOptions.map((u) => (
-                                    <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
-                                  ))}
-                                </select>
-                              ) : (
-                                usersById[caseItem.coordinator_id]?.full_name ||
-                                usersById[caseItem.coordinator_id]?.email || "—"
-                              )}
-                            </div>
-                            <div style={styles.dtCell}>
-                              {(currentUserRole === "admin" || currentUserRole === "coordinator") && caseItem.status === "open" ? (
-                                <select
-                                  value={caseItem.case_complexity || "simple"}
-                                  onChange={(e) => handleChangeComplexity(caseItem.id, e.target.value)}
-                                  style={styles.inlineSelect}
-                                >
-                                  <option value="simple">{t.simple}</option>
-                                  <option value="complex">{t.complex}</option>
-                                  <option value="very_complex">{t.veryComplex}</option>
-                                </select>
-                              ) : (
-                                complexityLabel(caseItem.case_complexity)
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Assigned volunteers */}
-                          {assignedNames && (
-                            <>
-                              <div style={{ ...styles.dtHead, gridTemplateColumns: "1fr" }}>
-                                <div style={{ ...styles.dtHeadCell, borderRight: "none" }}>{t.assignedVols}</div>
-                              </div>
-                              <div style={{ ...styles.dtRow, gridTemplateColumns: "1fr" }}>
-                                <div style={{ ...styles.dtCell, borderRight: "none", textAlign: isHe ? "right" : "left", color: "#16803d", fontWeight: "800" }}>
-                                  👤 {assignedNames}
-                                </div>
-                              </div>
-                            </>
-                          )}
-
-                          {/* Closed extra rows */}
-                          {caseItem.status === "closed" && (
-                            <>
-                              <div style={{ ...styles.dtHead, gridTemplateColumns: "1fr 1fr 1fr" }}>
-                                <div style={styles.dtHeadCell}>{t.closedAt}</div>
-                                <div style={styles.dtHeadCell}>{t.result}</div>
-                                <div style={{ ...styles.dtHeadCell, borderRight: "none" }}>{t.closingNotes}</div>
-                              </div>
-                              <div style={{ ...styles.dtRow, gridTemplateColumns: "1fr 1fr 1fr" }}>
-                                <div style={styles.dtCell}>{cleanDate(caseItem.closed_at)}</div>
-                                <div style={styles.dtCell}>{getResultLabel(caseItem.result_status)}</div>
-                                <div style={{ ...styles.dtCell, borderRight: "none", textAlign: isHe ? "right" : "left" }}>
-                                  {caseItem.result_notes || t.noClosingNotes}
-                                </div>
-                              </div>
-                            </>
-                          )}
-
-                          {/* Description */}
-                          <div style={{ ...styles.dtHead, gridTemplateColumns: "1fr" }}>
-                            <div style={{ ...styles.dtHeadCell, borderRight: "none" }}>{t.description}</div>
-                          </div>
-                          <div style={{ ...styles.dtRow, gridTemplateColumns: "1fr" }}>
-                            <div style={{ ...styles.dtCell, borderRight: "none", textAlign: isHe ? "right" : "left" }}>
-                              {caseItem.location_description || t.noDescription}
-                            </div>
-                          </div>
-
-                          {/* Feedback (closed) */}
-                          {caseItem.status === "closed" && (
-                            feedbackData ? (
-                              <>
-                                <div style={{ ...styles.dtHead, gridTemplateColumns: "1fr 1fr 1fr" }}>
-                                  <div style={styles.dtHeadCell}>{t.adminRating}</div>
-                                  <div style={styles.dtHeadCell}>{t.evacuationRating}</div>
-                                  <div style={{ ...styles.dtHeadCell, borderRight: "none" }}>{t.notes}</div>
-                                </div>
-                                <div style={{ ...styles.dtRow, gridTemplateColumns: "1fr 1fr 1fr" }}>
-                                  <div style={styles.dtCell}>{feedbackData.administrative_rating != null ? `${feedbackData.administrative_rating}/4` : "—"}</div>
-                                  <div style={styles.dtCell}>{feedbackData.evacuation_rating != null ? `${feedbackData.evacuation_rating}/4` : "—"}</div>
-                                  <div style={{ ...styles.dtCell, borderRight: "none" }}>{feedbackData.comments || t.noNotes}</div>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div style={{ ...styles.dtHead, gridTemplateColumns: "1fr" }}>
-                                  <div style={{ ...styles.dtHeadCell, borderRight: "none" }}>{t.feedbackLink}</div>
-                                </div>
-                                <div style={{ ...styles.dtRow, gridTemplateColumns: "1fr", justifyItems: "center", padding: "10px 0" }}>
-                                  {feedbackCopied ? (
-                                    <div style={{ textAlign: "center" }}>
-                                      <div style={{ fontWeight: "700", color: "#16803d", marginBottom: "6px" }}>{t.linkCopied}</div>
-                                      <button onClick={(e) => { e.stopPropagation(); handleSendFeedbackOptimistic(caseItem); }} style={styles.assignButton}>{t.copyAgain}</button>
-                                    </div>
-                                  ) : (
-                                    <button onClick={(e) => { e.stopPropagation(); handleSendFeedbackOptimistic(caseItem); }} style={styles.assignButton}>{t.copyFeedbackLink}</button>
-                                  )}
-                                </div>
-                              </>
-                            )
-                          )}
-                        </div>
-
-                        {/* Case actions */}
-                        {closingCase.caseId === caseItem.id ? (
-                          <div style={styles.closeCasePicker} className="close-case-picker">
-                            <label style={styles.label}>{t.selectResult}</label>
-                            <select
-                              value={closingCase.result_status}
-                              onChange={(e) => setClosingCase((p) => ({ ...p, result_status: e.target.value }))}
-                              style={styles.inlineSelect}
-                            >
-                              {FINISHING_STATUSES.map((opt) => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                              ))}
-                            </select>
-                            <label style={styles.label}>{t.closingNotesOpt}</label>
-                            <textarea
-                              rows={2}
-                              value={closingCase.notes}
-                              onChange={(e) => setClosingCase((p) => ({ ...p, notes: e.target.value }))}
-                              style={styles.textarea}
-                            />
-                            <div style={styles.inlineActions} className="case-inline-actions">
-                              <button onClick={cancelCloseCase} style={styles.reopenButton}>{t.cancel}</button>
-                              <button onClick={confirmCloseCase} style={styles.closeButton}>{t.confirmClose}</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={styles.inlineActions} className="case-inline-actions">
-                            {caseItem.status !== "closed" ? (
-                              <>
-                                <button onClick={() => openAssignModal(caseItem)} style={styles.assignButton}>
-                                  {caseItem.status === "assigned" ? t.reassignVolunteer : t.assignVolunteer}
-                                </button>
-                                <button onClick={() => beginCloseCase(caseItem.id)} style={styles.closeButton}>{t.closeCase}</button>
-                              </>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setLocalFeedbackCopied((p) => { const n = { ...p }; delete n[caseItem.id]; return n; });
-                                  handleReopenCase(caseItem.id);
-                                }}
-                                style={styles.reopenButton}
-                              >
-                                {t.reopenCase}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -766,124 +576,337 @@ export default function RequestsView({
         </section>
       </main>
 
-      {/* ── ASSIGN MODAL ── */}
-      {modalState.open && (
-        <div style={styles.modalOverlay} onClick={closeAssignModal}>
-          <div style={styles.assignModal} className="assign-modal" onClick={(e) => e.stopPropagation()} dir={dir}>
-            <div style={styles.modalHeader} className="assign-modal-header">
+      {/* ── CASE DETAIL DRAWER ── */}
+      {drawerCase && (
+        <>
+          <div className="drawer-overlay" onClick={closeDrawer} />
+          <div className={`case-drawer ${isHe ? "drawer-left" : "drawer-right"}`} dir={dir}>
+
+            {/* Drawer header */}
+            <div style={styles.drawerHeader}>
               <div>
-                <h2 style={styles.modalTitle}>{t.assignModalTitle}</h2>
-                <p style={styles.modalSubtitle}>{t.assignModalSub}</p>
+                <h2 style={styles.drawerTitle}>
+                  {drawerCase.requester_first_name} {drawerCase.requester_last_name}
+                </h2>
+                <span style={getStatusBadgeStyle(drawerCase.status)}>{translateStatus(drawerCase.status, t)}</span>
               </div>
-              <button onClick={closeAssignModal} style={styles.iconButton}>×</button>
+              <button onClick={closeDrawer} style={styles.drawerClose}>×</button>
             </div>
 
-            <div style={styles.assignModalGrid} className="assign-modal-grid">
-              <div style={styles.assignLeftPanel}>
-                <label style={styles.label}>{t.selectVolunteer}</label>
-                <input
-                  placeholder={t.searchByName}
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  style={styles.searchInput}
-                  className="requests-search-input"
-                />
-                <div style={styles.userList} className="assign-user-list">
-                  {filteredUsersForModal.length === 0 ? (
-                    <div style={styles.emptyState}>{t.noUsers}</div>
-                  ) : filteredUsersForModal.map((user) => {
-                    const score = scoreByUserId[user.id];
-                    return (
-                      <button
-                        key={user.id}
-                        type="button"
-                        onClick={() => { setModalState((s) => ({ ...s, userId: user.id })); setUserSearch(user.full_name || user.email); }}
-                        style={{ ...styles.userOption, ...(modalState.userId === user.id ? styles.userOptionActive : {}) }}
-                      >
-                        <div style={styles.userOptionTop}>
-                          <strong>{user.full_name || user.email}</strong>
-                          {score != null && <span style={styles.scoreBadge}>{t.score} {score}</span>}
-                        </div>
-                        <span style={styles.userOptionMeta}>{user.phone || t.noPhone} · {user.city || t.noCity}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div style={styles.assignRightPanel}>
-                <div style={styles.mapPreviewBox} className="assign-map-box">
-                  <div style={styles.mapHeader}>
-                    <strong>{t.caseMap}</strong>
-                    <span style={styles.mapLegend}>{t.mapLegend}</span>
+            <div style={styles.drawerBody}>
+
+              {/* ── Case details ── */}
+              <div style={styles.drawerSection}>
+                <p style={styles.drawerSectionLabel}>{t.caseDetails}</p>
+                <div style={styles.detailGrid}>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>{t.phone}</span>
+                    <span style={styles.detailValue}>{drawerCase.requester_phone || "—"}</span>
                   </div>
-                  <VolunteerRecommendationMap
-                    caseData={currentModalCase}
-                    volunteers={modalState.userId
-                      ? (recommendations || filteredUsersForModal).filter((v) => v.id === modalState.userId)
-                      : recommendations || filteredUsersForModal}
-                    selectedVolunteerId={modalState.userId}
-                  />
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>{t.city}</span>
+                    <span style={styles.detailValue}>{drawerCase.city || "—"}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>{t.street}</span>
+                    <span style={styles.detailValue}>{drawerCase.street || "—"} {drawerCase.house_number || ""}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>{t.openedCol.replace(" ↕","")}</span>
+                    <span style={styles.detailValue}>{formatDate(drawerCase.opened_at)}</span>
+                  </div>
+                  <div style={styles.detailItem}>
+                    <span style={styles.detailLabel}>{t.coordinator2}</span>
+                    <span style={styles.detailValue}>
+                      {isAdmin && (drawerCase.status === "open" || drawerCase.status === "assigned") ? (
+                        <select value={drawerCase.coordinator_id || ""} onChange={(e) => handleChangeCoordinator(drawerCase.id, e.target.value)} style={styles.inlineSelect}>
+                          {coordinatorOptions.map((u) => <option key={u.id} value={u.id}>{u.full_name || u.email}</option>)}
+                        </select>
+                      ) : (
+                        usersById[drawerCase.coordinator_id]?.full_name || usersById[drawerCase.coordinator_id]?.email || "—"
+                      )}
+                    </span>
+                  </div>
+                  {drawerAssignedNames && (
+                    <div style={{ ...styles.detailItem, gridColumn: "1 / -1" }}>
+                      <span style={styles.detailLabel}>{t.assignedVols}</span>
+                      <span style={{ ...styles.detailValue, color: "#16803d", fontWeight: "700" }}>👤 {drawerAssignedNames}</span>
+                    </div>
+                  )}
+                  {drawerCase.location_description && (
+                    <div style={{ ...styles.detailItem, gridColumn: "1 / -1" }}>
+                      <span style={styles.detailLabel}>{t.description}</span>
+                      <span style={styles.detailValue}>{drawerCase.location_description}</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div style={styles.assignBottomPanel} className="assign-bottom-panel">
-              <div>
-                <label style={styles.label}>{t.requiredEquipment}</label>
-                <div style={styles.equipmentList}>
-                  {PRESET_EQUIPMENT.map((eq) => {
-                    const checked = (modalState.selected || []).includes(eq);
-                    return (
-                      <button
-                        key={eq}
-                        type="button"
-                        onClick={() => setModalState((s) => ({
-                          ...s,
-                          selected: checked
-                            ? (s.selected || []).filter((i) => i !== eq)
-                            : [...(s.selected || []), eq],
-                        }))}
-                        style={{ ...styles.equipmentChip, ...(checked ? styles.equipmentChipActive : {}) }}
-                      >
-                        {eq}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <label style={styles.label}>{t.otherEquipment}</label>
-                <input
-                  placeholder={t.otherEquipmentPh}
-                  value={modalState.other}
-                  onChange={(e) => setModalState((s) => ({ ...s, other: e.target.value }))}
-                  style={styles.searchInput}
-                />
-              </div>
-              <div>
-                <label style={styles.label}>{t.assignmentNotes}</label>
-                <textarea
-                  placeholder={t.assignmentNotesPh}
-                  value={modalState.notes}
-                  onChange={(e) => setModalState((s) => ({ ...s, notes: e.target.value }))}
-                  rows={2}
-                  style={styles.textarea}
-                />
-              </div>
-            </div>
+              {/* ── OPEN/ASSIGNED: Complexity + Assign ── */}
+              {drawerCase.status !== "closed" && (
+                <>
+                  {/* Complexity */}
+                  <div style={styles.drawerSection}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                      <div>
+                        <p style={styles.drawerSectionLabel}>{t.complexity}</p>
+                        <select
+                          value={drawerCase.case_complexity || "simple"}
+                          onChange={(e) => {
+                            handleChangeComplexity(drawerCase.id, e.target.value);
+                            setDrawerCase((prev) => ({ ...prev, case_complexity: e.target.value }));
+                          }}
+                          style={styles.complexitySelect}
+                        >
+                          <option value="simple">{t.simple}</option>
+                          <option value="complex">{t.complex}</option>
+                          <option value="very_complex">{t.veryComplex}</option>
+                        </select>
+                      </div>
 
-            <div style={styles.assignFooterActions}>
-              <button onClick={closeAssignModal} style={styles.reopenButton}>{t.cancel}</button>
-              <button
-                style={styles.modalAssignButton}
-                disabled={!modalState.userId || assigning}
-                onClick={handleAssignFromModal}
-              >
-                {assigning ? t.assigning : t.assignBtn}
-              </button>
+                    </div>
+                  </div>
+
+                  {/* Assign volunteer */}
+                  <div style={styles.drawerSection}>
+                    <p style={styles.drawerSectionLabel}>
+                      {drawerCase.status === "assigned" ? t.reassignVolunteer : t.assignVolunteer}
+                    </p>
+
+                    {/* Search + list + map side by side */}
+                    <div style={styles.assignGrid} className="drawer-assign-grid">
+                      {/* Left: volunteer list */}
+                      <div style={styles.assignListCol}>
+                        <input
+                          placeholder={t.searchByName}
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
+                          style={{ ...styles.searchInput, marginBottom: "8px" }}
+                          className="requests-search-input"
+                        />
+                        <div style={styles.volunteerList}>
+                          {sortedVolunteers.length === 0 ? (
+                            <div style={styles.emptyState}>{t.noUsers}</div>
+                          ) : sortedVolunteers.map((user) => {
+                            const score = scoreByUserId[user.id];
+                            const isSelected = selectedVolunteerId === user.id;
+                            return (
+                              <button key={user.id} type="button"
+                                onClick={() => setSelectedVolunteerId(isSelected ? "" : user.id)}
+                                style={{ ...styles.volunteerBtn, ...(isSelected ? styles.volunteerBtnActive : {}) }}>
+                                <div style={styles.volunteerBtnTop}>
+                                  <strong style={{ fontSize: "13px" }}>{user.full_name || user.email}</strong>
+                                  {score != null && <span style={styles.scoreBadge}>{t.score} {score}</span>}
+                                </div>
+                                <span style={styles.volunteerBtnMeta}>{user.phone || t.noPhone} · {user.city || t.noCity}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Right: map */}
+                      <div style={styles.assignMapCol} className="drawer-map-col">
+                        <div style={styles.mapBox}>
+                          <div style={styles.mapHeader}>
+                            <strong style={{ fontSize: "12px" }}>{t.caseMap}</strong>
+                            <span style={styles.mapLegend}>{t.mapLegend}</span>
+                          </div>
+                          <VolunteerRecommendationMap
+                            caseData={drawerCase}
+                            volunteers={selectedVolunteerId
+                              ? (recommendations || sortedVolunteers).filter((v) => v.id === selectedVolunteerId)
+                              : recommendations || sortedVolunteers}
+                            selectedVolunteerId={selectedVolunteerId}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Selected volunteer expanded card */}
+                    {selectedUser && (
+                      <div style={styles.volunteerCard}>
+                        <div style={styles.volunteerCardHeader}>
+                          <div>
+                            <strong style={{ fontSize: "15px", color: "#2b160c" }}>{selectedUser.full_name || selectedUser.email}</strong>
+                            <span style={{ ...styles.availBadge, background: selectedUser.is_available ? "#dcfce7" : "#fee2e2", color: selectedUser.is_available ? "#15803d" : "#b42318" }}>
+                              {selectedUser.is_available ? t.available : t.unavailable}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={styles.volunteerCardGrid}>
+                          <div style={styles.vcItem}><span style={styles.vcLabel}>{t.phone}</span><span>{selectedUser.phone || "—"}</span></div>
+                          <div style={styles.vcItem}><span style={styles.vcLabel}>{t.city}</span><span>{selectedUser.city || "—"}</span></div>
+                          <div style={styles.vcItem}><span style={styles.vcLabel}>{t.occupation}</span><span>{selectedUser.occupation || "—"}</span></div>
+                          <div style={styles.vcItem}><span style={styles.vcLabel}>{t.experience}</span><span>{translateExperience(selectedUser.experience_level, t)}</span></div>
+                          <div style={styles.vcItem}><span style={styles.vcLabel}>{t.heightLicense}</span><span>{selectedUser.licenses?.height_work ? t.yes : t.no}</span></div>
+                          <div style={styles.vcItem}>
+                            <span style={styles.vcLabel}>{t.totalRescues}</span>
+                            <span>{statsLoading ? t.loading : (volunteerStats?.completedRescues ?? "—")}</span>
+                          </div>
+                        </div>
+                        {/* Equipment */}
+                        <div style={{ marginTop: "8px" }}>
+                          <span style={styles.vcLabel}>{t.equipment2}: </span>
+                          <span style={{ fontSize: "13px", color: "#3d332b" }}>
+                            {Object.entries(selectedUser.equipment || {})
+                              .filter(([, v]) => v)
+                              .map(([k]) => equipmentLabels[k] || k)
+                              .join(", ") || "—"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Equipment + notes + assign button */}
+                    {selectedVolunteerId && (
+                      <div style={styles.assignFooter}>
+                        <div>
+                          <label style={styles.label}>{t.requiredEquipment}</label>
+                          <div style={styles.equipmentList}>
+                            {PRESET_EQUIPMENT.map((eq) => {
+                              const checked = (modalState.selected || []).includes(eq);
+                              return (
+                                <button key={eq} type="button"
+                                  onClick={() => setModalState((s) => ({
+                                    ...s,
+                                    selected: checked ? (s.selected || []).filter((i) => i !== eq) : [...(s.selected || []), eq],
+                                  }))}
+                                  style={{ ...styles.equipChip, ...(checked ? styles.equipChipActive : {}) }}>
+                                  {eq}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div style={styles.assignFooterRow}>
+                          <div style={{ flex: 1 }}>
+                            <label style={styles.label}>{t.otherEquipment}</label>
+                            <input placeholder={t.otherEquipmentPh} value={modalState.other}
+                              onChange={(e) => setModalState((s) => ({ ...s, other: e.target.value }))}
+                              style={styles.searchInput} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={styles.label}>{t.assignmentNotes}</label>
+                            <input placeholder={t.assignmentNotesPh} value={modalState.notes}
+                              onChange={(e) => setModalState((s) => ({ ...s, notes: e.target.value }))}
+                              style={styles.searchInput} />
+                          </div>
+                        </div>
+                        <button
+                          style={{ ...styles.assignConfirmBtn, opacity: assigning ? 0.7 : 1 }}
+                          disabled={assigning}
+                          onClick={() => {
+                            setModalState((s) => ({ ...s, open: true, caseId: drawerCase.id, userId: selectedVolunteerId }));
+                            setTimeout(() => handleAssignFromModal(), 0);
+                            
+                          }}
+                        >
+                          {assigning ? t.assigning : t.assignBtn}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Close case */}
+                  <div style={styles.drawerSection}>
+                    {closingCase.caseId === drawerCase.id ? (
+                      <div style={styles.closePicker}>
+                        <label style={styles.label}>{t.selectResult}</label>
+                        <select value={closingCase.result_status}
+                          onChange={(e) => setClosingCase((p) => ({ ...p, result_status: e.target.value }))}
+                          style={styles.inlineSelect}>
+                          {FINISHING_STATUSES.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                        <label style={styles.label}>{t.closingNotesOpt}</label>
+                        <textarea rows={2} value={closingCase.notes}
+                          onChange={(e) => setClosingCase((p) => ({ ...p, notes: e.target.value }))}
+                          style={styles.textarea} />
+                        <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                          <button onClick={cancelCloseCase} style={styles.secondaryBtn}>{t.cancel}</button>
+                          <button onClick={async () => { await confirmCloseCase(); setDrawerCase(null); document.body.style.overflow = ""; }} style={styles.dangerBtn}>{t.confirmClose}</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => beginCloseCase(drawerCase.id)} style={styles.dangerBtn}>{t.closeCase}</button>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ── CLOSED case ── */}
+              {drawerCase.status === "closed" && (
+                <>
+                  <div style={styles.drawerSection}>
+                    <p style={styles.drawerSectionLabel}>{t.closingInfo}</p>
+                    <div style={styles.detailGrid}>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>{t.closedAt}</span>
+                        <span style={styles.detailValue}>{cleanDate(drawerCase.closed_at)}</span>
+                      </div>
+                      <div style={styles.detailItem}>
+                        <span style={styles.detailLabel}>{t.result}</span>
+                        <span style={styles.detailValue}>{getResultLabel(drawerCase.result_status)}</span>
+                      </div>
+                      {(drawerCase.result_notes || drawerCase.closed_by?.full_name || drawerCase.closed_by_full_name) && (
+                        <>
+                          {drawerCase.result_notes && (
+                            <div style={{ ...styles.detailItem, gridColumn: "1 / -1" }}>
+                              <span style={styles.detailLabel}>{t.closingNotes}</span>
+                              <span style={styles.detailValue}>{drawerCase.result_notes}</span>
+                            </div>
+                          )}
+                          <div style={{ ...styles.detailItem, gridColumn: "1 / -1" }}>
+                            <span style={styles.detailLabel}>{t.closedBy}</span>
+                            <span style={styles.detailValue}>
+                              {drawerCase.closed_by?.full_name || drawerCase.closed_by_full_name || "—"}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={styles.drawerSection}>
+                    <p style={styles.drawerSectionLabel}>{t.feedbackSection}</p>
+                    {drawerFeedback ? (
+                      <div style={styles.detailGrid}>
+                        <div style={styles.detailItem}>
+                          <span style={styles.detailLabel}>{t.adminRating}</span>
+                          <span style={styles.detailValue}>{drawerFeedback.administrative_rating != null ? `${drawerFeedback.administrative_rating}/4` : "—"}</span>
+                        </div>
+                        <div style={styles.detailItem}>
+                          <span style={styles.detailLabel}>{t.evacuationRating}</span>
+                          <span style={styles.detailValue}>{drawerFeedback.evacuation_rating != null ? `${drawerFeedback.evacuation_rating}/4` : "—"}</span>
+                        </div>
+                        {drawerFeedback.comments && (
+                          <div style={{ ...styles.detailItem, gridColumn: "1 / -1" }}>
+                            <span style={styles.detailLabel}>{t.notes}</span>
+                            <span style={styles.detailValue}>{drawerFeedback.comments}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <p style={{ margin: 0, fontSize: "13px", color: "#6b625c" }}>{t.feedbackNotYet}</p>
+                        <p style={{ margin: 0, fontSize: "12px", color: "#9a8f86" }}>{t.closedFeedbackNote}</p>
+                        <button
+                          onClick={() => handleSendFeedbackOptimistic(drawerCase)}
+                          style={styles.secondaryBtn}>
+                          {localFeedbackCopied[drawerCase.id] || drawerCase.feedback_token ? t.copyAgain : t.copyFeedbackLink}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={styles.drawerSection}>
+                    <button onClick={async () => { await handleReopenCase(drawerCase.id); closeDrawer(); }} style={styles.secondaryBtn}>{t.reopenCase}</button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
@@ -904,32 +927,29 @@ const styles = {
   langButton: { border: "1px solid #eadfd2", background: "#fffaf4", color: "#2b160c", borderRadius: "10px", padding: "10px", fontWeight: "800", cursor: "pointer", fontSize: "13px" },
   logoutButton: { border: "none", background: "#6a2300", color: "white", borderRadius: "6px", padding: "10px", fontSize: "13px", fontWeight: "800", cursor: "pointer" },
   main: { padding: "20px 18px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: "18px" },
-  welcomeBanner: { padding: window.innerWidth < 768 ? "10px 14px" : "14px 20px", background: "#fff8ef", borderRadius: "14px", border: "1px solid #f0e5d8" },
+  welcomeBanner: { padding: "14px 20px", background: "#fff8ef", borderRadius: "14px", border: "1px solid #f0e5d8" },
   welcomeText: { color: "#3d332b", fontSize: "15px" },
   errorText: { color: "#dc2626", background: "#fee2e2", border: "1px solid #fecaca", padding: "10px 12px", borderRadius: "12px", fontSize: "14px", margin: 0 },
-  card: { background: "#ffffff", borderRadius: "22px", padding: window.innerWidth < 768 ? "10px" : "16px", boxShadow: "0 4px 24px rgba(43,22,12,0.05)", border: "1px solid #f2e7dc" },
-  sectionTitle: { margin: "0 0 10px", color: "#6a2300", fontSize: "18px", fontWeight: "900" },
-  // Top two-column row
+  card: { background: "#ffffff", borderRadius: "22px", padding: "20px", boxShadow: "0 4px 24px rgba(43,22,12,0.05)", border: "1px solid #f2e7dc" },
+  sectionTitle: { margin: "0 0 14px", color: "#6a2300", fontSize: "18px", fontWeight: "900" },
   topRow: { display: "flex", gap: "18px", alignItems: "stretch" },
-  topLeft: { flex: "0 0 380px", minWidth: 0 },
+  topLeft: { flex: "0 0 42%", minWidth: 0 },
   topRight: { flex: "1 1 0", minWidth: 0 },
-  // Instructions inside send form card
-  instructionsBox: { background: "#fffdf8", border: "1px solid #f0e5d8", borderRadius: "12px", padding: "7px" },
-  instructionsTitle: { margin: "0 0 4px", fontWeight: "800", fontSize: "13px", color: "#6a2300" },
-  instructionsList: { margin: 0, paddingInlineStart: "20px", display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#3d332b", lineHeight: "1.2" },
-  // Form tracking — scrollable list showing ~5 rows
+  instructionsBox: { background: "#fffdf8", border: "1px solid #f0e5d8", borderRadius: "12px", padding: "10px" },
+  instructionsTitle: { margin: "0 0 6px", fontWeight: "800", fontSize: "13px", color: "#6a2300" },
+  instructionsList: { margin: 0, paddingInlineStart: "20px", display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#3d332b", lineHeight: "1.4" },
   trackHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginBottom: "14px" },
-  trackControls: { display: "flex", gap: "8px" , flexDirection: "row"},
+  trackControls: { display: "flex", gap: "8px" },
   sortSelect: { padding: "7px 10px", borderRadius: "6px", border: "1px solid #eadfd2", background: "#ffffff", color: "#2b160c", fontSize: "13px", fontWeight: "800", cursor: "pointer" },
-  trackScrollArea: { overflowY: "auto", overflowX: "auto", maxHeight: window.innerWidth < 768 ? "130px" : "190px", borderRadius: "10px", border: "1px solid #f0e5d8" },
+  trackScrollArea: { overflowY: "auto", overflowX: "auto", maxHeight: "210px", borderRadius: "10px", border: "1px solid #f0e5d8" },
   table: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
   th: { padding: "8px 10px", color: "#6b625c", fontWeight: "800", borderBottom: "1px solid #f0e5d8", whiteSpace: "nowrap", textAlign: "inherit" },
   td: { padding: "10px 10px", color: "#2b160c", borderBottom: "1px solid #f8f4f0", verticalAlign: "middle", textAlign: "inherit" },
   tr: { transition: "background 0.15s" },
   statusPill: { display: "inline-block", padding: "3px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "800" },
   emptyText: { margin: 0, color: "#7a6658", fontSize: "14px" },
-  // Cases
-  filters: { display: "flex", gap: "8px", marginBottom: "14px", flexWrap: "wrap",   justifyContent: window.innerWidth < 768 ? "flex-start" : "flex-start" },
+  closedNote: { background: "#fffbef", border: "1px solid #f5e0a0", borderRadius: "10px", padding: "10px 14px", fontSize: "13px", color: "#7a5c00", marginBottom: "12px" },
+  filters: { display: "flex", gap: "8px", marginBottom: "14px", flexWrap: "wrap" },
   filterButton: { display: "flex", alignItems: "center", gap: "6px", border: "1.5px solid #f3c49a", background: "white", color: "#3d332b", borderRadius: "20px", padding: "7px 14px", fontWeight: "800", fontSize: "13px", cursor: "pointer", whiteSpace: "nowrap" },
   filterActive: { background: "#fff1df", color: "#e85d04" },
   filterCount: { background: "#f0e5d8", color: "#7a5c44", borderRadius: "10px", padding: "1px 7px", fontSize: "11px", fontWeight: "900" },
@@ -938,57 +958,69 @@ const styles = {
   searchInput: { width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: "12px", border: "1px solid #eadfd2", background: "#fffdf8", fontSize: "14px", color: "#2b160c" },
   emptyState: { padding: "24px", textAlign: "center", background: "#fffdf8", color: "#6b625c", fontSize: "14px" },
   casesList: { background: "white", border: "1px solid #eee2d8", borderRadius: "16px", overflow: "hidden" },
-  desktopHeader: { display: "grid", gridTemplateColumns: "1.8fr 1.1fr 1.3fr 0.9fr 1.2fr 0.9fr 32px", alignItems: "center", padding: "12px 16px", fontWeight: "900", background: "#fff8ef", borderBottom: "1px solid #eadfd2", fontSize: "12px", color: "#51443a" },
+  desktopHeader: { display: "grid",  gridTemplateColumns: "2fr 1.2fr 1.6fr 1fr 1.4fr 1.8fr", alignItems: "center", padding: "12px 16px", fontWeight: "900", background:  "#fff3e6", borderBottom: "1px solid #eadfd2", fontSize: "12px", color: "#51443a" },
   thCell: { textAlign: "center", cursor: "pointer", userSelect: "none" },
-  accordionCard: { borderBottom: "1px solid #eadfd2" },
-  rowTrigger: { width: "100%", border: "none", background: "transparent", cursor: "pointer", padding: "14px 16px", display: "grid", gridTemplateColumns: "1.8fr 1.1fr 1.3fr 0.9fr 1.2fr 0.9fr 32px", alignItems: "center", gap: "8px", textAlign: "inherit" },
+  sortHint: { opacity: 0.35, fontSize: "11px" },
+  caseRow: { borderBottom: "1px solid #d6ccc0" },
+  rowTrigger: { width: "100%", border: "none", background: "transparent", cursor: "pointer", padding: "14px 16px", display: "grid",gridTemplateColumns: "2fr 1.2fr 1.6fr 1fr 1.4fr 1.8fr", alignItems: "center", gap: "8px", textAlign: "inherit" },
   colName: { color: "#2b160c", fontWeight: "700", textTransform: "capitalize", fontSize: "14px", textAlign: "center" },
   colMeta: { color: "#2b160c", fontSize: "13px", textAlign: "center" },
   colAssigned: { color: "#2b160c", fontSize: "12px", textAlign: "center", fontWeight: "600" },
-  accordionBody: { borderTop: "1px solid #eadfd2", padding: "14px 16px" },
-  detailTableWrapper: { marginBottom: "16px" },
-  dtHead: { display: "grid", background: "#f7f7f6" },
-  dtHeadCell: { padding: "8px 12px", textAlign: "center", fontSize: "11px", color: "#9a9a9a", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px", borderRight: "1px solid #efefef" },
-  dtRow: { display: "grid", background: "#fff" },
-  dtCell: { padding: "10px 12px", textAlign: "center", fontSize: "13px", color: "#2b160c", fontWeight: "600", borderRight: "1px solid #f3f3f3" },
-  inlineSelect: { padding: "5px 7px", borderRadius: "8px", border: "1px solid #eadfd2", background: "white", fontWeight: "700", fontSize: "13px", color: "#2b160c" },
-  inlineActions: { marginTop: "14px", display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" },
-  closeCasePicker: { marginTop: "16px", padding: "14px", borderRadius: "14px", background: "#fff3e0", border: "1px solid #ffcc80", display: "flex", flexDirection: "column", gap: "8px" },
-  badge: { padding: "4px 10px", borderRadius: "6px", fontWeight: "900", fontSize: "12px", textTransform: "capitalize", whiteSpace: "nowrap" },
+  badge: { padding: "4px 10px", borderRadius: "6px", fontWeight: "900", fontSize: "12px", whiteSpace: "nowrap" },
   openBadge: { background: "#fff3e6", color: "#d95f00" },
   assignedBadge: { background: "#eef8ef", color: "#16803d" },
   closedBadge: { background: "#f3f4f6", color: "#374151" },
-  feedbackReceived: { color: "#16803d", fontWeight: "800", fontSize: "12px", whiteSpace: "nowrap" },
-  feedbackCopiedBtn: { border: "1px solid #b7dfc0", background: "#eef8ef", color: "#16803d", borderRadius: "6px", padding: "4px 8px", fontWeight: "800", fontSize: "11px", cursor: "pointer", whiteSpace: "nowrap" },
-  feedbackSendBtn: { border: "1px solid #f3c49a", background: "#fff8ef", color: "#d95f00", borderRadius: "6px", padding: "4px 8px", fontWeight: "800", fontSize: "11px", cursor: "pointer", whiteSpace: "nowrap" },
-  assignButton: { border: "1px solid #f3c49a", background: "#fff8ef", color: "#d95f00", borderRadius: "6px", padding: "7px 11px", fontWeight: "800", cursor: "pointer" },
-  closeButton: { border: "1px solid #e0c4b8", background: "white", color: "#7a2e1a", borderRadius: "6px", padding: "7px 11px", fontWeight: "800", cursor: "pointer" },
-  reopenButton: { border: "1px solid #d9c2b8", background: "white", color: "#6a2300", borderRadius: "4px", padding: "5px 9px", fontSize: "13px", fontWeight: "800", cursor: "pointer" },
-  label: { display: "block", margin: "10px 0 5px", color: "#2b160c", fontWeight: "800", fontSize: "13px" },
-  textarea: { width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: "12px", border: "1px solid #eadfd2", background: "#fffdf8", fontSize: "13px", minHeight: "38px", maxHeight: "50px", resize: "none", color: "#2b160c" },
-  // Modal
-  modalOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "20px" },
-  assignModal: { width: "90vw", maxWidth: "900px", maxHeight: "85vh", overflowY: "auto", background: "white", borderRadius: "14px", padding: "18px 22px 20px", border: "1px solid #f0e5d8" },
-  modalHeader: { display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", marginBottom: "12px" },
-  modalTitle: { margin: 0, color: "#6a2300", fontSize: "19px", fontWeight: "900" },
-  modalSubtitle: { margin: "4px 0 0", color: "#6b625c", fontSize: "14px" },
-  iconButton: { border: "none", background: "transparent", color: "#9a8f86", borderRadius: "6px", width: "30px", height: "30px", fontSize: "20px", cursor: "pointer", flexShrink: 0 },
-  assignModalGrid: { display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "16px", height: "300px", marginBottom: "16px" },
-  assignLeftPanel: { minHeight: 0, overflow: "hidden" },
-  assignRightPanel: { minHeight: 0, overflow: "hidden" },
-  assignBottomPanel: { marginTop: "14px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", alignItems: "start" },
-  assignFooterActions: { display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #f0e5d8" },
-  modalAssignButton: { border: "none", background: "#6a2300", color: "white", borderRadius: "6px", padding: "9px 18px", fontWeight: "800", cursor: "pointer" },
-  userList: { height: "220px", overflowY: "auto", border: "1px solid #eadfd2", borderRadius: "12px", marginTop: "8px" },
-  userOption: { width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderBottom: "1px solid #f1ebe5", background: "white", cursor: "pointer", display: "flex", flexDirection: "column", gap: "3px", color: "#2b160c" },
-  userOptionActive: { background: "#fff1df" },
-  userOptionTop: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" },
-  userOptionMeta: { fontSize: "12px", color: "#6b625c" },
+  feedbackReceived: { fontSize: "12px", fontWeight: "800", color: "#16803d" },
+  feedbackSentBtn: { border: "none", background: "transparent", fontSize: "12px", fontWeight: "800", color: "#16803d", cursor: "pointer", padding: "0" },
+  feedbackCopyBtn: { border: "none", background: "transparent", fontSize: "12px", fontWeight: "700", color: "#d95f00", cursor: "pointer", padding: "0", textDecoration: "underline" },
+  // Drawer
+  drawerHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "20px 22px 16px", borderBottom: "1px solid #f0e5d8", gap: "12px" },
+  drawerTitle: { margin: "0 0 8px", color: "#2b160c", fontSize: "20px", fontWeight: "900", textTransform: "capitalize" },
+  drawerClose: { border: "none", background: "#f0e5d8", color: "#6a2300", borderRadius: "50%", width: "32px", height: "32px", fontSize: "20px", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" },
+  drawerBody: { padding: "0 22px 32px", overflowY: "auto", flex: 1 },
+  drawerSection: { paddingTop: "20px", paddingBottom: "4px", borderTop: "1px solid #f5efe8", marginTop: "4px" },
+  drawerSectionLabel: { margin: "0 0 12px", fontSize: "11px", fontWeight: "900", color: "#9a8f86", textTransform: "uppercase", letterSpacing: "0.8px" },
+  detailGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px" },
+  detailItem: { display: "flex", flexDirection: "column", gap: "3px" },
+  detailLabel: { fontSize: "11px", color: "#9a8f86", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.4px" },
+  detailValue: { fontSize: "14px", color: "#2b160c", fontWeight: "600" },
+  complexitySelect: { padding: "7px 10px", borderRadius: "8px", border: "1px solid #eadfd2", background: "white", fontWeight: "700", fontSize: "14px", color: "#2b160c", marginTop: "4px" },
+  complexityWarning: { background: "#fffbef", border: "1px solid #f5e0a0", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", color: "#7a5000", fontWeight: "700" },
+  assignGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "12px" },
+  assignListCol: { display: "flex", flexDirection: "column", minHeight: 0 },
+  assignMapCol: { minHeight: 0 },
+  mapBox: { border: "1px solid #d6ead8", borderRadius: "12px", overflow: "hidden", height: "100%", minHeight: "370px", display: "flex", flexDirection: "column" },
+  mapHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#f8fcf8", borderBottom: "1px solid #e6efe7", flexShrink: 0 },
+  mapLegend: { fontSize: "11px", color: "#6b7280" },
+volunteerList: {
+  overflowY: "auto",
+  border: "1px solid #eadfd2",
+  borderRadius: "12px",
+maxHeight: window.innerWidth <= 600 ? "190px" : "320px"
+},
+  volunteerBtn: { width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderBottom: "1px solid #f1ebe5", background: "white", cursor: "pointer", display: "flex", flexDirection: "column", gap: "3px", color: "#2b160c" },
+  volunteerBtnActive: { background: "#fff1df" },
+  volunteerBtnTop: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" },
+  volunteerBtnMeta: { fontSize: "12px", color: "#6b625c" },
   scoreBadge: { fontSize: "11px", fontWeight: "800", color: "#6a2300", background: "#fff1df", padding: "2px 8px", borderRadius: "6px", whiteSpace: "nowrap" },
+  volunteerCard: { background: "#fffdf8", border: "1px solid #f0e5d8", borderRadius: "12px", padding: "14px", marginBottom: "14px" },
+  volunteerCardHeader: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" },
+  volunteerCardGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px 16px" },
+  vcItem: { display: "flex", flexDirection: "column", gap: "2px", fontSize: "13px", color: "#2b160c" },
+  vcLabel: { fontSize: "11px", color: "#9a8f86", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.4px" },
+  availBadge: { display: "inline-block", padding: "2px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "800", marginLeft: "8px" },
+  assignFooter: { display: "flex", flexDirection: "column", gap: "10px", padding: "14px", background: "#fffdf8", border: "1px solid #f0e5d8", borderRadius: "12px" },
+  assignFooterRow: { display: "flex", gap: "12px" },
   equipmentList: { display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "6px" },
-  equipmentChip: { border: "1px solid #e0c9b8", background: "white", color: "#51443a", borderRadius: "6px", padding: "6px 12px", fontWeight: "700", fontSize: "13px", cursor: "pointer" },
-  equipmentChipActive: { background: "#fff1df", color: "#6a2300", borderColor: "#6a2300" },
-  mapPreviewBox: { border: "1px solid #d6ead8", borderRadius: "12px", overflow: "hidden", background: "white", height: "100%" },
-  mapHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#f8fcf8", borderBottom: "1px solid #e6efe7" },
-  mapLegend: { fontSize: "12px", color: "#6b7280" },
+  equipChip: { border: "1px solid #e0c9b8", background: "white", color: "#51443a", borderRadius: "6px", padding: "5px 10px", fontWeight: "700", fontSize: "12px", cursor: "pointer" },
+  equipChipActive: { background: "#fff1df", color: "#6a2300", borderColor: "#6a2300" },
+  assignConfirmBtn: { background: "#6a2300", color: "white", border: "none", borderRadius: "8px", padding: "11px 20px", fontWeight: "800", fontSize: "14px", cursor: "pointer", alignSelf: "flex-end" },
+  closePicker: { background: "#fff3e0", border: "1px solid #ffcc80", borderRadius: "12px", padding: "14px", display: "flex", flexDirection: "column", gap: "8px" },
+  inlineSelect: { padding: "7px 10px", borderRadius: "8px", border: "1px solid #eadfd2", background: "white", fontWeight: "700", fontSize: "13px", color: "#2b160c", width: "100%" },
+  textarea: { width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: "10px", border: "1px solid #eadfd2", background: "#fffdf8", fontSize: "13px", minHeight: "60px", resize: "vertical", color: "#2b160c" },
+  label: { display: "block", margin: "0 0 5px", color: "#2b160c", fontWeight: "800", fontSize: "13px" },
+  secondaryBtn: { border: "1px solid #d9c2b8", background: "white", color: "#6a2300", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: "800", cursor: "pointer" },
+  dangerBtn: { border: "1px solid #e0c4b8", background: "white", color: "#7a2e1a", borderRadius: "8px", padding: "9px 16px", fontWeight: "800", cursor: "pointer", fontSize: "13px" },
+
+  
 };
