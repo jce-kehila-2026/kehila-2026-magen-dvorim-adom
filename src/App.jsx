@@ -83,10 +83,10 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
+          <Route
           path="/reports"
           element={
-            <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
+            <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.COORDINATOR]}>
               <Reports />
             </ProtectedRoute>
           }

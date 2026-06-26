@@ -19,11 +19,11 @@ function ProtectedRoute({ allowedRoles, children }) {
   }
 
   if (allowedRoles && !allowedRoles.includes(userProfile.role)) {
+    console.warn("ProtectedRoute redirect:", { role: userProfile.role, allowedRoles });
     return (
       <Navigate to={getDashboardPathByRole(userProfile.role)} replace />
     );
   }
-
   return children;
 }
 

@@ -126,7 +126,7 @@ const goTo = (path) => {
   {navTexts.users}
 </button>
 
-        {canManageUsers && (
+         {(canManageUsers || userProfile?.role === USER_ROLES.COORDINATOR) && (
           <button
             style={styles.navItem}
             onClick={() => goTo("/reports")}

@@ -1,12 +1,12 @@
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 
-export async function getReportsStats() {
+export async function getReportsStats(coordinatorId = null) {
   const casesSnap = await getDocs(collection(db, "cases"));
   const usersSnap = await getDocs(collection(db, "users"));
   const feedbackSnap = await getDocs(collection(db, "feedback"));
 
-  const cases = casesSnap.docs.map((doc) => ({
+  const allCases = casesSnap.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   }));
@@ -16,10 +16,23 @@ export async function getReportsStats() {
     ...doc.data(),
   }));
 
-  const feedbackList = feedbackSnap.docs.map((doc) => ({
+  const allFeedback = feedbackSnap.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   }));
+
+  // Scope everything below to a single coordinator's own cases when
+  // requested. Admins call this with no coordinatorId and get the
+  // org-wide view, unchanged.
+  const cases = coordinatorId
+    ? allCases.filter((c) => c.coordinator_id === coordinatorId)
+    : allCases;
+
+  const caseIds = new Set(cases.map((c) => c.id));
+
+  const feedbackList = coordinatorId
+    ? allFeedback.filter((f) => caseIds.has(f.case_id))
+    : allFeedback;
 
   const totalCases = cases.length;
 
@@ -120,7 +133,7 @@ export async function getReportsStats() {
     return date.getTime();
   };
 
-const feedbackWithCaseInfo = feedbackWithOverall.map((feedback) => {
+  const feedbackWithCaseInfo = feedbackWithOverall.map((feedback) => {
     const relatedCase = cases.find((c) => c.id === feedback.case_id);
     return {
       ...feedback,
@@ -132,6 +145,11 @@ const feedbackWithCaseInfo = feedbackWithOverall.map((feedback) => {
           }`.trim() || "Requester"
         : "Requester",
     };
+  });
+
+  const feedbackByCaseId = {};
+  feedbackWithCaseInfo.forEach((feedback) => {
+    feedbackByCaseId[feedback.case_id] = feedback;
   });
 
   const recentFeedbacks = [...feedbackWithCaseInfo]
@@ -169,8 +187,9 @@ const feedbackWithCaseInfo = feedbackWithOverall.map((feedback) => {
     negativeFeedbackCount,
     positiveFeedbackRate,
     responseRate,
-   latestFeedback,
+    latestFeedback,
     latestFeedbackCase,
     recentFeedbacks,
+    feedbackByCaseId,
   };
 }
