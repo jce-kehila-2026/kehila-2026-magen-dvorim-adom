@@ -1,11 +1,9 @@
-
-
 // Case management interface — bilingual (EN / HE)
 import "./CasesView.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import VolunteerRecommendationMap from "./VolunteerRecommendationMap";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 
 // ─── Translation map ──────────────────────────────────────────────────────────
@@ -175,18 +173,45 @@ export default function CasesView({
   FINISHING_STATUSES = [],
 }) {
   const navigate = useNavigate();
-const goTo = (path) => {
-  setMobileMenuOpen(false);
-  navigate(path);
-};
+  const location = useLocation();
+  const goTo = (path) => {
+    setMobileMenuOpen(false);
+    navigate(path);
+  };
 
-  const [expandedCaseId, setExpandedCaseId] = useState(null);
+  // Freeze any incoming nav state (e.g. a feedback card linking here).
+  const [focusState] = useState(() => location.state || {});
+  const focusCaseId = focusState.focusCaseId || null;
+  const rowRefs = useRef({});
+
+  const [expandedCaseId, setExpandedCaseId] = useState(focusCaseId || null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [localFeedbackCopied, setLocalFeedbackCopied] = useState({});
   const { language, setLanguage } = useLanguage();
   const isHe = language === "he";
   const t = T[language] || T.en;
   const dir = isHe ? "rtl" : "ltr";
+
+  // Switch to "All" so a focused case shows regardless of its status,
+  // and clear the nav state so refresh/back doesn't redo this.
+  useEffect(() => {
+    if (!focusCaseId) return;
+    setActiveFilter("all");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusCaseId]);
+
+  useEffect(() => {
+    if (location.state) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!focusCaseId || expandedCaseId !== focusCaseId) return;
+    const el = rowRefs.current[focusCaseId];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusCaseId, expandedCaseId, activeCases]);
 
   const subtitle =
     activeFilter === "all" ? t.subtitleAll :
@@ -244,25 +269,25 @@ const goTo = (path) => {
       <button type="button" className="mobile-menu-button" onClick={() => setMobileMenuOpen(true)}>☰</button>
 
       {mobileMenuOpen && (
-  <>
-    <div className="mobile-menu-backdrop" />
-    <div
-      onClick={() => setMobileMenuOpen(false)}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 998,
-        background: 'transparent',
-      }}
-    />
-  </>
-)}
+        <>
+          <div className="mobile-menu-backdrop" />
+          <div
+            onClick={() => setMobileMenuOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 998,
+              background: 'transparent',
+            }}
+          />
+        </>
+      )}
       {/* ── SIDEBAR ── */}
       <aside
-  style={styles.sidebar}
-  className={`cases-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}
-  onClick={(e) => e.stopPropagation()}
->
+        style={styles.sidebar}
+        className={`cases-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
           <div>
@@ -270,35 +295,35 @@ const goTo = (path) => {
             <p style={styles.brandSub}>{currentUserName || "User"}</p>
           </div>
         </div>
-<nav style={styles.nav}>
-  <button style={styles.navItem} onClick={() => goTo("/dashboard")}>
-    {t.dashboard}
-  </button>
+        <nav style={styles.nav}>
+          <button style={styles.navItem} onClick={() => goTo("/dashboard")}>
+            {t.dashboard}
+          </button>
 
-  <button style={{ ...styles.navItem, ...styles.navItemActive }}>
-    {t.cases}
-  </button>
+          <button style={{ ...styles.navItem, ...styles.navItemActive }}>
+            {t.cases}
+          </button>
 
-  <button style={styles.navItem} onClick={() => goTo("/users")}>
-    {t.users}
-  </button>
+          <button style={styles.navItem} onClick={() => goTo("/users")}>
+            {t.users}
+          </button>
 
-  {currentUserRole === "admin" && (
+          {(currentUserRole === "admin" || currentUserRole === "coordinator") && (
     <button style={styles.navItem} onClick={() => goTo("/reports")}>
       {t.reports}
     </button>
   )}
 
-  {currentUserRole === "admin" && (
-    <button style={styles.navItem} onClick={() => goTo("/backup")}>
-      {t.backup}
-    </button>
-  )}
+          {currentUserRole === "admin" && (
+            <button style={styles.navItem} onClick={() => goTo("/backup")}>
+              {t.backup}
+            </button>
+          )}
 
-  <button style={styles.navItem} onClick={() => goTo("/profile")}>
-    {t.profile}
-  </button>
-</nav>
+          <button style={styles.navItem} onClick={() => goTo("/profile")}>
+            {t.profile}
+          </button>
+        </nav>
         <div style={styles.sidebarBottom}>
           <button style={styles.langButton} onClick={() => setLanguage(isHe ? "en" : "he")}>{t.langToggle}</button>
           <button style={styles.logoutButton} onClick={() => { setMobileMenuOpen(false); handleLogout(); }}>{t.logout}</button>
@@ -365,9 +390,18 @@ const goTo = (path) => {
                 const feedbackSubmitted = caseItem.feedback_submitted;
                 const feedbackCopied = localFeedbackCopied[caseItem.id] || !!caseItem.feedback_token;
                 const feedbackData = feedbackByCase[caseItem.id];
+                const isFocusedRow = caseItem.id === focusCaseId;
 
                 return (
-                  <div key={caseItem.id} style={{ ...styles.accordionCard, background: rowIndex % 2 === 0 ? "#fff" : "#fdf8f0" }}>
+                  <div
+                    key={caseItem.id}
+                    ref={(el) => { if (el) rowRefs.current[caseItem.id] = el; }}
+                    style={{
+                      ...styles.accordionCard,
+                      background: rowIndex % 2 === 0 ? "#fff" : "#fdf8f0",
+                      ...(isFocusedRow ? styles.focusedRow : {}),
+                    }}
+                  >
                     {/* Row trigger */}
                     
                       <div
@@ -490,6 +524,17 @@ const goTo = (path) => {
                                   <div style={styles.dtCell}>{feedbackData.evacuation_rating != null ? `${feedbackData.evacuation_rating}/4` : "—"}</div>
                                   <div style={{ ...styles.dtCell, borderRight: "none" }}>{feedbackData.comments || t.noNotes}</div>
                                 </div>
+                             {(currentUserRole === "admin" || currentUserRole === "coordinator") && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate("/reports", { state: { focusCaseId: caseItem.id } });
+                                    }}
+                                    style={{ ...styles.viewInReportsLink, textAlign: isHe ? "right" : "left" }}
+                                  >
+                                    View in Reports →
+                                  </button>
+                                )}
                               </>
                             ) : (
                               <>
@@ -721,4 +766,18 @@ const styles = {
   mapPreviewBox: { border: "1px solid #d6ead8", borderRadius: "12px", overflow: "hidden", background: "white", height: "100%" },
   mapHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#f8fcf8", borderBottom: "1px solid #e6efe7" },
   mapLegend: { fontSize: "12px", color: "#6b7280" },
+  focusedRow: {
+    boxShadow: "inset 4px 0 0 0 #6a2300",
+  },
+  viewInReportsLink: {
+    display: "block",
+    width: "100%",
+    margin: "8px 0 0",
+    border: "none",
+    background: "transparent",
+    color: "#6a2300",
+    fontWeight: "900",
+    fontSize: "12px",
+    cursor: "pointer",
+  },
 };

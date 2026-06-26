@@ -104,7 +104,8 @@ function DashboardView({
   // Form tracking sort
   const [sortDir, setSortDir] = useState("desc"); // desc = newest first
 
-  const isAdmin = userProfile?.role === USER_ROLES.ADMIN;
+const isAdmin = userProfile?.role === USER_ROLES.ADMIN;
+  const isCoordinator = userProfile?.role === USER_ROLES.COORDINATOR;
 
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -196,7 +197,7 @@ const sortedForms = useMemo(() => {
             {texts.users}
           </button>
 
-          {isAdmin && (
+         {(isAdmin || isCoordinator) && (
             <button style={styles.navItem} onClick={() => goTo("/reports")}>
               {texts.reports}
             </button>

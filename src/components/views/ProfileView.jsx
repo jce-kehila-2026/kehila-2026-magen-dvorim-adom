@@ -238,7 +238,7 @@ const t = {
             </>
           )}
 
-          {userProfile?.role === USER_ROLES.COORDINATOR && (
+        {userProfile?.role === USER_ROLES.COORDINATOR && (
             <>
               <button style={styles.navItem} onClick={() => goTo("/cases")}>
                 {t.cases}
@@ -246,6 +246,10 @@ const t = {
 
               <button style={styles.navItem} onClick={() => goTo("/users")}>
                 {t.users}
+              </button>
+
+              <button style={styles.navItem} onClick={() => goTo("/reports")}>
+                {t.reports}
               </button>
             </>
           )}
