@@ -30,7 +30,7 @@ const T = {
     casesTitle: "Cases",
     open: "Open", assigned: "Assigned", closed: "Closed",
     myCases: "Assigned to me",
-    name: "Name", openedCol: "Opened ", statusCol: "Status",
+    name: "Requester's name", openedCol: "Opened ", statusCol: "Status",
     assignedTo: "Assigned to", feedback: "Feedback",
     city: "City", street: "Street", coordinator2: "Coordinator",
     complexity: "Complexity", closedAt: "Closed at",
@@ -105,7 +105,7 @@ const T = {
     casesTitle: "פניות",
     open: "פתוח", assigned: "משויך", closed: "סגור",
     myCases: "מוקצה לי",
-    name: "שם", openedCol: "נפתח ↕", statusCol: "סטטוס",
+    name: "שם הפונה", openedCol: "נפתח ↕", statusCol: "סטטוס",
     assignedTo: "מוקצה ל", feedback: "משוב",
     city: "עיר", street: "רחוב", coordinator2: "רכז",
     complexity: "מורכבות", closedAt: "נסגר ב",
@@ -119,7 +119,7 @@ const T = {
     selectResult: "בחר תוצאת סיום",
     closingNotesOpt: "הערות סגירה (אופציונלי)",
     copyFeedbackLink: "העתק קישור משוב",
-    sent2: "נשלח ✓", received: "התקבל ✅",
+    sent2: "נשלח ", received: "התקבל ",
     feedbackNotYet: "משוב טרם התקבל.",
     copyAgain: "העתק שוב",
     closedFeedbackNote: "העתק ושלח את קישור המשוב לפונה.",
@@ -425,7 +425,7 @@ export default function RequestsView({
           {/* Form Tracking */}
           <div style={styles.topRight} className="requests-top-right">
             <section style={{ ...styles.card, height: "100%", boxSizing: "border-box" }} className="requests-card">
-              <div style={{ ...styles.trackHeader, flexDirection: isHe ? "row-reverse" : "row" }}>
+              <div style={{ ...styles.trackHeader, flexDirection: "row" }}>
                 <h2 style={{ ...styles.sectionTitle, margin: 0, textAlign: isHe ? "right" : "left" }}>{t.trackTitle}</h2>
                 <div style={styles.trackControls}>
                   <select style={styles.sortSelect} value={formSortDir} onChange={(e) => setFormSortDir(e.target.value)}>
@@ -483,13 +483,23 @@ export default function RequestsView({
 
           {/* Filter pills */}
           <div style={{ ...styles.filters, flexDirection: isHe ? "row-reverse" : "row", justifyContent: isHe ? "flex-end" : "flex-start" }} className="requests-filters">
-            {[
-              { key: "all", label: t.all, count: cases.length },
-              { key: "open", label: t.open, count: openCaseCount },
-              { key: "assigned", label: t.assigned, count: assignedCaseCount },
-              { key: "closed", label: t.closed, count: closedCases.length },
-              { key: "my", label: t.myCases, count: myCasesCount },
-            ].map(({ key, label, count }) => (
+            
+{(isHe
+  ? [
+      { key: "all", label: t.all, count: cases.length },
+      { key: "open", label: t.open, count: openCaseCount },
+      { key: "assigned", label: t.assigned, count: assignedCaseCount },
+      { key: "closed", label: t.closed, count: closedCases.length },
+      { key: "my", label: t.myCases, count: myCasesCount },
+    ].reverse()
+  : [
+      { key: "all", label: t.all, count: cases.length },
+      { key: "open", label: t.open, count: openCaseCount },
+      { key: "assigned", label: t.assigned, count: assignedCaseCount },
+      { key: "closed", label: t.closed, count: closedCases.length },
+      { key: "my", label: t.myCases, count: myCasesCount },
+    ]
+).map(({ key, label, count }) => (
               <button key={key} onClick={() => setActiveFilter(key)}
                 style={{ ...styles.filterButton, ...(activeFilter === key ? styles.filterActive : {}) }}>
                 {label}
@@ -958,11 +968,11 @@ const styles = {
   searchInput: { width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: "12px", border: "1px solid #eadfd2", background: "#fffdf8", fontSize: "14px", color: "#2b160c" },
   emptyState: { padding: "24px", textAlign: "center", background: "#fffdf8", color: "#6b625c", fontSize: "14px" },
   casesList: { background: "white", border: "1px solid #eee2d8", borderRadius: "16px", overflow: "hidden" },
-  desktopHeader: { display: "grid",  gridTemplateColumns: "2fr 1.2fr 1.6fr 1fr 1.4fr 1.8fr", alignItems: "center", padding: "12px 16px", fontWeight: "900", background:  "#fff3e6", borderBottom: "1px solid #eadfd2", fontSize: "12px", color: "#51443a" },
+  desktopHeader: { display: "grid",  gridTemplateColumns: "2fr 1.2fr 1.6fr 1.5fr 1.5fr 1.5fr", alignItems: "center", padding: "12px 16px", fontWeight: "900", background:  "#fff3e6", borderBottom: "1px solid #eadfd2", fontSize: "12px", color: "#51443a" },
   thCell: { textAlign: "center", cursor: "pointer", userSelect: "none" },
   sortHint: { opacity: 0.35, fontSize: "11px" },
   caseRow: { borderBottom: "1px solid #d6ccc0" },
-  rowTrigger: { width: "100%", border: "none", background: "transparent", cursor: "pointer", padding: "14px 16px", display: "grid",gridTemplateColumns: "2fr 1.2fr 1.6fr 1fr 1.4fr 1.8fr", alignItems: "center", gap: "8px", textAlign: "inherit" },
+  rowTrigger: { width: "100%", border: "none", background: "transparent", cursor: "pointer", padding: "14px 16px", display: "grid",gridTemplateColumns: "2fr 1.2fr 1.6fr 1.5fr 1.5fr 1.5fr", alignItems: "center", gap: "8px", textAlign: "inherit" },
   colName: { color: "#2b160c", fontWeight: "700", textTransform: "capitalize", fontSize: "14px", textAlign: "center" },
   colMeta: { color: "#2b160c", fontSize: "13px", textAlign: "center" },
   colAssigned: { color: "#2b160c", fontSize: "12px", textAlign: "center", fontWeight: "600" },
