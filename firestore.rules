@@ -44,8 +44,17 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // ✅ Cases store who's assigned in assigned_volunteer_ids (an array of
+    // uids), kept in sync by assignmentService.js whenever an assignment
+    // is created or removed — rules can't query the separate
+    // "assignments" collection by case_id, so this denormalized array on
+    // the case itself is what lets an assigned volunteer close their own
+    // case. Guard against the field being absent (e.g. cases created
+    // before this field existed, or never assigned) so the check fails
+    // closed instead of erroring.
     function isAssignedVolunteer(resource) {
-      return resource.data.assignedVolunteer == request.auth.uid;
+      return resource.data.assigned_volunteer_ids != null
+        && request.auth.uid in resource.data.assigned_volunteer_ids;
     }
 
     // ===== USERS =====

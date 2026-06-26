@@ -351,7 +351,13 @@ export async function closeCase(caseData) {
     return { success: true, case_id };
   } catch (error) {
     console.error("Failed to close case:", error);
-    throw new Error("Failed to close case. Please try again.");
+    // Surface the real Firestore error (e.g. "permission-denied",
+    // "not-found") instead of a generic message, so the next failure
+    // is actually diagnosable from the alert the user sees, rather
+    // than needing devtools open every time.
+    throw new Error(
+      `Failed to close case: ${error.code || ""} ${error.message || error}`.trim()
+    );
   }
 }
 
