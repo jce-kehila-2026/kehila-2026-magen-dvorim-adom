@@ -50,8 +50,8 @@ export default function ProfileView({
 const { language, setLanguage } = useLanguage();
 const isHebrew = language === "he";
 const t = {
-  dashboard: isHebrew ? "דשבורד" : "Dashboard",
-  cases: isHebrew ? "מקרים" : "Cases",
+   dashboard: isHebrew ? "דשבורד" : "Dashboard",
+requests: isHebrew ? "פניות" : "Requests",
   users: isHebrew ? "משתמשים" : "Users",
   reports: isHebrew ? "דוחות" : "Reports",
   backup: isHebrew ? "גיבוי" : "Backup",
@@ -214,57 +214,60 @@ const t = {
           </div>
         </div>
 
-        <nav style={styles.nav}>
-          <button style={styles.navItem} onClick={() => goTo("/dashboard")}>
-            {t.dashboard}
-          </button>
+       <nav style={styles.nav}>
 
-          {userProfile?.role === USER_ROLES.ADMIN && (
-            <>
-              <button style={styles.navItem} onClick={() => goTo("/cases")}>
-                {t.cases}
-              </button>
+  {/* ✅ ADMIN */}
+  {userProfile?.role === USER_ROLES.ADMIN && (
+    <>
+      <button style={styles.navItem} onClick={() => goTo("/requests")}>
+        {t.requests}
+      </button>
 
-              <button style={styles.navItem} onClick={() => goTo("/users")}>
-                {t.users}
-              </button>
+      <button style={styles.navItem} onClick={() => goTo("/users")}>
+        {t.users}
+      </button>
 
-              <button style={styles.navItem} onClick={() => goTo("/reports")}>
-                {t.reports}
-              </button>
+      <button style={styles.navItem} onClick={() => goTo("/reports")}>
+        {t.reports}
+      </button>
 
-              <button style={styles.navItem} onClick={() => goTo("/backup")}>
-                {t.backup}
-              </button>
-            </>
-          )}
+      <button style={styles.navItem} onClick={() => goTo("/backup")}>
+        {t.backup}
+      </button>
+    </>
+  )}
 
-        {userProfile?.role === USER_ROLES.COORDINATOR && (
-            <>
-              <button style={styles.navItem} onClick={() => goTo("/cases")}>
-                {t.cases}
-              </button>
+  {/* ✅ COORDINATOR */}
+  {userProfile?.role === USER_ROLES.COORDINATOR && (
+    <>
+      <button style={styles.navItem} onClick={() => goTo("/requests")}>
+        {t.requests}
+      </button>
 
-              <button style={styles.navItem} onClick={() => goTo("/users")}>
-                {t.users}
-              </button>
+      <button style={styles.navItem} onClick={() => goTo("/users")}>
+        {t.users}
+      </button>
+    </>
+  )}
 
-              <button style={styles.navItem} onClick={() => goTo("/reports")}>
-                {t.reports}
-              </button>
-            </>
-          )}
+  {/* ✅ VOLUNTEER (UNCHANGED) */}
+  {userProfile?.role === USER_ROLES.VOLUNTEER && (
+    <>
+      <button style={styles.navItem} onClick={() => goTo("/dashboard")}>
+        {t.dashboard}
+      </button>
 
-          {userProfile?.role === USER_ROLES.VOLUNTEER && (
-            <button style={styles.navItem} onClick={() => goTo("/my-cases")}>
-              {t.myCases}
-            </button>
-          )}
+      <button style={styles.navItem} onClick={() => goTo("/my-cases")}>
+        {t.myCases}
+      </button>
+    </>
+  )}
 
-          <button style={{ ...styles.navItem, ...styles.navItemActive }}>
-            {t.profile}
-          </button>
-        </nav>
+  {/* ✅ PROFILE (ACTIVE) */}
+  <button style={{ ...styles.navItem, ...styles.navItemActive }}>
+    {t.profile}
+  </button>
+</nav>
 
         <div style={styles.bottomSection}>
           <button

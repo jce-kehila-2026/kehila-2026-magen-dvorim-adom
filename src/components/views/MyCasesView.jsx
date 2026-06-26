@@ -592,7 +592,7 @@ const styles = {
     top: 0,
     padding: "28px 20px",
     background: "#fff8ef",
-    borderRight: "1px solid #f0e5d8",
+    borderRight: "1px solid #f3e9da",
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
@@ -636,7 +636,7 @@ const styles = {
     background: "transparent",
     color: "#3d332b",
     padding: "13px 16px",
-    borderRadius: "14px",
+    borderRadius: "6px",
     textAlign: "left",
     fontWeight: "800",
     cursor: "pointer",
@@ -644,33 +644,35 @@ const styles = {
 
   navItemActive: {
     background: "#fff1df",
-    color: "#e85d04",
+    color: "#6a2300",
   },
 
-  logoutButton: {
-    marginTop: "auto",
-    padding: "13px",
-    borderRadius: "14px",
-    border: "none",
-    background: "#e85d04",
-    color: "white",
-    fontWeight: "800",
-    cursor: "pointer",
-    boxShadow: "0 6px 16px rgba(232, 93, 4, 0.18)",
-  },
+
+logoutButton: {
+  marginTop: "auto",
+  padding: "13px",
+  borderRadius: "6px",               // ✅ FIX
+  border: "none",
+  background: "#6a2300",             // ✅ FIX
+  color: "white",
+  fontWeight: "800",
+  cursor: "pointer",
+},
+
 
   main: {
     padding: "34px",
     boxSizing: "border-box",
   },
 
+
   contentCard: {
-    background: "#ffffff",
-    borderRadius: "26px",
-    padding: "34px",
-    boxShadow: "0 20px 70px rgba(43, 22, 12, 0.06)",
-    border: "1px solid #f2e7dc",
-  },
+  background: "#ffffff",
+  borderRadius: "16px",   // ✅ MATCH PROFILE
+  padding: "30px",        // ✅ MATCH PROFILE
+  boxShadow: "0 16px 40px rgba(0,0,0,0.03)",
+  border: "1px solid #f0e5d8",
+},
 
   header: {
     display: "flex",
@@ -741,7 +743,7 @@ const styles = {
   summaryCard: {
     background: "#fff8ef",
     border: "1px solid #f0e5d8",
-    borderRadius: "18px",
+    borderRadius: "16px",
     padding: "20px",
   },
 
@@ -764,7 +766,7 @@ const styles = {
 
   closedItem: {
     padding: "18px",
-    borderRadius: "18px",
+    borderRadius: "16px",
     border: "1px solid #f1ebe5",
     background: "#fffdf8",
   },
@@ -792,7 +794,7 @@ const styles = {
     border: "1px solid #f3c49a",
     background: "#fff8ef",
     color: "#d95f00",
-    borderRadius: "10px",
+    borderRadius: "6px",
     padding: "8px 13px",
     fontWeight: "800",
     cursor: "pointer",
@@ -802,7 +804,7 @@ const styles = {
     border: "1px solid #ddd6ce",
     background: "white",
     color: "#3d332b",
-    borderRadius: "10px",
+    borderRadius: "6px",
     padding: "8px 13px",
     fontWeight: "800",
     cursor: "pointer",
@@ -818,7 +820,7 @@ const styles = {
   },
 
   accordionCase: {
-    borderRadius: "18px",
+    borderRadius: "16px",
     border: "1px solid #f1ebe5",
     background: "#fffdf8",
     overflow: "hidden",
@@ -924,27 +926,27 @@ const styles = {
     marginTop: "24px",
   },
 
-  cancelButton: {
-    flex: 1,
-    padding: "10px 16px",
-    background: "#f3f4f6",
-    color: "#374151",
-    border: "none",
-    borderRadius: "10px",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
+submitButton: {
+  flex: 1,
+  padding: "10px 16px",
+  background: "#6a2300",   // ✅ FIX
+  color: "white",
+  border: "none",
+  borderRadius: "6px",     // ✅ FIX
+  fontWeight: "800",
+  cursor: "pointer",
+},
 
-  submitButton: {
-    flex: 1,
-    padding: "10px 16px",
-    background: "#ea580c",
-    color: "white",
-    border: "none",
-    borderRadius: "10px",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
+cancelButton: {
+  flex: 1,
+  padding: "10px 16px",
+  background: "#f3f4f6",
+  color: "#374151",
+  border: "none",
+  borderRadius: "6px",     // ✅ FIX
+  fontWeight: "800",
+  cursor: "pointer",
+},
   bottomSection: {
   marginTop: "auto",
   display: "flex",
@@ -952,15 +954,17 @@ const styles = {
   gap: "10px",
 },
 
+
 languageButton: {
   padding: "13px",
-  borderRadius: "14px",
+  borderRadius: "6px",               // ✅ FIX
   border: "1px solid #eadfd2",
   background: "#fffaf4",
   color: "#2b160c",
   fontWeight: "800",
   cursor: "pointer",
 },
+
 };
 
 export default MyCasesView;

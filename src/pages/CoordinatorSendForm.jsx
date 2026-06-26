@@ -39,7 +39,7 @@ function CoordinatorSendForm() {
     setMsg("");
   }
 
-  async function handleCreate() {
+  async function handleCreate({ onFormCreated }) {
     if (!validatePhone(phone)) return;
     setLoading(true);
     setMsg("");
@@ -52,6 +52,7 @@ function CoordinatorSendForm() {
       setMsg(
         isHebrew ? "הטופס נוצר בהצלחה" : "Form created successfully."
       );
+      onFormCreated?.();
       setMsgIsError(false);
     } catch (e) {
       setMsg(

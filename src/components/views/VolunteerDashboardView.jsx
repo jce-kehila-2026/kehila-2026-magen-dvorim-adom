@@ -335,8 +335,10 @@ const styles = {
     position: "sticky",
     top: 0,
     padding: "28px 20px",
-    background: "#fff8ef",
-    borderRight: "1px solid #f0e5d8",
+
+  background: "#fff8ef",
+  borderRight: "1px solid #f3e9da",
+
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
@@ -349,7 +351,7 @@ const styles = {
   },
   logo: { width: "50px", height: "50px", objectFit: "contain" },
   brandTitle: { margin: 0, color: "#2b160c", fontSize: "16px", fontWeight: "900" },
-  brandSub: { margin: "4px 0 0", color: "#ff6f0f", fontSize: "13px" },
+  brandSub: { margin: "4px 0 0", color: "#6a2300", fontSize: "13px" },
   nav: { display: "flex", flexDirection: "column", gap: "10px" },
   navItem: {
     border: "none",
@@ -361,13 +363,13 @@ const styles = {
     fontWeight: "800",
     cursor: "pointer",
   },
-  navItemActive: { background: "#fff1df", color: "#ff6f0f" },
+  navItemActive: { background: "#fff1df", color: "#6a2300" },
   logoutButton: {
     marginTop: "auto",
     border: "none",
-    background: "#ff6f0f",
+    background: "#6a2300",
     color: "white",
-    borderRadius: "14px",
+    borderRadius: "6px",
     padding: "14px",
     fontWeight: "800",
     cursor: "pointer",
@@ -375,10 +377,10 @@ const styles = {
   main: { padding: "28px", boxSizing: "border-box" },
   contentCard: {
     background: "white",
-    borderRadius: "22px",
-    padding: "28px",
+    borderRadius: "16px",
+    padding: "24px",
     border: "1px solid #f2e7dc",
-    boxShadow: "0 16px 50px rgba(43, 22, 12, 0.05)",
+     boxShadow: "0 16px 50px rgba(43, 22, 12, 0.06)",
     minHeight: "70vh",
   },
   header: { marginBottom: "24px" },
@@ -389,7 +391,7 @@ const styles = {
   fontWeight: "800",
 },
   
-  userName: { color: "#ff6f0f" },
+  userName: { color: "#6a2300"},
  cardGrid: {
   display: "grid",
   gridTemplateColumns: "repeat(2, minmax(160px, 1fr))",
@@ -398,12 +400,13 @@ const styles = {
 card: {
   background: "#fffdf8",
   border: "1px solid #f0e5d8",
-  borderRadius: "20px",
+  borderRadius: "16px",
   padding: "24px",
   minHeight: "120px",  // ✅ ADD
   display: "flex",     // ✅ optional polish
   flexDirection: "column",
   justifyContent: "center",
+  oxShadow: "0 10px 30px rgba(43, 22, 12, 0.05)",
 },
   cardIconRow: {
     display: "flex",
@@ -419,7 +422,7 @@ bigName: {
   margin: "4px 0 20px",
   fontSize: "36px",
   fontWeight: "900",
-  color: "#ff6f0f",
+  color: "#6a2300",
 },
 
   dot: { width: "10px", height: "10px", borderRadius: "50%", flexShrink: 0 },
@@ -427,7 +430,7 @@ bigName: {
   caseSnippet: { marginTop: "4px" },
   caseCity: { margin: "0 0 4px", color: "#2b160c", fontSize: "18px", fontWeight: "900" },
   caseDesc: { margin: "0 0 10px", color: "#6b625c", fontSize: "13px", lineHeight: 1.5 },
-  tapHint: { fontSize: "12px", color: "#d97706", fontWeight: "800" },
+  tapHint: { fontSize: "12px", color: "#e85d04", fontWeight: "800" },
   cardTitle: { margin: "0 0 8px", color: "#6b625c", fontSize: "13px", fontWeight: "800" },
   cardValue: { margin: "0 0 4px", fontSize: "28px", fontWeight: "900" },
   cardSubtitle: { margin: 0, fontSize: "12px", color: "#d97706", fontWeight: "800" },
@@ -449,7 +452,7 @@ bigName: {
 
 languageButton: {
   padding: "13px",
-  borderRadius: "14px",
+  borderRadius: "6px",
   border: "1px solid #eadfd2",
   background: "#fffaf4",
   color: "#2b160c",

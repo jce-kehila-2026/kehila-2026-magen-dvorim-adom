@@ -77,8 +77,7 @@ const { language, setLanguage } = useLanguage();
 const isHebrew = language === "he";
 
 const navTexts = {
-  dashboard: isHebrew ? "דשבורד" : "Dashboard",
-  cases: isHebrew ? "מקרים" : "Cases",
+  requests: isHebrew ? "פניות" : "Requests",
   users: isHebrew ? "משתמשים" : "Users",
   reports: isHebrew ? "דוחות" : "Reports",
   backup: isHebrew ? "גיבוי" : "Backup",
@@ -112,15 +111,11 @@ const goTo = (path) => {
 
         <nav style={styles.nav}>
           <button
-            style={styles.navItem}
-            onClick={() => goTo("/dashboard")}
-          >
-            {navTexts.dashboard}
-          </button>
-
-        <button style={styles.navItem} onClick={() => goTo("/cases")}>
-          {navTexts.cases}
-        </button>
+              style={styles.navItem}
+              onClick={() => goTo("/requests")}
+            >
+              {navTexts.requests}
+            </button>
 
 <button
   style={{
