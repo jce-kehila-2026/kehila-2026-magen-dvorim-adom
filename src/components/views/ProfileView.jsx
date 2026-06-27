@@ -247,6 +247,9 @@ requests: isHebrew ? "פניות" : "Requests",
       <button style={styles.navItem} onClick={() => goTo("/users")}>
         {t.users}
       </button>
+      <button style={styles.navItem} onClick={() => goTo("/reports")}>
+        {t.reports}
+      </button>
     </>
   )}
 
