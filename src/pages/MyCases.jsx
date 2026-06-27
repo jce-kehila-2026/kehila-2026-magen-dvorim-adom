@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../contexts/AuthContext";
 import { getCasesForUser, closeCase } from "../services/caseService";
@@ -8,6 +9,7 @@ import {
 } from "../services/assignmentService";
 import { getUserById } from "../services/userService";
 import { USER_ROLES } from "../services/userSchema";
+import { logoutUser } from "../services/authService";
 import MyCasesView from "../components/views/MyCasesView";
 
 const CLOSE_STATUS_OPTIONS = [
@@ -21,6 +23,7 @@ const CLOSE_STATUS_OPTIONS = [
 
 function MyCases() {
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
 
   const [cases, setCases] = useState([]);
   const [assignments, setAssignments] = useState({});
@@ -128,6 +131,20 @@ function MyCases() {
     }));
   };
 
+  // Actually clears the Firebase session before navigating — previously
+  // this page had no logout handler at all, so clicking "Logout" just
+  // tried to redirect to "/" while the session stayed signed in, which
+  // bounced straight back into the Dashboard.
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      navigate("/");
+    } catch (err) {
+      console.error("Logout failed:", err);
+      setError("Logout failed. Please try again.");
+    }
+  };
+
   return (
     <MyCasesView
       userProfile={userProfile}
@@ -149,6 +166,7 @@ function MyCases() {
       handleSubmitCloseCase={handleSubmitCloseCase}
       toggleExpand={toggleExpand}
       formatDate={formatDate}
+      handleLogout={handleLogout}
     />
   );
 }
