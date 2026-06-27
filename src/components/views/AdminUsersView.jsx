@@ -58,7 +58,6 @@ export default function AdminUsersView({
   handleSubmit,
   handleDelete,
   handleRestore,
-  getDaysUntilPermanentDelete,
   isFormValid,
   ISRAELI_CITIES,
   USER_ROLES,
@@ -86,7 +85,6 @@ export default function AdminUsersView({
     const map = {
       en: {
         userDirectory: "User Directory",
-        filtersAll: "All",
         filtersActive: "Active",
         filtersDeleted: "Deleted",
         searchPlaceholder: "Search by name, phone, city...",
@@ -99,7 +97,6 @@ export default function AdminUsersView({
           role: "Role",
           status: "Status",
           actions: "Actions",
-          deleteIn: "Delete In",
         },
 
         empty: {
@@ -127,7 +124,6 @@ export default function AdminUsersView({
       },
       he: {
         userDirectory: "רשימת משתמשים",
-        filtersAll: "הכל",
         filtersActive: "פעילים",
         filtersDeleted: "מחקים",
         searchPlaceholder: "חפש לפי שם, טלפון, עיר...",
@@ -140,7 +136,6 @@ export default function AdminUsersView({
           role: "תפקיד",
           status: "סטטוס",
           actions: "פעולות",
-          deleteIn: "מחיקה בעוד",
         },
 
         empty: {
@@ -275,16 +270,6 @@ export default function AdminUsersView({
                 className="users-filter-pillbar"
                 style={styles.pillBar}
               >
-                <button
-                  type="button"
-                  onClick={() => setViewMode("active")}
-                  className={`users-filter-pill ${viewMode !== "deleted" ? "selected" : ""}`}
-                  style={styles.pill}
-                >
-                  <span style={styles.pillLabel}>{t.filtersAll}</span>
-                  <span style={styles.pillBadge}>{users.length}</span>
-                </button>
-
                 <button
                   type="button"
                   onClick={() => setViewMode("active")}
@@ -428,12 +413,6 @@ export default function AdminUsersView({
                   {t.headers.status}
                 </div>
 
-                {canManageUsers && (
-                  <div className="users-th" style={styles.thCell}>
-                    {t.headers.deleteIn}
-                  </div>
-                )}
-
                 <div className="users-th" style={{...styles.thCell, marginInlineStart: "auto"}}>
                   {t.headers.actions}
                 </div>
@@ -478,14 +457,6 @@ export default function AdminUsersView({
                             ? "Available"
                             : "Unavailable"}
                       </span>
-
-                      {canManageUsers && (
-                        <span style={{...styles.daysCell, ...{flex: "0.8", minWidth: 0}}}>
-                          {viewMode === "deleted"
-                            ? `${getDaysUntilPermanentDelete(user.deleted_at)} days`
-                            : "—"}
-                        </span>
-                      )}
 
                       <div style={{...styles.actions, ...{flex: "0.8", minWidth: 0}}}>
                         {canManageUsers ? (
@@ -1072,12 +1043,6 @@ const styles = {
   deletedBadge: {
     background: "#fee2e2",
     color: "#dc2626",
-  },
-
-  daysCell: {
-    textAlign: "center",
-    color: "#6b625c",
-    fontWeight: "800",
   },
 
   actions: {
