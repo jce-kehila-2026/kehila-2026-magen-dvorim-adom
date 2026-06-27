@@ -65,6 +65,7 @@ const T = {
     assignmentNotesPh: "Optional notes for the volunteer...",
     assigning: "Assigning...",
     assignBtn: "Assign volunteer",
+    reassignBtn: "Reassign volunteer",
     caseMap: "Volunteer map",
     mapLegend: "📍 Case • 🟢 Volunteers",
     score: "Score",
@@ -140,6 +141,7 @@ const T = {
     assignmentNotesPh: "הערות אופציונליות עבור המתנדב...",
     assigning: "משייך...",
     assignBtn: "שייך מתנדב",
+    reassignBtn: "שייך מחדש",
     caseMap: "מפת מתנדבים",
     mapLegend: "📍 מקרה • 🟢 מתנדבים",
     score: "ניקוד",
@@ -257,13 +259,30 @@ export default function RequestsView({
   const [selectedVolunteerId, setSelectedVolunteerId] = useState("");
   const [volunteerStats, setVolunteerStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  // Counts assign-button clicks so the effect below fires exactly once
+  // per click, using whichever handleAssignFromModal closure is current
+  // at the time React actually commits the updated modalState — instead
+  // of guessing with a setTimeout that races the render cycle.
+  const [assignClickToken, setAssignClickToken] = useState(0);
   const { language, setLanguage } = useLanguage();
   const isHe = language === "he";
   const t = T[language] || T.en;
   const dir = isHe ? "rtl" : "ltr";
   const isAdmin = currentUserRole === USER_ROLES?.ADMIN || currentUserRole === "admin";
+  const isCoordinator = currentUserRole === USER_ROLES?.COORDINATOR || currentUserRole === "coordinator";
 
   const goTo = (path) => { setMobileMenuOpen(false); navigate(path); };
+
+  // Fires the actual assignment only after React has committed the
+  // modalState update from the click below, so handleAssignFromModal
+  // (which reads modalState fresh in the container) always sees the
+  // caseId/userId that were just set — not a stale pre-click version.
+  useEffect(() => {
+    if (assignClickToken > 0) {
+      handleAssignFromModal();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignClickToken]);
 
   // Load volunteer stats when one is selected in the drawer
   useEffect(() => {
@@ -385,7 +404,7 @@ export default function RequestsView({
         <nav style={styles.nav}>
           <button style={{ ...styles.navItem, ...styles.navItemActive }}>{t.requests}</button>
           <button style={styles.navItem} onClick={() => goTo("/users")}>{t.users}</button>
-          {isAdmin && <button style={styles.navItem} onClick={() => goTo("/reports")}>{t.reports}</button>}
+          {(isAdmin || isCoordinator) && <button style={styles.navItem} onClick={() => goTo("/reports")}>{t.reports}</button>}
           {isAdmin && <button style={styles.navItem} onClick={() => goTo("/backup")}>{t.backup}</button>}
           <button style={styles.navItem} onClick={() => goTo("/profile")}>{t.profile}</button>
         </nav>
@@ -808,11 +827,14 @@ export default function RequestsView({
                           disabled={assigning}
                           onClick={() => {
                             setModalState((s) => ({ ...s, open: true, caseId: drawerCase.id, userId: selectedVolunteerId }));
-                            setTimeout(() => handleAssignFromModal(), 0);
-                            
+                            setAssignClickToken((c) => c + 1);
                           }}
                         >
-                          {assigning ? t.assigning : t.assignBtn}
+                          {assigning
+                            ? t.assigning
+                            : drawerCase.status === "assigned"
+                            ? t.reassignBtn
+                            : t.assignBtn}
                         </button>
                       </div>
                     )}
@@ -1024,7 +1046,7 @@ maxHeight: window.innerWidth <= 600 ? "190px" : "320px"
   equipmentList: { display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "6px" },
   equipChip: { border: "1px solid #e0c9b8", background: "white", color: "#51443a", borderRadius: "6px", padding: "5px 10px", fontWeight: "700", fontSize: "12px", cursor: "pointer" },
   equipChipActive: { background: "#fff1df", color: "#6a2300", borderColor: "#6a2300" },
-  assignConfirmBtn: { background: "#6a2300", color: "white", border: "none", borderRadius: "8px", padding: "11px 20px", fontWeight: "800", fontSize: "14px", cursor: "pointer", alignSelf: "flex-end" },
+  assignConfirmBtn: { background: "#6a2300", color: "white", border: "none", borderRadius: "8px", padding: "11px 20px", fontWeight: "800", fontSize: "14px", cursor: "pointer", alignSelf: "center" },
   closePicker: { background: "#fff3e0", border: "1px solid #ffcc80", borderRadius: "12px", padding: "14px", display: "flex", flexDirection: "column", gap: "8px" },
   inlineSelect: { padding: "7px 10px", borderRadius: "8px", border: "1px solid #eadfd2", background: "white", fontWeight: "700", fontSize: "13px", color: "#2b160c", width: "100%" },
   textarea: { width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: "10px", border: "1px solid #eadfd2", background: "#fffdf8", fontSize: "13px", minHeight: "60px", resize: "vertical", color: "#2b160c" },
