@@ -1,15 +1,11 @@
-  // User management interface.
-// Allows viewing, creating, editing, deleting, and restoring users.
-
-import { useState } from "react";
-import "./AdminUsersView.css";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/logo.png";
-import BulkImportModal from "../bulk-import/BulkImportModal";
 import { useLanguage } from "../../contexts/LanguageContext";
 
+import "./AdminUsersView.css";
+import logo from "../../assets/logo.png";
+import BulkImportModal from "../bulk-import/BulkImportModal";
 
-// Returns the visual badge style and label based on the user's role.
 function getRoleBadge(role, USER_ROLES) {
   const labels = {
     [USER_ROLES.ADMIN]: "Admin",
@@ -24,10 +20,15 @@ function getRoleBadge(role, USER_ROLES) {
   };
 }
 
-function AdminUsersView({
+export default function AdminUsersView({
   userProfile,
   currentUserName,
   handleLogout,
+
+  // harden against blank page crash if props are missing
+  users = [],
+  deletedUsers = [],
+
   filteredUsers,
   loading,
   saving,
@@ -41,6 +42,7 @@ function AdminUsersView({
   setRoleFilter,
   sortMode,
   setSortMode,
+
   formMode,
   formData,
   setFormData,
@@ -49,6 +51,7 @@ function AdminUsersView({
   setCitySearch,
   showCityDropdown,
   setShowCityDropdown,
+
   openUserModal,
   closeModal,
   handleChange,
@@ -59,12 +62,14 @@ function AdminUsersView({
   isFormValid,
   ISRAELI_CITIES,
   USER_ROLES,
+
   addMenuOpen,
   setAddMenuOpen,
   canManageUsers,
   sortField,
   sortDirection,
   handleSort,
+
   importModalOpen,
   setImportModalOpen,
   handleImportComplete,
@@ -72,35 +77,144 @@ function AdminUsersView({
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const { language, setLanguage } = useLanguage();
+  const isHebrew = language === "he";
 
-const { language, setLanguage } = useLanguage();
-const isHebrew = language === "he";
+  const t = useMemo(() => {
+    // Use LanguageContext (language) for all table headers.
+    // (CasesView uses its own translation map; we keep headers consistent with the current UI language.)
+    const map = {
+      en: {
+        userDirectory: "User Directory",
+        filtersAll: "All",
+        filtersActive: "Active",
+        filtersDeleted: "Deleted",
+        searchPlaceholder: "Search by name, phone, city...",
 
-const navTexts = {
-  requests: isHebrew ? "פניות" : "Requests",
-  users: isHebrew ? "משתמשים" : "Users",
-  reports: isHebrew ? "דוחות" : "Reports",
-  backup: isHebrew ? "גיבוי" : "Backup",
-  profile: isHebrew ? "פרופיל" : "Profile",
-  logout: isHebrew ? "התנתק" : "Logout",
-};
-const goTo = (path) => {
-  setMenuOpen(false);
-  navigate(path);
-};
+        headers: {
+          name: "Name",
+          phone: "Phone",
+          city: "City",
+          email: "Email",
+          role: "Role",
+          status: "Status",
+          actions: "Actions",
+          deleteIn: "Delete In",
+        },
+
+        empty: {
+          loading: "Loading users...",
+          none: "No users found.",
+        },
+
+        actions: {
+          edit: "Edit",
+          delete: "Delete",
+          restore: "Restore",
+        },
+
+        dropdowns: {
+          allRoles: "All roles",
+          admins: "Admins",
+          coordinators: "Coordinators",
+          volunteers: "Volunteers",
+          newestFirst: "Newest first",
+          oldestFirst: "Oldest first",
+          addUsers: "+ Add Users",
+          addManually: "+ Add Manually",
+          importUsers: "Import Users",
+        },
+      },
+      he: {
+        userDirectory: "רשימת משתמשים",
+        filtersAll: "הכל",
+        filtersActive: "פעילים",
+        filtersDeleted: "מחקים",
+        searchPlaceholder: "חפש לפי שם, טלפון, עיר...",
+
+        headers: {
+          name: "שם",
+          phone: "טלפון",
+          city: "עיר",
+          email: "אימייל",
+          role: "תפקיד",
+          status: "סטטוס",
+          actions: "פעולות",
+          deleteIn: "מחיקה בעוד",
+        },
+
+        empty: {
+          loading: "טוען משתמשים...",
+          none: "לא נמצאו משתמשים.",
+        },
+
+        actions: {
+          edit: "ערוך",
+          delete: "מחק",
+          restore: "שחזר",
+        },
+
+        dropdowns: {
+          allRoles: "כל התפקידים",
+          admins: "מנהלים",
+          coordinators: "רכזים",
+          volunteers: "מתנדבים",
+          newestFirst: "חדשים קודם",
+          oldestFirst: "ישנים קודם",
+          addUsers: "+ הוסף משתמשים",
+          addManually: "+ הוסף ידנית",
+          importUsers: "ייבוא משתמשים",
+        },
+      },
+    };
+
+    return map[language] || map.en;
+  }, [language]);
+
+  const navTexts = useMemo(
+    () => ({
+      requests: isHebrew ? "פניות" : "Requests",
+      users: isHebrew ? "משתמשים" : "Users",
+      reports: isHebrew ? "דוחות" : "Reports",
+      backup: isHebrew ? "גיבוי" : "Backup",
+      profile: isHebrew ? "פרופיל" : "Profile",
+      logout: isHebrew ? "התנתק" : "Logout",
+    }),
+    [isHebrew]
+  );
+
+  const activeCount = useMemo(() => users.filter((u) => u.is_available !== false).length, [users]);
+  const deletedCount = deletedUsers.length;
+
+  const goTo = (path) => {
+    setMenuOpen(false);
+    navigate(path);
+  };
+
+  // If parent passes undefined for filteredUsers (edge), harden.
+  const safeFilteredUsers = filteredUsers || [];
+
   return (
     <div style={styles.layout} className="users-page">
+      <button
+        type="button"
+        className="mobile-menu-button"
+        onClick={() => setMenuOpen(true)}
+      >
+        ☰
+      </button>
 
-  {menuOpen && (
-    <div
-      className="users-overlay"
-      onClick={() => setMenuOpen(false)}
-    />
-  )}
-    <aside
-  style={styles.sidebar}
-  className={`users-sidebar ${menuOpen ? "open" : ""}`}
->
+      {menuOpen && (
+        <div
+          className="mobile-menu-backdrop"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      <aside
+        style={styles.sidebar}
+        className={`users-sidebar ${menuOpen ? "mobile-open" : ""}`}
+      >
         <div style={styles.brand}>
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
           <div>
@@ -110,99 +224,89 @@ const goTo = (path) => {
         </div>
 
         <nav style={styles.nav}>
-          <button
-              style={styles.navItem}
-              onClick={() => goTo("/requests")}
-            >
-              {navTexts.requests}
+          <button style={styles.navItem} onClick={() => goTo("/requests")}>
+            {navTexts.requests}
+          </button>
+
+          <button style={{ ...styles.navItem, ...styles.activeNav }}>
+            {navTexts.users}
+          </button>
+
+          {(canManageUsers || userProfile?.role === USER_ROLES.COORDINATOR) && (
+            <button style={styles.navItem} onClick={() => goTo("/reports")}>
+              {navTexts.reports}
             </button>
+          )}
 
-<button
-  style={{
-    ...styles.navItem,
-    ...styles.activeNav,
-  }}
->
-  {navTexts.users}
-</button>
-
-         {(canManageUsers || userProfile?.role === USER_ROLES.COORDINATOR) && (
-          <button
-            style={styles.navItem}
-            onClick={() => goTo("/reports")}
-          >
-            {navTexts.reports}
-          </button>
-        )}
-
-        {userProfile?.role === USER_ROLES.ADMIN && (
-          <button style={styles.navItem} onClick={() => goTo("/backup")}>
-            {navTexts.backup}
-          </button>
-        )}
+          {userProfile?.role === USER_ROLES.ADMIN && (
+            <button style={styles.navItem} onClick={() => goTo("/backup")}>
+              {navTexts.backup}
+            </button>
+          )}
 
           <button style={styles.navItem} onClick={() => goTo("/profile")}>
             {navTexts.profile}
           </button>
         </nav>
-<div style={styles.bottomSection}>
-  <button
-    style={styles.languageButton}
-    onClick={() =>
-      setLanguage(language === "he" ? "en" : "he")
-    }
-  >
-    {language === "he" ? "English 🌐" : "עברית 🌐"}
-  </button>
 
-  <button style={styles.logoutButton} onClick={handleLogout}>
-    {navTexts.logout}
-  </button>
-</div>
+        <div style={styles.bottomSection}>
+          <button
+            style={styles.languageButton}
+            onClick={() => setLanguage(language === "he" ? "en" : "he")}
+          >
+            {language === "he" ? "English 🌐" : "עברית 🌐"}
+          </button>
 
-
+          <button style={styles.logoutButton} onClick={handleLogout}>
+            {navTexts.logout}
+          </button>
+        </div>
       </aside>
 
-     <main style={styles.page} className="users-main">
+      <main style={styles.page} className="users-main" dir={isHebrew ? "rtl" : "ltr"}>
 
-  <div className="users-mobile-topbar">
-    <button
-      className="users-menu-button"
-      onClick={() => setMenuOpen(true)}
-    >
-      ☰
-    </button>
-
-    <span className="users-mobile-title">
-      Users
-    </span>
-  </div>
         <section style={styles.contentCard} className="users-content-card">
           <header style={styles.header}>
-            <h1 style={styles.title}>User Directory</h1>
+            <h1 style={styles.title}>{t.userDirectory}</h1>
 
             <div style={styles.headerActions}>
-              <button
-                onClick={() => setViewMode("active")}
-                style={{
-                  ...styles.filterButton,
-                  ...(viewMode === "active" ? styles.filterActive : {}),
-                }}
+              {/* Pill-shaped filter bar with counter badges */}
+              <div
+                className="users-filter-pillbar"
+                style={styles.pillBar}
               >
-                Active users
-              </button>
-
-              {canManageUsers && (
                 <button
-                  onClick={() => setViewMode("deleted")}
-                  style={{
-                    ...styles.filterButton,
-                    ...(viewMode === "deleted" ? styles.filterActive : {}),
-                  }}
+                  type="button"
+                  onClick={() => setViewMode("active")}
+                  className={`users-filter-pill ${viewMode !== "deleted" ? "selected" : ""}`}
+                  style={styles.pill}
                 >
-                  Deleted users
+                  <span style={styles.pillLabel}>{t.filtersAll}</span>
+                  <span style={styles.pillBadge}>{users.length}</span>
                 </button>
-              )}
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode("active")}
+                  className={`users-filter-pill ${viewMode === "active" ? "selected" : ""}`}
+                  style={styles.pill}
+                >
+                  <span style={styles.pillLabel}>{t.filtersActive}</span>
+                  <span style={styles.pillBadge}>{activeCount}</span>
+                </button>
+
+                {canManageUsers && (
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("deleted")}
+                    className={`users-filter-pill ${viewMode === "deleted" ? "selected" : ""}`}
+                    style={styles.pill}
+                  >
+                    <span style={styles.pillLabel}>{t.filtersDeleted}</span>
+                    <span style={styles.pillBadge}>{deletedCount}</span>
+                  </button>
+                )}
+              </div>
 
               {canManageUsers && (
                 <div style={styles.addMenuWrap}>
@@ -211,7 +315,7 @@ const goTo = (path) => {
                     onClick={() => setAddMenuOpen((prev) => !prev)}
                     style={styles.addButton}
                   >
-                    + Add Users
+                    {t.dropdowns.addUsers}
                   </button>
 
                   {addMenuOpen && (
@@ -224,9 +328,8 @@ const goTo = (path) => {
                         }}
                         style={styles.addMenuItem}
                       >
-                        + Add Manually
+                        {t.dropdowns.addManually}
                       </button>
-
                       <button
                         type="button"
                         onClick={() => {
@@ -235,7 +338,7 @@ const goTo = (path) => {
                         }}
                         style={styles.addMenuItem}
                       >
-                        Import Users
+                        {t.dropdowns.importUsers}
                       </button>
                     </div>
                   )}
@@ -249,7 +352,7 @@ const goTo = (path) => {
 
           <div style={styles.toolbar} className="users-toolbar">
             <input
-              placeholder="Search by name, phone, email or city..."
+              placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               style={styles.searchInput}
@@ -260,10 +363,10 @@ const goTo = (path) => {
               onChange={(event) => setRoleFilter(event.target.value)}
               style={styles.selectInput}
             >
-              <option value="all">All roles</option>
-              <option value={USER_ROLES.ADMIN}>Admins</option>
-              <option value={USER_ROLES.COORDINATOR}>Coordinators</option>
-              <option value={USER_ROLES.VOLUNTEER}>Volunteers</option>
+              <option value="all">{t.dropdowns.allRoles}</option>
+              <option value={USER_ROLES.ADMIN}>{t.dropdowns.admins}</option>
+              <option value={USER_ROLES.COORDINATOR}>{t.dropdowns.coordinators}</option>
+              <option value={USER_ROLES.VOLUNTEER}>{t.dropdowns.volunteers}</option>
             </select>
 
             <select
@@ -271,165 +374,163 @@ const goTo = (path) => {
               onChange={(event) => setSortMode(event.target.value)}
               style={styles.selectInput}
             >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
+              <option value="newest">{t.dropdowns.newestFirst}</option>
+              <option value="oldest">{t.dropdowns.oldestFirst}</option>
             </select>
           </div>
-         <div className="users-table-scroll">
-          <div style={styles.usersList}>
-            <div
-              style={{
-                ...styles.tableHeader,
-                gridTemplateColumns: canManageUsers
-                  ? "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr 0.8fr"
-                  : "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr",
-              }}
-            >
-             <button
-  style={styles.sortHeader}
-  onClick={() => handleSort("full_name")}
->
-  Name {sortField === "full_name" && (sortDirection === "asc" ? "▲" : "▼")}
-</button>
 
-<button
-  style={styles.sortHeader}
-  onClick={() => handleSort("phone")}
->
-  Phone {sortField === "phone" && (sortDirection === "asc" ? "▲" : "▼")}
-</button>
-
-<button
-  style={styles.sortHeader}
-  onClick={() => handleSort("city")}
->
-  City {sortField === "city" && (sortDirection === "asc" ? "▲" : "▼")}
-</button>
-
-<button
-  style={styles.sortHeader}
-  onClick={() => handleSort("email")}
->
-  Email {sortField === "email" && (sortDirection === "asc" ? "▲" : "▼")}
-</button>
-
-<button
-  style={styles.sortHeader}
-  onClick={() => handleSort("role")}
->
-  Role {sortField === "role" && (sortDirection === "asc" ? "▲" : "▼")}
-</button>
-
-<button
-  style={styles.sortHeader}
-  onClick={() => handleSort("is_available")}
->
-  Status {sortField === "is_available" && (sortDirection === "asc" ? "▲" : "▼")}
-</button>
-              {canManageUsers && <span>Delete In</span>}
-              <span>Actions</span>
-            </div>
-
-            {loading ? (
-              <div style={styles.emptyState}>Loading users...</div>
-            ) : filteredUsers.length === 0 ? (
-              <div style={styles.emptyState}>No users found.</div>
-            ) : (
-              filteredUsers.map((user) => {
-                const roleBadge = getRoleBadge(user.role, USER_ROLES);
-
-                return (
-                  <div
-                  key={user.uid}
-                  style={{
-                    ...styles.tableRow,
-                    gridTemplateColumns: canManageUsers
-                      ? "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr 0.8fr"
-                      : "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr",
-                  }}
+          <div className="users-table-scroll">
+            <div style={styles.usersList}>
+              {/* beige-tinted table header with sortable arrows */}
+              <div
+                className="users-table-header"
+                style={styles.tableHeader}
+              >
+                <button
+                  type="button"
+                  className="users-sort-th"
+                  style={styles.sortHeader}
+                  onClick={() => handleSort("full_name")}
                 >
-                    <span style={styles.userName}>{user.full_name || "—"}</span>
-                    <span>{user.phone || "—"}</span>
-                    <span>{user.city || "—"}</span>
-                    <span>{user.email || "—"}</span>
+                  {t.headers.name}
+                  {sortField === "full_name" ? (sortDirection === "asc" ? "▲" : "▼") : "⇅"}
+                </button>
 
-                    <span
-                      style={{
-                        ...styles.badge,
-                        background: roleBadge.background,
-                        color: roleBadge.color,
-                      }}
-                    >
-                      {roleBadge.label}
-                    </span>
+                <button
+                  type="button"
+                  className="users-sort-th"
+                  style={styles.sortHeader}
+                  onClick={() => handleSort("phone")}
+                >
+                  {t.headers.phone}
+                  {sortField === "phone" ? (sortDirection === "asc" ? "▲" : "▼") : "⇅"}
+                </button>
 
-                    <span
-                      style={{
-                        ...styles.badge,
-                        ...(viewMode === "deleted"
-                          ? styles.deletedBadge
-                          : user.is_available
-                          ? styles.availableBadge
-                          : styles.unavailableBadge),
-                      }}
-                    >
-                      {viewMode === "deleted"
-                        ? "Deleted"
-                        : user.is_available
-                        ? "Available"
-                        : "Unavailable"}
-                    </span>
+                <button
+                  type="button"
+                  className="users-sort-th"
+                  style={styles.sortHeader}
+                  onClick={() => handleSort("city")}
+                >
+                  {t.headers.city}
+                  {sortField === "city" ? (sortDirection === "asc" ? "▲" : "▼") : "⇅"}
+                </button>
 
-                    {canManageUsers && (
-                      <span>
-                        {viewMode === "deleted"
-                          ? `${getDaysUntilPermanentDelete(user.deleted_at)} days`
-                          : "—"}
-                      </span>
-                    )}
+                <div className="users-th" style={styles.thCell}>
+                  {t.headers.email}
+                </div>
 
-                    <div style={styles.actions}>
-                      {canManageUsers ? (
-                        viewMode === "active" ? (
-                          <>
-                            <button
-                              onClick={() => openUserModal("edit", user)}
-                              style={styles.iconButton}
-                              title="Edit"
-                            >
-                              ✏️
-                            </button>
+                <div className="users-th" style={styles.thCell}>
+                  {t.headers.role}
+                </div>
 
-                            <button
-                              onClick={() => handleDelete(user)}
-                              style={{
-                                ...styles.iconButton,
-                                ...styles.deleteButton,
-                              }}
-                              title="Delete"
-                            >
-                              🗑️
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => handleRestore(user)}
-                            style={styles.restoreTextButton}
-                          >
-                            Restore
-                          </button>
-                        )
-                      ) : (
-                        <button type="button" style={styles.viewOnlyButton}>
-                          View
-                        </button>
-                      )}
-                    </div>
+                <div className="users-th" style={styles.thCell}>
+                  {t.headers.status}
+                </div>
+
+                {canManageUsers && (
+                  <div className="users-th" style={styles.thCell}>
+                    {t.headers.deleteIn}
                   </div>
-                );
-              })
-            )}
-          </div>
+                )}
+
+                <div className="users-th" style={{...styles.thCell, marginInlineStart: "auto"}}>
+                  {t.headers.actions}
+                </div>
+              </div>
+
+              {loading ? (
+                <div style={styles.emptyState}>{t.empty.loading}</div>
+              ) : safeFilteredUsers.length === 0 ? (
+                <div style={styles.emptyState}>{t.empty.none}</div>
+              ) : (
+                safeFilteredUsers.map((user) => {
+                  const roleBadge = getRoleBadge(user.role, USER_ROLES);
+
+                  return (
+                    <div
+                      key={user.uid}
+                      style={styles.tableRow}
+                    >
+                      <span style={{...styles.userName, flex: "1.15", minWidth: 0}}>{user.full_name || "—"}</span>
+                      <span style={{flex: "0.95", minWidth: 0}}>{user.phone || "—"}</span>
+                      <span style={{flex: "0.85", minWidth: 0}}>{user.city || "—"}</span>
+                      <span style={{flex: "1.35", minWidth: 0}}>{user.email || "—"}</span>
+
+                      <span style={{...styles.badge, ...{flex: "0.9", minWidth: 0}, background: roleBadge.background, color: roleBadge.color}}>
+                        {roleBadge.label}
+                      </span>
+
+                      <span
+                        style={{
+                          ...styles.badge,
+                          ...{flex: "0.9", minWidth: 0},
+                          ...(viewMode === "deleted"
+                            ? styles.deletedBadge
+                            : user.is_available !== false
+                              ? styles.availableBadge
+                              : styles.unavailableBadge),
+                        }}
+                      >
+                        {viewMode === "deleted"
+                          ? "Deleted"
+                          : user.is_available !== false
+                            ? "Available"
+                            : "Unavailable"}
+                      </span>
+
+                      {canManageUsers && (
+                        <span style={{...styles.daysCell, ...{flex: "0.8", minWidth: 0}}}>
+                          {viewMode === "deleted"
+                            ? `${getDaysUntilPermanentDelete(user.deleted_at)} days`
+                            : "—"}
+                        </span>
+                      )}
+
+                      <div style={{...styles.actions, ...{flex: "0.8", minWidth: 0}}}>
+                        {canManageUsers ? (
+                          viewMode === "active" ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => openUserModal("edit", user)}
+                                style={styles.iconButton}
+                                title={t.actions.edit}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(user)}
+                                style={{
+                                  ...styles.iconButton,
+                                  ...styles.deleteButton,
+                                }}
+                                title={t.actions.delete}
+                              >
+                                🗑️
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleRestore(user)}
+                              style={styles.restoreTextButton}
+                            >
+                              {t.actions.restore}
+                            </button>
+                          )
+                        ) : (
+                          <button type="button" style={styles.viewOnlyButton}>
+                            View
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </section>
       </main>
@@ -530,12 +631,7 @@ const goTo = (path) => {
                     value={formData.city}
                     onChange={(event) => {
                       const value = event.target.value;
-
-                      setFormData((prev) => ({
-                        ...prev,
-                        city: value,
-                      }));
-
+                      setFormData((prev) => ({ ...prev, city: value }));
                       setCitySearch(value);
                       setShowCityDropdown(true);
                     }}
@@ -549,16 +645,12 @@ const goTo = (path) => {
 
                   {showCityDropdown && (
                     <div style={styles.dropdown}>
-                      {[
-                        ...ISRAELI_CITIES.filter(
-                          (city) =>
-                            city !== "Other" &&
-                            city
-                              .toLowerCase()
-                              .includes((citySearch || "").toLowerCase())
-                        ),
-                        "Other",
-                      ].map((city) => (
+                      {[...ISRAELI_CITIES.filter((city) =>
+                        city !== "Other" &&
+                        city
+                          .toLowerCase()
+                          .includes((citySearch || "").toLowerCase())
+                      ), "Other"].map((city) => (
                         <div
                           key={city}
                           style={styles.dropdownItem}
@@ -632,8 +724,8 @@ const goTo = (path) => {
                   {saving
                     ? "Saving..."
                     : formMode === "create"
-                    ? "Create User"
-                    : "Save Changes"}
+                      ? "Create User"
+                      : "Save Changes"}
                 </button>
 
                 <button
@@ -648,13 +740,14 @@ const goTo = (path) => {
           </div>
         </div>
       )}
-            {canManageUsers && importModalOpen && (
-              <BulkImportModal
-                isOpen={importModalOpen}
-                onClose={() => setImportModalOpen(false)}
-                onComplete={handleImportComplete}
-              />
-            )}
+
+      {canManageUsers && importModalOpen && (
+        <BulkImportModal
+          isOpen={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          onComplete={handleImportComplete}
+        />
+      )}
     </div>
   );
 }
@@ -666,6 +759,7 @@ const styles = {
     gridTemplateColumns: "240px 1fr",
     background: "#fffdf8",
     fontFamily: "Arial, sans-serif",
+    direction: "ltr",
   },
 
   sidebar: {
@@ -673,7 +767,7 @@ const styles = {
     position: "sticky",
     top: 0,
     background: "#fff8ef",
-    borderRight: "1px solid #f0e5d8",
+    borderInlineEnd: "1px solid #f0e5d8",
     padding: "28px 20px",
     boxSizing: "border-box",
     display: "flex",
@@ -719,7 +813,7 @@ const styles = {
     color: "#3d332b",
     padding: "14px 16px",
     borderRadius: "6px",
-    textAlign: "left",
+    textAlign: "start",
     fontWeight: "800",
     cursor: "pointer",
   },
@@ -729,8 +823,24 @@ const styles = {
     color: "#6a2300",
   },
 
-  logoutButton: {
+  bottomSection: {
     marginTop: "auto",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+
+  languageButton: {
+    padding: "13px",
+    borderRadius: "6px",
+    border: "1px solid #eadfd2",
+    background: "#fffaf4",
+    color: "#2b160c",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+
+  logoutButton: {
     border: "none",
     background: "#6a2300",
     color: "white",
@@ -775,21 +885,42 @@ const styles = {
     flexWrap: "wrap",
   },
 
-  filterButton: {
-    border: "1px solid #eadfd2",
-    background: "white",
-    color: "#3d332b",
-    borderRadius: "999px",
-    padding: "7px 14px",
-    fontWeight: "700",
-    fontSize: "13px",
-    cursor: "pointer",
+  pillBar: {
+    display: "flex",
+    gap: "10px",
+    alignItems: "center",
+    flexWrap: "wrap",
   },
 
-  filterActive: {
+  pill: {
+    border: "1px solid #eadfd2",
+    background: "#fff",
+    color: "#3d332b",
+    borderRadius: "999px",
+    padding: "9px 14px",
+    fontWeight: "800",
+    fontSize: "13px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+
+  pillLabel: {
+    lineHeight: 1,
+  },
+
+  pillBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: "28px",
+    padding: "3px 8px",
+    borderRadius: "999px",
     background: "#fff1df",
     color: "#e85d04",
-    borderColor: "#f3c49a",
+    fontWeight: "900",
+    fontSize: "12px",
   },
 
   addButton: {
@@ -810,14 +941,15 @@ const styles = {
   addMenu: {
     position: "absolute",
     top: "calc(100% + 8px)",
-    right: 0,
+    insetInlineEnd: 0,
     minWidth: "180px",
+    maxWidth: "220px",
     background: "white",
     border: "1px solid #eadfd2",
     borderRadius: "8px",
     boxShadow: "0 12px 25px rgba(43, 22, 12, 0.12)",
     padding: "6px",
-    zIndex: 20,
+    zIndex: 100,
   },
 
   addMenuItem: {
@@ -827,7 +959,7 @@ const styles = {
     color: "#3d332b",
     padding: "10px 12px",
     borderRadius: "6px",
-    textAlign: "left",
+    textAlign: "start",
     fontWeight: "800",
     cursor: "pointer",
   },
@@ -841,15 +973,14 @@ const styles = {
 
   searchInput: {
     flex: 1,
-    padding: "12px 14px",
-    borderRadius: "6px",
-    border: "1px solid #eadfd2",
-    background: "#fffdf8",
+    width: "100%",
+    padding: "14px 16px",
+    borderRadius: "8px",
+    border: "1px solid #e5e7eb",
+    background: "white",
     fontSize: "14px",
-    
-    color: "#2b160c",      
-    caretColor: "#2b160c",  
-
+    color: "#2b160c",
+    caretColor: "#2b160c",
   },
 
   selectInput: {
@@ -868,25 +999,48 @@ const styles = {
   },
 
   tableHeader: {
-    display: "grid",
-    gridTemplateColumns:
-      "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr 0.8fr",
+    display: "flex",
     gap: "10px",
-    padding: "12px 14px",
-    background: "#fff8ef",
-    color: "#51443a",
+    padding: "14px 14px",
+    background: "#fbf3e6",
+    color: "#3d332b",
     fontWeight: "900",
     fontSize: "13px",
+    borderBottom: "1px solid #f1e5d8",
+    alignItems: "center",
+  },
+
+  thCell: {
+    textAlign: "center",
+    fontWeight: "900",
+    color: "#3d332b",
+    flex: 1,
+    minWidth: 0,
+  },
+
+  sortHeader: {
+    border: "none",
+    background: "transparent",
+    cursor: "pointer",
+    fontWeight: "900",
+    color: "#3d332b",
+    textAlign: "center",
+    padding: 0,
+    fontSize: "13px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    flex: 1,
+    minWidth: 0,
   },
 
   tableRow: {
-    display: "grid",
-    gridTemplateColumns:
-      "1.1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 0.8fr 0.8fr",
+    display: "flex",
     gap: "10px",
     alignItems: "center",
-    padding: "14px",
-    borderTop: "1px solid #f1ebe5",
+    padding: "16px 14px",
+    borderBottom: "1px solid #f1e5d8",
     color: "#1f2933",
     fontSize: "13px",
   },
@@ -902,6 +1056,7 @@ const styles = {
     fontWeight: "800",
     fontSize: "12px",
     width: "fit-content",
+    justifySelf: "center",
   },
 
   availableBadge: {
@@ -919,9 +1074,18 @@ const styles = {
     color: "#dc2626",
   },
 
+  daysCell: {
+    textAlign: "center",
+    color: "#6b625c",
+    fontWeight: "800",
+  },
+
   actions: {
     display: "flex",
     gap: "8px",
+    justifyContent: "center",
+    alignItems: "center",
+    marginInlineStart: "auto",
   },
 
   iconButton: {
@@ -1052,14 +1216,8 @@ const styles = {
     border: "1px solid #eadfd2",
     background: "#fffdf8",
     boxSizing: "border-box",
-    color: "#2b160c",       
-    caretColor: "#2b160c",  
-
-  },
-
-  disabledInput: {
-    background: "#f8fafc",
-    color: "#6b7280",
+    color: "#2b160c",
+    caretColor: "#2b160c",
   },
 
   checkboxLabel: {
@@ -1073,8 +1231,8 @@ const styles = {
   dropdown: {
     position: "absolute",
     top: "calc(100% + 6px)",
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     background: "white",
     border: "1px solid #eadfd2",
     borderRadius: "8px",
@@ -1105,35 +1263,5 @@ const styles = {
     fontWeight: "700",
     cursor: "pointer",
   },
-  sortHeader: {
-  border: "none",
-  background: "transparent",
-  cursor: "pointer",
-  fontWeight: "900",
-  color: "#51443a",
-  textAlign: "left",
-  padding: 0,
-  fontSize: "13px",
-},
-
-bottomSection: {
-  marginTop: "auto",
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
-},
-
-languageButton: {
-  padding: "13px",
-  borderRadius: "6px",
-  border: "1px solid #eadfd2",
-  background: "#fffaf4",
-  color: "#2b160c",
-  fontWeight: "800",
-  cursor: "pointer",
-},
-
-  
 };
 
-export default AdminUsersView;
