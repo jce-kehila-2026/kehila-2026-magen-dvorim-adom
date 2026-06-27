@@ -1,8 +1,8 @@
 // Reports and analytics dashboard.
 // Displays system statistics, charts, and performance insights.
 
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import { USER_ROLES } from "../../services/userSchema";
 import { logoutUser } from "../../services/authService";
@@ -10,9 +10,22 @@ import "./ReportsView.css";
 import { useLanguage } from "../../contexts/LanguageContext";
 
 const CITY_COLORS = ["#ea580c", "#f59e0b", "#16a34a", "#374151", "#8b5cf6", "#dc2626", "#0ea5e9", "#a855f7"];
-
 function ReportsView({ userProfile, stats, loading, error }) {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Freeze any incoming nav state (e.g. a case linking here) so it survives
+  // even after we clear it from history right below.
+  const [focusState] = useState(() => location.state || {});
+  const focusCaseId = focusState.focusCaseId || null;
+  const feedbackCardRefs = useRef({});
+
+  useEffect(() => {
+    if (location.state) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -124,6 +137,24 @@ const navTexts = {
     return Object.values(result).sort((a, b) => b.total - a.total);
   }, [filteredCases]);
 
+  // If we arrived from a case's "View in Reports" link and that case's
+  // feedback isn't in the latest-10 carousel, pull it in from the full
+  // lookup so the link always lands on something real.
+  const displayFeedbacks = useMemo(() => {
+    const base = stats?.recentFeedbacks || [];
+
+    if (!focusCaseId) return base;
+    if (base.some((feedback) => feedback.case_id === focusCaseId)) return base;
+
+    const focused = stats?.feedbackByCaseId?.[focusCaseId];
+    return focused ? [focused, ...base] : base;
+  }, [stats, focusCaseId]);
+
+  useEffect(() => {
+    if (!focusCaseId) return;
+    const el = feedbackCardRefs.current[focusCaseId];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [focusCaseId, displayFeedbacks]);
   if (loading) {
     return (
       <div style={styles.page}>
@@ -392,28 +423,39 @@ const navTexts = {
         <section style={styles.chartPanel}>
           <h2 style={styles.panelTitle}>Latest Feedback</h2>
 
-          {!stats?.recentFeedbacks?.length ? (
+          {!displayFeedbacks.length ? (
             <p style={styles.emptyText}>No feedback submitted yet.</p>
           ) : (
             <div style={styles.feedbackScroll} className="feedback-scroll">
-             
-              {stats.recentFeedbacks.map((feedback) => (
-                <div key={feedback.id} style={styles.feedbackCard}>
-                  <div style={styles.starsLine}>
-                    {"★".repeat(feedback.overallRating)}
-                    {"☆".repeat(4 - feedback.overallRating)}
+              {displayFeedbacks.map((feedback) => {
+                const isFocused = feedback.case_id === focusCaseId;
+
+                return (
+                  <div
+                    key={feedback.id || feedback.case_id}
+                    ref={(el) => { if (el) feedbackCardRefs.current[feedback.case_id] = el; }}
+                    style={{ ...styles.feedbackCard, ...(isFocused ? styles.feedbackCardFocused : {}) }}
+                    onClick={() => navigate("/cases", { state: { focusCaseId: feedback.case_id } })}
+                    title="View this case"
+                  >
+                    <div style={styles.starsLine}>
+                      {"★".repeat(feedback.overallRating)}
+                      {"☆".repeat(4 - feedback.overallRating)}
+                    </div>
+
+                    <p style={styles.feedbackComment}>
+                      {feedback.comments || "No comment provided."}
+                    </p>
+
+                    <p style={styles.feedbackMeta}>
+                      {feedback.caseCity} · {feedback.caseRequesterName}
+                      {feedback.closureRound > 1 && ` · Round ${feedback.closureRound}`}
+                    </p>
+
+                    <span style={styles.feedbackCardLink} className="print-hide">View case →</span>
                   </div>
-
-                  <p style={styles.feedbackComment}>
-                    {feedback.comments || "No comment provided."}
-                  </p>
-
-                  <p style={styles.feedbackMeta}>
-                    {feedback.caseCity} · {feedback.caseRequesterName}
-                    {feedback.closureRound > 1 && ` · Round ${feedback.closureRound}`}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
@@ -1021,13 +1063,7 @@ const styles = {
     overflowX: "auto",
     paddingBottom: "6px",
   },
-  feedbackCard: {
-    flex: "0 0 260px",
-    background: "#fff8ef",
-    border: "1px solid #f0e5d8",
-    borderRadius: "14px",
-    padding: "14px",
-  },
+  
   starsLine: {
     color: "#f59e0b",
     fontSize: "18px",
@@ -1136,6 +1172,25 @@ languageButton: {
   fontWeight: "800",
   cursor: "pointer",
 },
+feedbackCard: {
+    flex: "0 0 260px",
+    background: "#fff8ef",
+    border: "1px solid #f0e5d8",
+    borderRadius: "14px",
+    padding: "14px",
+    cursor: "pointer",
+  },
+  feedbackCardFocused: {
+    border: "1px solid #6a2300",
+    boxShadow: "0 0 0 2px rgba(106, 35, 0, 0.15)",
+  },
+  feedbackCardLink: {
+    display: "inline-block",
+    marginTop: "8px",
+    color: "#6a2300",
+    fontWeight: "900",
+    fontSize: "11px",
+  },
 };
 
 export default ReportsView;
