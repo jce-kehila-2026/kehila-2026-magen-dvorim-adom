@@ -1,80 +1,65 @@
-.users-mobile-topbar,
-.users-overlay {
+/* ─────────────────────────────────────────
+   AdminUsersView — responsive + pills
+   ───────────────────────────────────────── */
+
+.mobile-menu-button {
+  display: none;
+}
+
+.mobile-menu-backdrop {
   display: none;
 }
 
 @media (max-width: 768px) {
-
   .users-page {
     display: block !important;
   }
 
-  .users-mobile-topbar {
+  .mobile-menu-button {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    height: 56px;
-    padding: 0 14px;
-    background: #fff8ef;
-    border-bottom: 1px solid #f0e5d8;
-    position: sticky;
-    top: 0;
-    z-index: 9997;
-  }
-
-  .users-menu-button {
-    width: 38px;
-    height: 38px;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 11997;
+    width: 42px;
+    height: 42px;
     border: none;
-    border-radius: 10px;
-    background: #fff1df;
-    color: #e85d04;
+    border-radius: 12px;
+    background: #6a2300;
+    color: white;
     font-size: 22px;
     font-weight: 900;
-    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 28px rgba(106, 35, 0, 0.25);
   }
 
-  .users-mobile-title {
-    font-size: 16px;
-    font-weight: 900;
-    color: #2b160c;
-  }
-
-  .users-overlay {
+  .mobile-menu-backdrop {
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.25);
-    z-index: 9998;
+    z-index: 11998;
+    background: rgba(0, 0, 0, 0.28);
   }
 
   .users-sidebar {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-
-    width: 270px !important;
+    z-index: 11999 !important;
+    width: 240px !important;
     height: 100vh !important;
-
-    background: #fff8ef !important;
-
-    padding: 24px 18px !important;
-
-    transform: translateX(-100%) !important;
-    transition: transform 0.25s ease !important;
-
-    z-index: 9999 !important;
-
-    overflow-y: auto !important;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    box-shadow: 18px 0 50px rgba(0, 0, 0, 0.12);
   }
 
-  .users-sidebar.open {
-    transform: translateX(0) !important;
+  .users-sidebar.mobile-open {
+    transform: translateX(0);
   }
 
   .users-main {
-    padding: 10px !important;
-    overflow: visible !important;
+    padding: 70px 14px 18px !important;
   }
 
   .users-content-card {
@@ -113,4 +98,29 @@
   .users-table-scroll > div {
     min-width: 850px;
   }
+}
+
+.users-filter-pill.selected {
+  background: #fff1df;
+  color: #e85d04;
+  border-color: #f3c49a;
+}
+
+/* Lock table container position to prevent jumping on language switch */
+.users-table-scroll {
+  direction: ltr;
+}
+
+/* Internal table structure inherits direction for text/icon adaptation */
+.users-table-header,
+.users-sort-th,
+.users-th {
+  direction: inherit;
+  text-align: start;
+}
+
+/* Center align sort icons and action columns */
+.users-sort-th,
+.users-th {
+  text-align: center;
 }
