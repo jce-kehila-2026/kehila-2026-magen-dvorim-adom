@@ -1,10 +1,10 @@
 // RequestsView — unified page for פניות (Requests)
 import "./RequestsView.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import VolunteerRecommendationMap from "./VolunteerRecommendationMap";
 import CoordinatorSendForm from "../../pages/CoordinatorSendForm";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { USER_ROLES } from "../../services/userSchema";
 import { getVolunteerAssignmentStats } from "../../services/assignmentService";
@@ -65,6 +65,7 @@ const T = {
     assignmentNotesPh: "Optional notes for the volunteer...",
     assigning: "Assigning...",
     assignBtn: "Assign volunteer",
+    reassignBtn: "Reassign volunteer",
     caseMap: "Volunteer map",
     mapLegend: "📍 Case • 🟢 Volunteers",
     score: "Score",
@@ -140,6 +141,7 @@ const T = {
     assignmentNotesPh: "הערות אופציונליות עבור המתנדב...",
     assigning: "משייך...",
     assignBtn: "שייך מתנדב",
+    reassignBtn: "שייך מחדש",
     caseMap: "מפת מתנדבים",
     mapLegend: "📍 מקרה • 🟢 מתנדבים",
     score: "ניקוד",
@@ -251,6 +253,12 @@ export default function RequestsView({
   onFormCreated,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Freeze any incoming nav state (e.g. a feedback card in Reports
+  // linking here) so it survives even after we clear it from history.
+  const [focusState] = useState(() => location.state || {});
+  const focusCaseId = focusState.focusCaseId || null;
+  const hasAutoOpenedFocusRef = useRef(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [localFeedbackCopied, setLocalFeedbackCopied] = useState({});
   const [drawerCase, setDrawerCase] = useState(null);
@@ -267,6 +275,7 @@ export default function RequestsView({
   const t = T[language] || T.en;
   const dir = isHe ? "rtl" : "ltr";
   const isAdmin = currentUserRole === USER_ROLES?.ADMIN || currentUserRole === "admin";
+  const isCoordinator = currentUserRole === USER_ROLES?.COORDINATOR || currentUserRole === "coordinator";
 
   const goTo = (path) => { setMobileMenuOpen(false); navigate(path); };
 
@@ -361,6 +370,31 @@ export default function RequestsView({
     document.body.style.overflow = "";
   };
 
+  // Clear the nav state so refresh/back doesn't redo the auto-open below.
+  useEffect(() => {
+    if (location.state) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Arrived here from a feedback card's "View case" link (Reports page) —
+  // automatically open that specific case's drawer once it's loaded, so
+  // the person lands directly on its details instead of having to find
+  // and click it themselves in the list. Switches to "All" first in case
+  // the case isn't visible under whatever filter happens to be active.
+  useEffect(() => {
+    if (!focusCaseId || hasAutoOpenedFocusRef.current) return;
+
+    const match = cases.find((c) => c.id === focusCaseId);
+    if (!match) return;
+
+    hasAutoOpenedFocusRef.current = true;
+    setActiveFilter("all");
+    openDrawer(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusCaseId, cases]);
+
   const handleSendFeedbackOptimistic = (caseItem) => {
     setLocalFeedbackCopied((p) => ({ ...p, [caseItem.id]: true }));
     handleSendFeedback(caseItem);
@@ -401,7 +435,7 @@ export default function RequestsView({
         <nav style={styles.nav}>
           <button style={{ ...styles.navItem, ...styles.navItemActive }}>{t.requests}</button>
           <button style={styles.navItem} onClick={() => goTo("/users")}>{t.users}</button>
-          {isAdmin && <button style={styles.navItem} onClick={() => goTo("/reports")}>{t.reports}</button>}
+          {(isAdmin || isCoordinator) && <button style={styles.navItem} onClick={() => goTo("/reports")}>{t.reports}</button>}
           {isAdmin && <button style={styles.navItem} onClick={() => goTo("/backup")}>{t.backup}</button>}
           <button style={styles.navItem} onClick={() => goTo("/profile")}>{t.profile}</button>
         </nav>
@@ -827,7 +861,11 @@ export default function RequestsView({
                             setAssignClickToken((c) => c + 1);
                           }}
                         >
-                          {assigning ? t.assigning : t.assignBtn}
+                          {assigning
+                            ? t.assigning
+                            : drawerCase.status === "assigned"
+                            ? t.reassignBtn
+                            : t.assignBtn}
                         </button>
                       </div>
                     )}
