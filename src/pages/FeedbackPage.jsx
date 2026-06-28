@@ -44,8 +44,12 @@ const [touched, setTouched] = useState({});
       title: "משוב",
       subtitle: "נשמח לשמוע על החוויה שלך",
       admin: "דירוג אדמיניסטרטיבי",
+      adminHint: "איכות השירות, המענה האנושי ויעילות התיאום מול המשרד.",
       evac: "דירוג הפינוי",
+      evacHint: "מקצועיות המטפל, מהירות הפינוי והצלחת המשימה בשטח.",
       hint: "1 = גרוע, 4 = מצוין",
+      rating1: "גרוע",
+      rating4: "מצוין",
       comments: "הערות (אופציונלי)",
       submit: "שלח משוב",
       submitting: "שולח...",
@@ -55,8 +59,12 @@ const [touched, setTouched] = useState({});
       title: "Feedback",
       subtitle: "Help us improve our service",
       admin: "Administrative rating",
+      adminHint: "Rates the quality of service, communication, and efficiency of the coordination process.",
       evac: "Evacuation rating",
+      evacHint: "Rates the professionalism of the rescuer, the speed of the removal, and the success of the operation.",
       hint: "1 = worst, 4 = best",
+      rating1: "Poor",
+      rating4: "Excellent",
       comments: "Comments (optional)",
       submit: "Submit Feedback",
       submitting: "Submitting...",
@@ -131,6 +139,7 @@ try {
       {[1, 2, 3, 4].map((n) => {
         const selected = form[field] === n;
         const hasError = touched[field] && !form[field];
+        const label = n === 1 ? txt.rating1 : n === 4 ? txt.rating4 : "";
 
         return (
           <div
@@ -164,6 +173,7 @@ try {
             }}
           >
             <strong>{n}</strong>
+            {label && <span style={styles.ratingLabel}>{label}</span>}
           </div>
         );
       })}
@@ -230,10 +240,12 @@ try {
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.section}>
             <label style={styles.label}>{txt.admin} *</label>
+            <p style={styles.hint}>{txt.adminHint}</p>
             <p style={styles.hint}>{txt.hint}</p>
             {renderRating("administrative_rating")}
 
             <label style={styles.label}>{txt.evac} *</label>
+            <p style={styles.hint}>{txt.evacHint}</p>
             <p style={styles.hint}>{txt.hint}</p>
             {renderRating("evacuation_rating")}
 
@@ -357,6 +369,16 @@ const styles = {
     textAlign: "center",
     cursor: "pointer",
     transition: "all 0.2s",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "4px",
+  },
+
+  ratingLabel: {
+    fontSize: "10px",
+    color: "#B0A088",
+    fontWeight: "normal",
   },
 
   input: {
