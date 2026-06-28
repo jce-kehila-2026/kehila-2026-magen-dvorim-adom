@@ -228,6 +228,7 @@ return canManageUsers;
 
       resetForm();
       await loadUsers();
+      closeModal();
     } catch (err) {
       setError(err.message || "Failed to save user.");
     } finally {
