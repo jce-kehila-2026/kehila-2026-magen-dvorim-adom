@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
@@ -147,22 +146,15 @@ function VolunteerDashboardView({
           <header style={styles.header}>
             <h1
               style={{
-                ...styles.title,
+                ...styles.welcomeLine,
                 textAlign: isHebrew ? "right" : "left",
               }}
             >
-
-              {t.welcome}
+              <span style={styles.welcomeText}>{t.welcome}</span>{" "}
+              <span style={styles.welcomeName}>
+                {userProfile?.full_name || t.volunteer}
+              </span>
             </h1>
-
-            <h2
-              style={{
-                ...styles.bigName,
-                textAlign: isHebrew ? "right" : "left",
-              }}
-            >
-              {userProfile?.full_name || t.volunteer}
-            </h2>
           </header>
 
           {error && <div style={styles.errorBox}>{error}</div>}
@@ -231,8 +223,8 @@ const t = {
     <div
       style={{
         ...styles.card,
-        padding: "28px",
-        marginBottom: "20px",
+        padding: "20px",
+        marginBottom: "16px",
         fontSize: "16px",
         cursor: hasCase ? "pointer" : "default",
         borderColor: hasCase ? "#fbbf24" : "#f0e5d8",
@@ -244,7 +236,6 @@ const t = {
   style={{
     ...styles.cardIconRow,
     flexDirection: isHebrew ? "row-reverse" : "row",
-    justifyContent: isHebrew ? "flex-start" : "flex-start",
     width: "100%",
   }}
 >
@@ -350,7 +341,9 @@ const styles = {
     marginBottom: "36px",
   },
   logo: { width: "50px", height: "50px", objectFit: "contain" },
-  brandTitle: { margin: 0, color: "#2b160c", fontSize: "16px", fontWeight: "900" },
+  // Elegant muted brown — distinct from the heavier mahogany used for
+  // headings elsewhere on this page, and from the role label below it.
+  brandTitle: { margin: 0, color: "#6a2300", fontSize: "16px", fontWeight: "900" },
   brandSub: { margin: "4px 0 0", color: "#6a2300", fontSize: "13px" },
   nav: { display: "flex", flexDirection: "column", gap: "10px" },
   navItem: {
@@ -381,58 +374,59 @@ const styles = {
     padding: "24px",
     border: "1px solid #f2e7dc",
      boxShadow: "0 16px 50px rgba(43, 22, 12, 0.06)",
-    minHeight: "70vh",
+    minHeight: "55vh",
   },
-  header: { marginBottom: "24px" },
-  title: {
-  margin: 0,
-  color: "#2b160c",
-  fontSize: "26px",
-  fontWeight: "800",
-},
-  
+  header: { marginBottom: "18px" },
+  welcomeLine: {
+    margin: 0,
+    fontSize: "22px",
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "baseline",
+    gap: "6px",
+  },
+  welcomeText: {
+    color: "#2b160c",
+    fontWeight: "700",
+  },
+  welcomeName: {
+    color: "#6a2300",
+    fontWeight: "900",
+  },
+
   userName: { color: "#6a2300"},
  cardGrid: {
   display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(160px, 1fr))",
-  gap: "16px",
+  gridTemplateColumns: "repeat(2, minmax(140px, 1fr))",
+  gap: "12px",
 },
 card: {
   background: "#fffdf8",
   border: "1px solid #f0e5d8",
-  borderRadius: "16px",
-  padding: "24px",
-  minHeight: "120px",  // ✅ ADD
-  display: "flex",     // ✅ optional polish
+  borderRadius: "14px",
+  padding: "18px",
+  minHeight: "92px",
+  display: "flex",
   flexDirection: "column",
   justifyContent: "center",
-  oxShadow: "0 10px 30px rgba(43, 22, 12, 0.05)",
+  boxShadow: "0 10px 30px rgba(43, 22, 12, 0.05)",
 },
   cardIconRow: {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    marginBottom: "12px",
-    flexDirection: "row", // default
+    marginBottom: "10px",
     width: "100%",
-
   },
 
-bigName: {
-  margin: "4px 0 20px",
-  fontSize: "36px",
-  fontWeight: "900",
-  color: "#6a2300",
-},
-
   dot: { width: "10px", height: "10px", borderRadius: "50%", flexShrink: 0 },
-  cardLabel: { fontSize: "20px", fontWeight: "1000", margin: 0 },
-  caseSnippet: { marginTop: "4px" },
-  caseCity: { margin: "0 0 4px", color: "#2b160c", fontSize: "18px", fontWeight: "900" },
-  caseDesc: { margin: "0 0 10px", color: "#6b625c", fontSize: "13px", lineHeight: 1.5 },
+  cardLabel: { fontSize: "16px", fontWeight: "900", margin: 0 },
+  caseSnippet: { marginTop: "2px" },
+  caseCity: { margin: "0 0 4px", color: "#2b160c", fontSize: "16px", fontWeight: "900" },
+  caseDesc: { margin: "0 0 8px", color: "#6b625c", fontSize: "13px", lineHeight: 1.5 },
   tapHint: { fontSize: "12px", color: "#e85d04", fontWeight: "800" },
-  cardTitle: { margin: "0 0 8px", color: "#6b625c", fontSize: "13px", fontWeight: "800" },
-  cardValue: { margin: "0 0 4px", fontSize: "28px", fontWeight: "900" },
+  cardTitle: { margin: "0 0 6px", color: "#6b625c", fontSize: "12.5px", fontWeight: "800" },
+  cardValue: { margin: "0 0 4px", fontSize: "24px", fontWeight: "900" },
   cardSubtitle: { margin: 0, fontSize: "12px", color: "#d97706", fontWeight: "800" },
   loading: { padding: "20px", color: "#6b625c", textAlign: "center" },
   errorBox: {

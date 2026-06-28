@@ -358,24 +358,7 @@ const filteredUsers = useMemo(() => {
   sortField,
   sortDirection,
 ]);
-const getDaysUntilPermanentDelete = (deletedAt) => {
-  if (!deletedAt) return 30;
 
-  const deletedDate = deletedAt.toDate
-    ? deletedAt.toDate()
-    : new Date(deletedAt.seconds * 1000);
-
-  const expirationDate = new Date(deletedDate);
-  expirationDate.setDate(expirationDate.getDate() + 30);
-
-  const diff =
-    expirationDate.getTime() - new Date().getTime();
-
-  return Math.max(
-    0,
-    Math.ceil(diff / (1000 * 60 * 60 * 24))
-  );
-};
   const formatDate = (timestamp) => {
     if (!timestamp) return "—";
     if (timestamp.toDate) return timestamp.toDate().toLocaleDateString();
@@ -425,7 +408,6 @@ const getDaysUntilPermanentDelete = (deletedAt) => {
       USER_ROLES={USER_ROLES}
       addMenuOpen={addMenuOpen}
       setAddMenuOpen={setAddMenuOpen}
-      getDaysUntilPermanentDelete={getDaysUntilPermanentDelete}
       canManageUsers={canManageUsers}
       sortField={sortField}
       sortDirection={sortDirection}

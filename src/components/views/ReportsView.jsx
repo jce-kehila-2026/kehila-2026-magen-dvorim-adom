@@ -474,7 +474,7 @@ requests: isHebrew ? "פניות" : "Requests",
                     key={feedback.id || feedback.case_id}
                     ref={(el) => { if (el) feedbackCardRefs.current[feedback.case_id] = el; }}
                     style={{ ...styles.feedbackCard, ...(isFocused ? styles.feedbackCardFocused : {}) }}
-                    onClick={() => navigate("/cases", { state: { focusCaseId: feedback.case_id } })}
+                    onClick={() => navigate("/requests", { state: { focusCaseId: feedback.case_id } })}
                     title="View this case"
                   >
                     <div style={styles.starsLine}>
