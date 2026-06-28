@@ -228,6 +228,8 @@ return canManageUsers;
 
       resetForm();
       await loadUsers();
+      console.log('Modal closing now');
+      closeModal();
     } catch (err) {
       setError(err.message || "Failed to save user.");
     } finally {
