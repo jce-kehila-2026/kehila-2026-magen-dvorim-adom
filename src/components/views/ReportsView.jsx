@@ -105,7 +105,6 @@ requests: isHebrew ? "פניות" : "Requests",
       openCases: filteredCases.filter((c) => c.status === "open").length,
       assignedCases: filteredCases.filter((c) => c.status === "assigned").length,
       closedCases: filteredCases.filter((c) => c.status === "closed").length,
-      urgentCases: filteredCases.filter((c) => c.urgency === "high").length,
     };
   }, [filteredCases]);
 
@@ -522,11 +521,7 @@ requests: isHebrew ? "פניות" : "Requests",
             value={filteredStats.closedCases}
             color="#374151"
           />
-          <StatCard
-            title="Urgent Cases"
-            value={filteredStats.urgentCases}
-            color="#dc2626"
-          />
+
           <StatCard
             title="Success Rate"
             value={`${stats?.successRate || 0}%`}
@@ -877,6 +872,8 @@ const styles = {
   main: {
     padding: "26px 30px",
     boxSizing: "border-box",
+    minWidth: 0,
+    overflowX: "hidden",
   },
   header: {
     marginBottom: "18px",
@@ -1102,7 +1099,7 @@ const styles = {
     overflowX: "auto",
     paddingBottom: "6px",
   },
-  
+
   starsLine: {
     color: "#f59e0b",
     fontSize: "18px",

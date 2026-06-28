@@ -100,4 +100,12 @@
   .reports-grid {
     grid-template-columns: 1fr !important;
   }
+  .reports-main {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.feedback-scroll {
+  overflow-x: auto;
+}
 }
