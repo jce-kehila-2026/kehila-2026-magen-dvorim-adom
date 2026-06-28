@@ -10,6 +10,7 @@ const T = {
     dashboard: "Dashboard",
     cases: "Cases",
     users: "Users",
+    reports: "Reports",
     backup: "Backup",
     profile: "Profile",
     logout: "Logout",
@@ -60,6 +61,7 @@ const T = {
     dashboard: "דשבורד",
     cases: "מקרים",
     users: "משתמשים",
+    reports: "דוחות",
     backup: "גיבוי",
     profile: "פרופיל",
     logout: "התנתק",
@@ -109,6 +111,7 @@ const T = {
 
 function MyCasesView({
   userProfile,
+  currentUserName,
   cases,
   assignments,
   users,
@@ -127,6 +130,7 @@ function MyCasesView({
   handleSubmitCloseCase,
   toggleExpand,
   formatDate,
+  handleLogout,
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -134,6 +138,18 @@ function MyCasesView({
   const goTo = (path) => {
     setMenuOpen(false);
     navigate(path);
+  };
+
+  // Falls back to a plain redirect only if the container hasn't wired up
+  // a real handleLogout yet — but that means the Firebase session is
+  // never actually cleared, so this should be treated as temporary.
+  const onLogoutClick = () => {
+    setMenuOpen(false);
+    if (handleLogout) {
+      handleLogout();
+    } else {
+      navigate("/");
+    }
   };
 
   const assignedCases = cases.filter((c) => c.status !== "closed");
@@ -168,7 +184,9 @@ function MyCasesView({
           <img src={logo} alt="Magen Dvorim Adom" style={styles.logo} />
           <div>
             <h2 style={styles.brandTitle}>Magen Dvorim Adom</h2>
-            <p style={styles.brandSub}>{userProfile?.role || "User"}</p>
+            <p style={styles.brandSub}>
+              {currentUserName || userProfile?.full_name || userProfile?.role || "User"}
+            </p>
           </div>
         </div>
 
@@ -185,6 +203,10 @@ function MyCasesView({
 
               <button style={styles.navItem} onClick={() => goTo("/users")}>
                 {t.users}
+              </button>
+
+              <button style={styles.navItem} onClick={() => goTo("/reports")}>
+                {t.reports}
               </button>
 
               {userProfile?.role === USER_ROLES.ADMIN && (
@@ -214,7 +236,7 @@ function MyCasesView({
             {language === "he" ? "English 🌐" : "עברית 🌐"}
           </button>
 
-          <button style={styles.logoutButton} onClick={() => goTo("/")}>
+          <button style={styles.logoutButton} onClick={onLogoutClick}>
             {t.logout}
           </button>
         </div>
@@ -244,7 +266,7 @@ function MyCasesView({
 
 <div
   style={{
-    width: "100%",                // ✅ VERY IMPORTANT
+    width: "100%",
     textAlign: isHe ? "right" : "left",
   }}
 >
@@ -285,12 +307,12 @@ function MyCasesView({
 
                 <div style={styles.summaryCard}>
                   <span>{t.activeCases}</span>
-                  <strong>{assignedCases.length}</strong>
+                  <strong style={styles.summaryCount}>{assignedCases.length}</strong>
                 </div>
 
                 <div style={styles.summaryCard}>
                   <span>{t.completedCases}</span>
-                  <strong>{closedCases.length}</strong>
+                  <strong style={styles.summaryCount}>{closedCases.length}</strong>
                 </div>
               </section>
 
@@ -321,6 +343,7 @@ function MyCasesView({
                           >
                             <div>
                               <strong style={styles.caseTitle}>
+                                <span style={styles.personIcon}>👤</span>
                                 {c.requester_first_name}{" "}
                                 {c.requester_last_name}
                               </strong>
@@ -406,7 +429,7 @@ function MyCasesView({
                     style={{
                       ...styles.sectionTitle,
                       textAlign: isHe ? "right" : "left",
-                      width: "100%", // ✅ THIS fixes the empty gap
+                      width: "100%",
                     }}
                   >
                     {t.completedCases}
@@ -418,10 +441,15 @@ function MyCasesView({
 
                       return (
                         <div key={c.id} style={styles.closedItem}>
-                         <div style={styles.closedTop}>
+                         <div
+                            style={{ ...styles.closedTop, cursor: "pointer" }}
+                            onClick={() => toggleExpand(c.id)}
+                            title={expanded ? t.collapse : t.viewDetails}
+                          >
 
                             <div>
                               <h3 style={styles.caseTitle}>
+                                <span style={styles.personIcon}>👤</span>
                                 {c.requester_first_name}{" "}
                                 {c.requester_last_name}
                               </h3>
@@ -435,12 +463,9 @@ function MyCasesView({
                               </p>
                             </div>
 
-                            <button
-                              style={styles.viewButton}
-                              onClick={() => toggleExpand(c.id)}
-                            >
-                              {expanded ? t.collapse : t.viewDetails}
-                            </button>
+                            <span style={styles.expandIcon}>
+                              {expanded ? "▲" : "▼"}
+                            </span>
                           </div>
 
                           {expanded && (
@@ -452,7 +477,7 @@ function MyCasesView({
                               }}
                             >
                               <p>
-                                <strong>Phone:</strong>{" "}
+                                <strong>{t.phone}:</strong>{" "}
                                 {c.requester_phone || "—"}
                               </p>
 
@@ -487,7 +512,7 @@ function MyCasesView({
 
                               {c.result_notes && (
                                 <p style={{ gridColumn: "1 / -1" }}>
-                                  <strong>Closing Notes:</strong>{" "}
+                                  <strong>{t.closingNotes}:</strong>{" "}
                                   {c.result_notes}
                                 </p>
                               )}
@@ -613,7 +638,7 @@ const styles = {
 
   brandTitle: {
     margin: 0,
-    color: "#2b160c",
+    color: "#6a2300",
     fontSize: "16px",
     fontWeight: "900",
   },
@@ -622,7 +647,6 @@ const styles = {
     margin: "4px 0 0",
     color: "#e85d04",
     fontSize: "13px",
-    textTransform: "capitalize",
   },
 
   nav: {
@@ -651,9 +675,9 @@ const styles = {
 logoutButton: {
   marginTop: "auto",
   padding: "13px",
-  borderRadius: "6px",               // ✅ FIX
+  borderRadius: "6px",
   border: "none",
-  background: "#6a2300",             // ✅ FIX
+  background: "#6a2300",
   color: "white",
   fontWeight: "800",
   cursor: "pointer",
@@ -661,15 +685,15 @@ logoutButton: {
 
 
   main: {
-    padding: "34px",
+    padding: "28px",
     boxSizing: "border-box",
   },
 
 
   contentCard: {
   background: "#ffffff",
-  borderRadius: "16px",   // ✅ MATCH PROFILE
-  padding: "30px",        // ✅ MATCH PROFILE
+  borderRadius: "14px",
+  padding: "22px",
   boxShadow: "0 16px 40px rgba(0,0,0,0.03)",
   border: "1px solid #f0e5d8",
 },
@@ -679,20 +703,20 @@ logoutButton: {
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "20px",
-    marginBottom: "28px",
+    marginBottom: "22px",
   },
 
   title: {
     margin: 0,
     color: "#2b160c",
-    fontSize: "32px",
+    fontSize: "24px",
     fontWeight: "900",
   },
 
   subtitle: {
-    margin: "8px 0 0",
+    margin: "6px 0 0",
     color: "#6b625c",
-    fontSize: "15px",
+    fontSize: "14px",
   },
 
   metaBox: {
@@ -721,52 +745,68 @@ logoutButton: {
 
   emptyState: {
     textAlign: "center",
-    padding: "44px 24px",
-    borderRadius: "20px",
+    padding: "36px 20px",
+    borderRadius: "16px",
     background: "#fffdf8",
     border: "1px solid #f0e5d8",
     color: "#6b625c",
   },
 
   emptyIcon: {
-    fontSize: "34px",
-    marginBottom: "12px",
+    fontSize: "30px",
+    marginBottom: "10px",
   },
 
   summaryBar: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(180px, 1fr))",
-    gap: "14px",
-    marginBottom: "28px",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+    marginBottom: "18px",
   },
 
   summaryCard: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "7px",
     background: "#fff8ef",
     border: "1px solid #f0e5d8",
-    borderRadius: "16px",
-    padding: "20px",
+    borderRadius: "999px",
+    padding: "6px 12px 6px 14px",
+    fontSize: "12.5px",
+    fontWeight: "700",
+    color: "#3d332b",
+    whiteSpace: "nowrap",
+  },
+
+  summaryCount: {
+    background: "#fff1df",
+    color: "#6a2300",
+    borderRadius: "999px",
+    padding: "2px 8px",
+    fontSize: "12px",
+    fontWeight: "900",
   },
 
   section: {
-    marginTop: "28px",
+    marginTop: "22px",
   },
 
   sectionTitle: {
-    margin: "0 0 16px",
+    margin: "0 0 14px",
     color: "#2b160c",
-    fontSize: "20px",
+    fontSize: "17px",
     fontWeight: "900",
   },
 
   caseList: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "10px",
   },
 
   closedItem: {
-    padding: "18px",
-    borderRadius: "16px",
+    padding: "14px",
+    borderRadius: "14px",
     border: "1px solid #f1ebe5",
     background: "#fffdf8",
   },
@@ -774,20 +814,26 @@ logoutButton: {
   closedTop: {
     display: "flex",
     justifyContent: "space-between",
+    alignItems: "center",
     gap: "18px",
   },
 
   caseTitle: {
     margin: 0,
     color: "#1f2937",
-    fontSize: "17px",
+    fontSize: "15.5px",
     fontWeight: "900",
   },
 
-  caseMeta: {
-    margin: "7px 0 0",
-    color: "#6b625c",
+  personIcon: {
+    marginRight: "6px",
     fontSize: "14px",
+  },
+
+  caseMeta: {
+    margin: "6px 0 0",
+    color: "#6b625c",
+    fontSize: "13px",
   },
 
   submitButtonSmall: {
@@ -795,17 +841,7 @@ logoutButton: {
     background: "#fff8ef",
     color: "#d95f00",
     borderRadius: "6px",
-    padding: "8px 13px",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
-
-  viewButton: {
-    border: "1px solid #ddd6ce",
-    background: "white",
-    color: "#3d332b",
-    borderRadius: "6px",
-    padding: "8px 13px",
+    padding: "7px 12px",
     fontWeight: "800",
     cursor: "pointer",
   },
@@ -813,14 +849,14 @@ logoutButton: {
   detailsGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: "10px 18px",
-    marginTop: "18px",
+    gap: "8px 16px",
+    marginTop: "14px",
     color: "#2b160c",
-    fontSize: "14px",
+    fontSize: "13.5px",
   },
 
   accordionCase: {
-    borderRadius: "16px",
+    borderRadius: "14px",
     border: "1px solid #f1ebe5",
     background: "#fffdf8",
     overflow: "hidden",
@@ -830,7 +866,7 @@ logoutButton: {
     width: "100%",
     border: "none",
     background: "transparent",
-    padding: "18px",
+    padding: "14px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
@@ -840,19 +876,19 @@ logoutButton: {
 
   expandIcon: {
     color: "#0f6b78",
-    fontSize: "16px",
+    fontSize: "15px",
     fontWeight: "900",
   },
 
   accordionBody: {
     borderTop: "1px solid #f1ebe5",
-    padding: "18px",
+    padding: "14px",
   },
 
   caseActionsRow: {
     display: "flex",
     justifyContent: "flex-end",
-    marginTop: "18px",
+    marginTop: "14px",
   },
 
   modalOverlay: {
@@ -868,52 +904,52 @@ logoutButton: {
 
   modal: {
     width: "100%",
-    maxWidth: "520px",
+    maxWidth: "480px",
     background: "white",
-    borderRadius: "22px",
-    padding: "28px",
+    borderRadius: "18px",
+    padding: "22px",
     boxShadow: "0 24px 80px rgba(0,0,0,0.18)",
   },
 
   modalTitle: {
     margin: "0 0 8px",
     color: "#2b160c",
-    fontSize: "22px",
+    fontSize: "20px",
     fontWeight: "900",
   },
 
   modalSubtitle: {
-    margin: "0 0 24px",
+    margin: "0 0 20px",
     color: "#6b625c",
-    fontSize: "14px",
+    fontSize: "13.5px",
   },
 
   formGroup: {
-    marginBottom: "18px",
+    marginBottom: "16px",
   },
 
   label: {
     display: "block",
-    marginBottom: "8px",
+    marginBottom: "7px",
     color: "#2b160c",
-    fontSize: "14px",
+    fontSize: "13.5px",
     fontWeight: "800",
   },
 
   select: {
     width: "100%",
-    padding: "11px 13px",
+    padding: "10px 12px",
     border: "1px solid #eadfd2",
-    borderRadius: "12px",
+    borderRadius: "10px",
     background: "white",
     color: "#1f2937",
   },
 
   textarea: {
     width: "100%",
-    padding: "11px 13px",
+    padding: "10px 12px",
     border: "1px solid #eadfd2",
-    borderRadius: "12px",
+    borderRadius: "10px",
     background: "#fffdf8",
     color: "#1f2937",
     resize: "vertical",
@@ -922,17 +958,17 @@ logoutButton: {
 
   modalActions: {
     display: "flex",
-    gap: "12px",
-    marginTop: "24px",
+    gap: "10px",
+    marginTop: "20px",
   },
 
 submitButton: {
   flex: 1,
   padding: "10px 16px",
-  background: "#6a2300",   // ✅ FIX
+  background: "#6a2300",
   color: "white",
   border: "none",
-  borderRadius: "6px",     // ✅ FIX
+  borderRadius: "6px",
   fontWeight: "800",
   cursor: "pointer",
 },
@@ -943,7 +979,7 @@ cancelButton: {
   background: "#f3f4f6",
   color: "#374151",
   border: "none",
-  borderRadius: "6px",     // ✅ FIX
+  borderRadius: "6px",
   fontWeight: "800",
   cursor: "pointer",
 },
@@ -957,7 +993,7 @@ cancelButton: {
 
 languageButton: {
   padding: "13px",
-  borderRadius: "6px",               // ✅ FIX
+  borderRadius: "6px",
   border: "1px solid #eadfd2",
   background: "#fffaf4",
   color: "#2b160c",

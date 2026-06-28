@@ -412,6 +412,10 @@ export default function RequestsView({
     smoker: t.smoker,
   };
 
+  const canSeeReports =
+  currentUserRole === USER_ROLES.ADMIN ||
+  currentUserRole === USER_ROLES.COORDINATOR;
+
   return (
     <div style={styles.page} className="requests-page">
       <button type="button" className="requests-mobile-menu-btn" onClick={() => setMobileMenuOpen(true)}>☰</button>
@@ -435,7 +439,7 @@ export default function RequestsView({
         <nav style={styles.nav}>
           <button style={{ ...styles.navItem, ...styles.navItemActive }}>{t.requests}</button>
           <button style={styles.navItem} onClick={() => goTo("/users")}>{t.users}</button>
-          {(isAdmin || isCoordinator) && <button style={styles.navItem} onClick={() => goTo("/reports")}>{t.reports}</button>}
+          {canSeeReports && <button style={styles.navItem} onClick={() => goTo("/reports")}>{t.reports}</button>}
           {isAdmin && <button style={styles.navItem} onClick={() => goTo("/backup")}>{t.backup}</button>}
           <button style={styles.navItem} onClick={() => goTo("/profile")}>{t.profile}</button>
         </nav>
