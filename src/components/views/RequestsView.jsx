@@ -7,9 +7,7 @@ import CoordinatorSendForm from "../../pages/CoordinatorSendForm";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { USER_ROLES } from "../../services/userSchema";
-import { getVolunteerAssignmentStats } from "../../services/assignmentService";
 
-// ─── Translations ─────────────────────────────────────────────────────────────
 const T = {
   en: {
     requests: "Requests", users: "Users", reports: "Reports",
@@ -165,7 +163,6 @@ const T = {
   },
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function formStatusLabel(status, t) {
   if (status === "submitted") return t.returned;
   if (status === "sent" || status === "waiting") return t.sent;
@@ -195,7 +192,6 @@ function translateExperience(level, t) {
   return level || "—";
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 export default function RequestsView({
   userProfile,
   currentUserRole,
@@ -251,24 +247,19 @@ export default function RequestsView({
   formStatusFilter,
   setFormStatusFilter,
   onFormCreated,
+  shouldCloseDrawer,
+  onDrawerClosed,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  // Freeze any incoming nav state (e.g. a feedback card in Reports
-  // linking here) so it survives even after we clear it from history.
   const [focusState] = useState(() => location.state || {});
   const focusCaseId = focusState.focusCaseId || null;
   const hasAutoOpenedFocusRef = useRef(false);
+  const casesRef = useRef(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [localFeedbackCopied, setLocalFeedbackCopied] = useState({});
   const [drawerCase, setDrawerCase] = useState(null);
   const [selectedVolunteerId, setSelectedVolunteerId] = useState("");
-  const [volunteerStats, setVolunteerStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(false);
-  // Counts assign-button clicks so the effect below fires exactly once
-  // per click, using whichever handleAssignFromModal closure is current
-  // at the time React actually commits the updated modalState — instead
-  // of guessing with a setTimeout that races the render cycle.
   const [assignClickToken, setAssignClickToken] = useState(0);
   const { language, setLanguage } = useLanguage();
   const isHe = language === "he";
@@ -279,26 +270,19 @@ export default function RequestsView({
 
   const goTo = (path) => { setMobileMenuOpen(false); navigate(path); };
 
-  // Fires the actual assignment only after React has committed the
-  // modalState update from the click below, so handleAssignFromModal
-  // (which reads modalState fresh in the container) always sees the
-  // caseId/userId that were just set — not a stale pre-click version.
+  // Close drawer when parent signals a successful assignment
   useEffect(() => {
-    if (assignClickToken > 0) {
-      handleAssignFromModal();
+    if (shouldCloseDrawer && drawerCase) {
+      closeDrawer();
+      onDrawerClosed?.();
     }
+  }, [shouldCloseDrawer]);
+
+  // Fire assignment after modalState is committed
+  useEffect(() => {
+    if (assignClickToken > 0) handleAssignFromModal();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignClickToken]);
-
-  // Load volunteer stats when one is selected in the drawer
-  useEffect(() => {
-    if (!selectedVolunteerId) { setVolunteerStats(null); return; }
-    setStatsLoading(true);
-    getVolunteerAssignmentStats(selectedVolunteerId)
-      .then(setVolunteerStats)
-      .catch(() => setVolunteerStats(null))
-      .finally(() => setStatsLoading(false));
-  }, [selectedVolunteerId]);
 
   // Close drawer on Escape
   useEffect(() => {
@@ -307,7 +291,13 @@ export default function RequestsView({
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Form tracking
+  // Keep drawerCase in sync when the live case data updates underneath it
+  useEffect(() => {
+    if (!drawerCase) return;
+    const fresh = cases.find((c) => c.id === drawerCase.id);
+    if (fresh) setDrawerCase(fresh);
+  }, [cases]);
+
   const filteredForms = useMemo(() => {
     if (formStatusFilter === "all") return intakeForms;
     return intakeForms.filter((f) => {
@@ -325,20 +315,15 @@ export default function RequestsView({
     });
   }, [filteredForms, formSortDir]);
 
-  // Case helpers
   const getStatusBadgeStyle = (s) => ({
     ...styles.badge,
     ...(s === "assigned" ? styles.assignedBadge : s === "closed" ? styles.closedBadge : styles.openBadge),
   });
 
-  const complexityLabel = (v) =>
-    v === "very_complex" ? t.veryComplex : v === "complex" ? t.complex : t.simple;
-
   const scoreByUserId = (recommendations || []).reduce((acc, v) => {
     acc[v.id] = v.recommendationScore; return acc;
   }, {});
 
-  // Sort volunteers by score descending
   const sortedVolunteers = useMemo(() => {
     return [...filteredUsersForModal].sort((a, b) =>
       (scoreByUserId[b.id] ?? -1) - (scoreByUserId[a.id] ?? -1)
@@ -357,7 +342,6 @@ export default function RequestsView({
   const openDrawer = (caseItem) => {
     setDrawerCase(caseItem);
     setSelectedVolunteerId("");
-    setVolunteerStats(null);
     handleGetRecommendations(caseItem);
     document.body.style.overflow = "hidden";
   };
@@ -365,30 +349,21 @@ export default function RequestsView({
   const closeDrawer = () => {
     setDrawerCase(null);
     setSelectedVolunteerId("");
-    setVolunteerStats(null);
     cancelCloseCase();
     document.body.style.overflow = "";
   };
 
-  // Clear the nav state so refresh/back doesn't redo the auto-open below.
+  // Clear nav state on mount
   useEffect(() => {
-    if (location.state) {
-      navigate(location.pathname, { replace: true, state: {} });
-    }
+    if (location.state) navigate(location.pathname, { replace: true, state: {} });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Arrived here from a feedback card's "View case" link (Reports page) —
-  // automatically open that specific case's drawer once it's loaded, so
-  // the person lands directly on its details instead of having to find
-  // and click it themselves in the list. Switches to "All" first in case
-  // the case isn't visible under whatever filter happens to be active.
+  // Auto-open drawer when arriving from Reports page
   useEffect(() => {
     if (!focusCaseId || hasAutoOpenedFocusRef.current) return;
-
     const match = cases.find((c) => c.id === focusCaseId);
     if (!match) return;
-
     hasAutoOpenedFocusRef.current = true;
     setActiveFilter("all");
     openDrawer(match);
@@ -400,21 +375,32 @@ export default function RequestsView({
     handleSendFeedback(caseItem);
   };
 
+  const handleFormRowClick = (form) => {
+    if (form.status !== "submitted") return;
+    const phone = form.requester_phone;
+    const matchingCases = cases
+      .filter((c) => c.requester_phone === phone)
+      .sort((a, b) => {
+        const aTime = a.opened_at?.toDate ? a.opened_at.toDate().getTime() : new Date(a.opened_at || 0).getTime();
+        const bTime = b.opened_at?.toDate ? b.opened_at.toDate().getTime() : new Date(b.opened_at || 0).getTime();
+        return bTime - aTime;
+      });
+    const match = matchingCases[0];
+    if (!match) return;
+    setActiveFilter("all");
+    openDrawer(match);
+    setTimeout(() => {
+      casesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  };
+
   const selectedUser = sortedVolunteers.find((u) => u.id === selectedVolunteerId);
   const drawerFeedback = drawerCase ? feedbackByCase[drawerCase.id] : null;
   const drawerAssignedNames = drawerCase ? getAssignedNames(drawerCase) : null;
 
-  // Equipment labels
-  const equipmentLabels = {
-    protective_suit: t.protectiveSuit,
-    bee_box: t.beeBox,
-    ladder: t.ladder,
-    smoker: t.smoker,
-  };
-
   const canSeeReports =
-  currentUserRole === USER_ROLES.ADMIN ||
-  currentUserRole === USER_ROLES.COORDINATOR;
+    currentUserRole === USER_ROLES.ADMIN ||
+    currentUserRole === USER_ROLES.COORDINATOR;
 
   return (
     <div style={styles.page} className="requests-page">
@@ -452,7 +438,6 @@ export default function RequestsView({
       {/* ── MAIN ── */}
       <main style={styles.main} className="requests-main" dir={dir}>
 
-        {/* Welcome */}
         <div style={{ ...styles.welcomeBanner, textAlign: isHe ? "right" : "left" }}>
           <span style={styles.welcomeText}>{t.welcome}, <strong>{currentUserName}</strong></span>
         </div>
@@ -462,7 +447,6 @@ export default function RequestsView({
         {/* ── TOP ROW ── */}
         <div style={{ ...styles.topRow, flexDirection: isHe ? "row-reverse" : "row" }} className="requests-top-row">
 
-          {/* Send Form */}
           <div style={styles.topLeft} className="requests-top-left">
             <section style={styles.card} className="requests-card">
               <h2 style={{ ...styles.sectionTitle, textAlign: isHe ? "right" : "left" }}>{t.sendFormTitle}</h2>
@@ -510,13 +494,24 @@ export default function RequestsView({
                     <tbody>
                       {sortedForms.map((form) => {
                         const sc = formStatusColor(form.status);
+                        const isReturned = form.status === "submitted";
                         return (
-                          <tr key={form.id} style={styles.tr}>
+                          <tr
+                            key={form.id}
+                            style={{ ...styles.tr, cursor: isReturned ? "pointer" : "default" }}
+                            onClick={() => isReturned && handleFormRowClick(form)}
+                            title={isReturned ? (isHe ? "לחץ לפתיחת המקרה" : "Click to open case") : undefined}
+                          >
                             <td style={styles.td}>{cleanDate(form.sent_at)}</td>
                             <td style={styles.td}>{form.requester_phone || "—"}</td>
                             {isAdmin && <td style={styles.td}>{coordinatorNames[form.coordinator_id] || "—"}</td>}
                             <td style={styles.td}>
-                              <span style={{ ...styles.statusPill, background: sc.bg, color: sc.color }}>
+                              <span style={{
+                                ...styles.statusPill,
+                                background: sc.bg,
+                                color: sc.color,
+                                ...(isReturned ? { textDecoration: "underline", textDecorationStyle: "dotted" } : {}),
+                              }}>
                                 {formStatusLabel(form.status, t)}
                               </span>
                             </td>
@@ -532,28 +527,26 @@ export default function RequestsView({
         </div>
 
         {/* ── CASES ── */}
-        <section style={styles.card} className="requests-card">
+        <section ref={casesRef} style={styles.card} className="requests-card">
           <h2 style={{ ...styles.sectionTitle, textAlign: isHe ? "right" : "left" }}>{t.casesTitle}</h2>
 
-          {/* Filter pills */}
           <div style={{ ...styles.filters, flexDirection: isHe ? "row-reverse" : "row", justifyContent: isHe ? "flex-end" : "flex-start" }} className="requests-filters">
-            
-{(isHe
-  ? [
-      { key: "all", label: t.all, count: cases.length },
-      { key: "open", label: t.open, count: openCaseCount },
-      { key: "assigned", label: t.assigned, count: assignedCaseCount },
-      { key: "closed", label: t.closed, count: closedCases.length },
-      { key: "my", label: t.myCases, count: myCasesCount },
-    ].reverse()
-  : [
-      { key: "all", label: t.all, count: cases.length },
-      { key: "open", label: t.open, count: openCaseCount },
-      { key: "assigned", label: t.assigned, count: assignedCaseCount },
-      { key: "closed", label: t.closed, count: closedCases.length },
-      { key: "my", label: t.myCases, count: myCasesCount },
-    ]
-).map(({ key, label, count }) => (
+            {(isHe
+              ? [
+                  { key: "all", label: t.all, count: cases.length },
+                  { key: "open", label: t.open, count: openCaseCount },
+                  { key: "assigned", label: t.assigned, count: assignedCaseCount },
+                  { key: "closed", label: t.closed, count: closedCases.length },
+                  { key: "my", label: t.myCases, count: myCasesCount },
+                ].reverse()
+              : [
+                  { key: "all", label: t.all, count: cases.length },
+                  { key: "open", label: t.open, count: openCaseCount },
+                  { key: "assigned", label: t.assigned, count: assignedCaseCount },
+                  { key: "closed", label: t.closed, count: closedCases.length },
+                  { key: "my", label: t.myCases, count: myCasesCount },
+                ]
+            ).map(({ key, label, count }) => (
               <button key={key} onClick={() => setActiveFilter(key)}
                 style={{ ...styles.filterButton, ...(activeFilter === key ? styles.filterActive : {}) }}>
                 {label}
@@ -562,7 +555,6 @@ export default function RequestsView({
             ))}
           </div>
 
-          {/* Closed tab note */}
           {activeFilter === "closed" && (
             <div style={{ ...styles.closedNote, textAlign: isHe ? "right" : "left" }}>
               ℹ️ {t.closedTabNote}
@@ -578,7 +570,6 @@ export default function RequestsView({
             <div style={styles.emptyState}>{t.noMatch}</div>
           ) : (
             <div style={styles.casesList}>
-              {/* Desktop header */}
               <div style={styles.desktopHeader} className="requests-desktop-header" dir={dir}>
                 <span onClick={() => handleSortClick("name")} style={styles.thCell}>
                   {t.name} {sortColumn === "name" ? (sortDirection === "asc" ? "↑" : "↓") : <span style={styles.sortHint}>↕</span>}
@@ -592,19 +583,14 @@ export default function RequestsView({
                 <span style={{ ...styles.thCell, cursor: "default" }}>{t.statusCol}</span>
                 <span style={{ ...styles.thCell, cursor: "default" }}>{t.assignedTo}</span>
                 <span style={{ ...styles.thCell, cursor: "default" }}>{t.feedback}</span>
-              
               </div>
 
-              {activeCases.map((caseItem, rowIndex) => {
+              {activeCases.map((caseItem) => {
                 const assignedNames = getAssignedNames(caseItem);
                 const feedbackSubmitted = caseItem.feedback_submitted;
                 const feedbackCopied = localFeedbackCopied[caseItem.id] || !!caseItem.feedback_token;
-
                 return (
-                  <div key={caseItem.id}
-                    style={{ ...styles.caseRow, background: "#fff" }}
-                    dir={dir}
-                  >
+                  <div key={caseItem.id} style={{ ...styles.caseRow, background: "#fff" }} dir={dir}>
                     <div className="case-row-trigger" onClick={() => openDrawer(caseItem)} style={styles.rowTrigger}>
                       <span className="col-name" style={styles.colName}>
                         {caseItem.requester_first_name} {caseItem.requester_last_name}
@@ -630,7 +616,6 @@ export default function RequestsView({
                             style={styles.feedbackCopyBtn}>{t.copyFeedbackLink}</button>
                         )}
                       </span>
-                      
                     </div>
                   </div>
                 );
@@ -646,7 +631,6 @@ export default function RequestsView({
           <div className="drawer-overlay" onClick={closeDrawer} />
           <div className={`case-drawer ${isHe ? "drawer-left" : "drawer-right"}`} dir={dir}>
 
-            {/* Drawer header */}
             <div style={styles.drawerHeader}>
               <div>
                 <h2 style={styles.drawerTitle}>
@@ -659,7 +643,6 @@ export default function RequestsView({
 
             <div style={styles.drawerBody}>
 
-              {/* ── Case details ── */}
               <div style={styles.drawerSection}>
                 <p style={styles.drawerSectionLabel}>{t.caseDetails}</p>
                 <div style={styles.detailGrid}>
@@ -676,7 +659,7 @@ export default function RequestsView({
                     <span style={styles.detailValue}>{drawerCase.street || "—"} {drawerCase.house_number || ""}</span>
                   </div>
                   <div style={styles.detailItem}>
-                    <span style={styles.detailLabel}>{t.openedCol.replace(" ↕","")}</span>
+                    <span style={styles.detailLabel}>{t.openedCol.replace(" ↕", "")}</span>
                     <span style={styles.detailValue}>{formatDate(drawerCase.opened_at)}</span>
                   </div>
                   <div style={styles.detailItem}>
@@ -706,10 +689,8 @@ export default function RequestsView({
                 </div>
               </div>
 
-              {/* ── OPEN/ASSIGNED: Complexity + Assign ── */}
               {drawerCase.status !== "closed" && (
                 <>
-                  {/* Complexity */}
                   <div style={styles.drawerSection}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
                       <div>
@@ -727,19 +708,15 @@ export default function RequestsView({
                           <option value="very_complex">{t.veryComplex}</option>
                         </select>
                       </div>
-
                     </div>
                   </div>
 
-                  {/* Assign volunteer */}
                   <div style={styles.drawerSection}>
                     <p style={styles.drawerSectionLabel}>
                       {drawerCase.status === "assigned" ? t.reassignVolunteer : t.assignVolunteer}
                     </p>
 
-                    {/* Search + list + map side by side */}
                     <div style={styles.assignGrid} className="drawer-assign-grid">
-                      {/* Left: volunteer list */}
                       <div style={styles.assignListCol}>
                         <input
                           placeholder={t.searchByName}
@@ -760,7 +737,7 @@ export default function RequestsView({
                                 style={{ ...styles.volunteerBtn, ...(isSelected ? styles.volunteerBtnActive : {}) }}>
                                 <div style={styles.volunteerBtnTop}>
                                   <strong style={{ fontSize: "13px" }}>{user.full_name || user.email}</strong>
-                                  {score != null && <span style={styles.scoreBadge}>{t.score} {score}</span>}
+                                  {score != null && <span style={styles.scoreBadge}>{t.score} {score ?? "--"} / 74</span>}
                                 </div>
                                 <span style={styles.volunteerBtnMeta}>{user.phone || t.noPhone} · {user.city || t.noCity}</span>
                               </button>
@@ -769,7 +746,6 @@ export default function RequestsView({
                         </div>
                       </div>
 
-                      {/* Right: map */}
                       <div style={styles.assignMapCol} className="drawer-map-col">
                         <div style={styles.mapBox}>
                           <div style={styles.mapHeader}>
@@ -787,7 +763,6 @@ export default function RequestsView({
                       </div>
                     </div>
 
-                    {/* Selected volunteer expanded card */}
                     {selectedUser && (
                       <div style={styles.volunteerCard}>
                         <div style={styles.volunteerCardHeader}>
@@ -804,25 +779,10 @@ export default function RequestsView({
                           <div style={styles.vcItem}><span style={styles.vcLabel}>{t.occupation}</span><span>{selectedUser.occupation || "—"}</span></div>
                           <div style={styles.vcItem}><span style={styles.vcLabel}>{t.experience}</span><span>{translateExperience(selectedUser.experience_level, t)}</span></div>
                           <div style={styles.vcItem}><span style={styles.vcLabel}>{t.heightLicense}</span><span>{selectedUser.licenses?.height_work ? t.yes : t.no}</span></div>
-                          <div style={styles.vcItem}>
-                            <span style={styles.vcLabel}>{t.totalRescues}</span>
-                            <span>{statsLoading ? t.loading : (volunteerStats?.completedRescues ?? "—")}</span>
-                          </div>
-                        </div>
-                        {/* Equipment */}
-                        <div style={{ marginTop: "8px" }}>
-                          <span style={styles.vcLabel}>{t.equipment2}: </span>
-                          <span style={{ fontSize: "13px", color: "#3d332b" }}>
-                            {Object.entries(selectedUser.equipment || {})
-                              .filter(([, v]) => v)
-                              .map(([k]) => equipmentLabels[k] || k)
-                              .join(", ") || "—"}
-                          </span>
                         </div>
                       </div>
                     )}
 
-                    {/* Equipment + notes + assign button */}
                     {selectedVolunteerId && (
                       <div style={styles.assignFooter}>
                         <div>
@@ -865,17 +825,12 @@ export default function RequestsView({
                             setAssignClickToken((c) => c + 1);
                           }}
                         >
-                          {assigning
-                            ? t.assigning
-                            : drawerCase.status === "assigned"
-                            ? t.reassignBtn
-                            : t.assignBtn}
+                          {assigning ? t.assigning : drawerCase.status === "assigned" ? t.reassignBtn : t.assignBtn}
                         </button>
                       </div>
                     )}
                   </div>
 
-                  {/* Close case */}
                   <div style={styles.drawerSection}>
                     {closingCase.caseId === drawerCase.id ? (
                       <div style={styles.closePicker}>
@@ -891,7 +846,7 @@ export default function RequestsView({
                           style={styles.textarea} />
                         <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
                           <button onClick={cancelCloseCase} style={styles.secondaryBtn}>{t.cancel}</button>
-                          <button onClick={async () => { await confirmCloseCase(); setDrawerCase(null); document.body.style.overflow = ""; }} style={styles.dangerBtn}>{t.confirmClose}</button>
+                          <button onClick={async () => { await confirmCloseCase(); closeDrawer(); }} style={styles.dangerBtn}>{t.confirmClose}</button>
                         </div>
                       </div>
                     ) : (
@@ -901,7 +856,6 @@ export default function RequestsView({
                 </>
               )}
 
-              {/* ── CLOSED case ── */}
               {drawerCase.status === "closed" && (
                 <>
                   <div style={styles.drawerSection}>
@@ -957,9 +911,7 @@ export default function RequestsView({
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                         <p style={{ margin: 0, fontSize: "13px", color: "#6b625c" }}>{t.feedbackNotYet}</p>
                         <p style={{ margin: 0, fontSize: "12px", color: "#9a8f86" }}>{t.closedFeedbackNote}</p>
-                        <button
-                          onClick={() => handleSendFeedbackOptimistic(drawerCase)}
-                          style={styles.secondaryBtn}>
+                        <button onClick={() => handleSendFeedbackOptimistic(drawerCase)} style={styles.secondaryBtn}>
                           {localFeedbackCopied[drawerCase.id] || drawerCase.feedback_token ? t.copyAgain : t.copyFeedbackLink}
                         </button>
                       </div>
@@ -979,7 +931,6 @@ export default function RequestsView({
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = {
   page: { minHeight: "100vh", width: "100%", display: "grid", gridTemplateColumns: "200px 1fr", background: "#fffdf8", fontFamily: "Arial, sans-serif" },
   sidebar: { height: "100vh", position: "sticky", top: 0, padding: "28px 20px", background: "#fff8ef", borderRight: "1px solid #f0e5d8", boxSizing: "border-box", display: "flex", flexDirection: "column" },
@@ -1025,11 +976,11 @@ const styles = {
   searchInput: { width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: "12px", border: "1px solid #eadfd2", background: "#fffdf8", fontSize: "14px", color: "#2b160c" },
   emptyState: { padding: "24px", textAlign: "center", background: "#fffdf8", color: "#6b625c", fontSize: "14px" },
   casesList: { background: "white", border: "1px solid #eee2d8", borderRadius: "16px", overflow: "hidden" },
-  desktopHeader: { display: "grid",  gridTemplateColumns: "2fr 1.2fr 1.6fr 1.5fr 1.5fr 1.5fr", alignItems: "center", padding: "12px 16px", fontWeight: "900", background:  "#fff3e6", borderBottom: "1px solid #eadfd2", fontSize: "12px", color: "#51443a" },
+  desktopHeader: { display: "grid", gridTemplateColumns: "2fr 1.2fr 1.6fr 1.5fr 1.5fr 1.5fr", alignItems: "center", padding: "12px 16px", fontWeight: "900", background: "#fff3e6", borderBottom: "1px solid #eadfd2", fontSize: "12px", color: "#51443a" },
   thCell: { textAlign: "center", cursor: "pointer", userSelect: "none" },
   sortHint: { opacity: 0.35, fontSize: "11px" },
   caseRow: { borderBottom: "1px solid #d6ccc0" },
-  rowTrigger: { width: "100%", border: "none", background: "transparent", cursor: "pointer", padding: "14px 16px", display: "grid",gridTemplateColumns: "2fr 1.2fr 1.6fr 1.5fr 1.5fr 1.5fr", alignItems: "center", gap: "8px", textAlign: "inherit" },
+  rowTrigger: { width: "100%", border: "none", background: "transparent", cursor: "pointer", padding: "14px 16px", display: "grid", gridTemplateColumns: "2fr 1.2fr 1.6fr 1.5fr 1.5fr 1.5fr", alignItems: "center", gap: "8px", textAlign: "inherit" },
   colName: { color: "#2b160c", fontWeight: "700", textTransform: "capitalize", fontSize: "14px", textAlign: "center" },
   colMeta: { color: "#2b160c", fontSize: "13px", textAlign: "center" },
   colAssigned: { color: "#2b160c", fontSize: "12px", textAlign: "center", fontWeight: "600" },
@@ -1040,7 +991,6 @@ const styles = {
   feedbackReceived: { fontSize: "12px", fontWeight: "800", color: "#16803d" },
   feedbackSentBtn: { border: "none", background: "transparent", fontSize: "12px", fontWeight: "800", color: "#16803d", cursor: "pointer", padding: "0" },
   feedbackCopyBtn: { border: "none", background: "transparent", fontSize: "12px", fontWeight: "700", color: "#d95f00", cursor: "pointer", padding: "0", textDecoration: "underline" },
-  // Drawer
   drawerHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "20px 22px 16px", borderBottom: "1px solid #f0e5d8", gap: "12px" },
   drawerTitle: { margin: "0 0 8px", color: "#2b160c", fontSize: "20px", fontWeight: "900", textTransform: "capitalize" },
   drawerClose: { border: "none", background: "#f0e5d8", color: "#6a2300", borderRadius: "50%", width: "32px", height: "32px", fontSize: "20px", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" },
@@ -1059,12 +1009,7 @@ const styles = {
   mapBox: { border: "1px solid #d6ead8", borderRadius: "12px", overflow: "hidden", height: "100%", minHeight: "370px", display: "flex", flexDirection: "column" },
   mapHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#f8fcf8", borderBottom: "1px solid #e6efe7", flexShrink: 0 },
   mapLegend: { fontSize: "11px", color: "#6b7280" },
-volunteerList: {
-  overflowY: "auto",
-  border: "1px solid #eadfd2",
-  borderRadius: "12px",
-maxHeight: window.innerWidth <= 600 ? "190px" : "320px"
-},
+  volunteerList: { overflowY: "auto", border: "1px solid #eadfd2", borderRadius: "12px", maxHeight: window.innerWidth <= 600 ? "190px" : "320px" },
   volunteerBtn: { width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderBottom: "1px solid #f1ebe5", background: "white", cursor: "pointer", display: "flex", flexDirection: "column", gap: "3px", color: "#2b160c" },
   volunteerBtnActive: { background: "#fff1df" },
   volunteerBtnTop: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" },
@@ -1088,6 +1033,4 @@ maxHeight: window.innerWidth <= 600 ? "190px" : "320px"
   label: { display: "block", margin: "0 0 5px", color: "#2b160c", fontWeight: "800", fontSize: "13px" },
   secondaryBtn: { border: "1px solid #d9c2b8", background: "white", color: "#6a2300", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: "800", cursor: "pointer" },
   dangerBtn: { border: "1px solid #e0c4b8", background: "white", color: "#7a2e1a", borderRadius: "8px", padding: "9px 16px", fontWeight: "800", cursor: "pointer", fontSize: "13px" },
-
-  
 };

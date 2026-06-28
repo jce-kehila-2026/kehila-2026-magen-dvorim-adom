@@ -8,7 +8,8 @@ import {
   where,
   doc,
   updateDoc,
-  serverTimestamp
+  serverTimestamp,
+  onSnapshot 
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { CaseSchema } from "./caseSchema";
@@ -412,5 +413,22 @@ export async function attachFeedbackToken(caseId, token) {
     feedback_submitted: false,
     feedback_submitted_at: null,
     feedback_requested_at: Timestamp.now(),
+  });
+}
+
+export function subscribeToAllCases(callback) {
+  return onSnapshot(collection(db, "cases"), (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  });
+}
+
+export function subscribeToCasesForCoordinator(coordinatorId, callback) {
+  if (!coordinatorId) { callback([]); return () => {}; }
+  return onSnapshot(collection(db, "cases"), (snap) => {
+    callback(
+      snap.docs
+        .filter((d) => d.data()?.coordinator_id === coordinatorId)
+        .map((d) => ({ id: d.id, ...d.data() }))
+    );
   });
 }

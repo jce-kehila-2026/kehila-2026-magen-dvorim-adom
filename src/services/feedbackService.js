@@ -6,7 +6,8 @@ import {
   where,
   doc,
   updateDoc,
-  Timestamp
+  Timestamp,
+  onSnapshot
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { FeedbackSchema } from "./feedbackSchema";
@@ -113,4 +114,18 @@ export async function submitFeedback({ token, data }) {
   });
 
   return { success: true };
+}
+
+export function subscribeToFeedbackForCases(caseIds, callback) {
+  if (!caseIds.length) { callback({}); return () => {}; }
+  return onSnapshot(collection(db, "feedback"), (snap) => {
+    const map = {};
+    snap.docs.forEach((d) => {
+      const data = d.data();
+      if (data && caseIds.includes(data.case_id)) {
+        map[data.case_id] = data;
+      }
+    });
+    callback(map);
+  });
 }
