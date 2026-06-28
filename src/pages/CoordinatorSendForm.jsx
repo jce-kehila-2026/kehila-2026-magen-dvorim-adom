@@ -3,7 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { createIntakeForm, isValidPhone } from "../services/intakeFormService";
 import { useLanguage } from "../contexts/LanguageContext";
 
-function CoordinatorSendForm() {
+function CoordinatorSendForm({ onFormCreated }) {
   const { userProfile } = useAuth();
 
   const [phone, setPhone] = useState("");
@@ -39,7 +39,7 @@ function CoordinatorSendForm() {
     setMsg("");
   }
 
-  async function handleCreate({ onFormCreated }) {
+  async function handleCreate() {
     if (!validatePhone(phone)) return;
     setLoading(true);
     setMsg("");

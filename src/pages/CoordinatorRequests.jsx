@@ -84,12 +84,22 @@ function CoordinatorRequests() {
 
   const PRESET_EQUIPMENT = ["ladder", "net", "bee house"];
 
-  useEffect(() => {
-    if (!currentUserId) return;
-    loadUsers();
-    loadCases();
+// AFTER
+useEffect(() => {
+  if (!currentUserId) return;
+  loadUsers();
+  loadCases();
+  loadIntakeForms();
+
+  // Poll every 30s to pick up status changes (form sent→returned,
+  // feedback not-yet→received) without a manual refresh.
+  const pollInterval = setInterval(() => {
     loadIntakeForms();
-  }, [currentUserId, currentUserRole]);
+    loadCases(); // also refreshes feedbackByCase
+  }, 30000);
+
+  return () => clearInterval(pollInterval);
+}, [currentUserId, currentUserRole]);
 
   useEffect(() => {
     if (!modalState.open) return;

@@ -7,7 +7,7 @@ import CoordinatorSendForm from "../../pages/CoordinatorSendForm";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { USER_ROLES } from "../../services/userSchema";
-import { getVolunteerAssignmentStats } from "../../services/assignmentService";
+
 
 // ─── Translations ─────────────────────────────────────────────────────────────
 const T = {
@@ -195,6 +195,7 @@ function translateExperience(level, t) {
   return level || "—";
 }
 
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function RequestsView({
   userProfile,
@@ -263,8 +264,7 @@ export default function RequestsView({
   const [localFeedbackCopied, setLocalFeedbackCopied] = useState({});
   const [drawerCase, setDrawerCase] = useState(null);
   const [selectedVolunteerId, setSelectedVolunteerId] = useState("");
-  const [volunteerStats, setVolunteerStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(false);
+
   // Counts assign-button clicks so the effect below fires exactly once
   // per click, using whichever handleAssignFromModal closure is current
   // at the time React actually commits the updated modalState — instead
@@ -278,7 +278,7 @@ export default function RequestsView({
   const isCoordinator = currentUserRole === USER_ROLES?.COORDINATOR || currentUserRole === "coordinator";
 
   const goTo = (path) => { setMobileMenuOpen(false); navigate(path); };
-
+const casesRef = useRef(null);
   // Fires the actual assignment only after React has committed the
   // modalState update from the click below, so handleAssignFromModal
   // (which reads modalState fresh in the container) always sees the
@@ -290,15 +290,7 @@ export default function RequestsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignClickToken]);
 
-  // Load volunteer stats when one is selected in the drawer
-  useEffect(() => {
-    if (!selectedVolunteerId) { setVolunteerStats(null); return; }
-    setStatsLoading(true);
-    getVolunteerAssignmentStats(selectedVolunteerId)
-      .then(setVolunteerStats)
-      .catch(() => setVolunteerStats(null))
-      .finally(() => setStatsLoading(false));
-  }, [selectedVolunteerId]);
+
 
   // Close drawer on Escape
   useEffect(() => {
@@ -357,7 +349,6 @@ export default function RequestsView({
   const openDrawer = (caseItem) => {
     setDrawerCase(caseItem);
     setSelectedVolunteerId("");
-    setVolunteerStats(null);
     handleGetRecommendations(caseItem);
     document.body.style.overflow = "hidden";
   };
@@ -365,7 +356,7 @@ export default function RequestsView({
   const closeDrawer = () => {
     setDrawerCase(null);
     setSelectedVolunteerId("");
-    setVolunteerStats(null);
+
     cancelCloseCase();
     document.body.style.overflow = "";
   };
@@ -399,6 +390,30 @@ export default function RequestsView({
     setLocalFeedbackCopied((p) => ({ ...p, [caseItem.id]: true }));
     handleSendFeedback(caseItem);
   };
+  const handleFormRowClick = (form) => {
+  if (form.status !== "submitted") return;
+
+  // Find the most recent case matching this phone number
+  const phone = form.requester_phone;
+  const matchingCases = cases
+    .filter((c) => c.requester_phone === phone)
+    .sort((a, b) => {
+      const aTime = a.opened_at?.toDate ? a.opened_at.toDate().getTime() : new Date(a.opened_at || 0).getTime();
+      const bTime = b.opened_at?.toDate ? b.opened_at.toDate().getTime() : new Date(b.opened_at || 0).getTime();
+      return bTime - aTime;
+    });
+
+  const match = matchingCases[0];
+  if (!match) return;
+
+  // Switch filter to all so the case is visible, open its drawer,
+  // then scroll the cases section into view
+  setActiveFilter("all");
+  openDrawer(match);
+  setTimeout(() => {
+    casesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 50);
+};
 
   const selectedUser = sortedVolunteers.find((u) => u.id === selectedVolunteerId);
   const drawerFeedback = drawerCase ? feedbackByCase[drawerCase.id] : null;
@@ -510,18 +525,33 @@ export default function RequestsView({
                     <tbody>
                       {sortedForms.map((form) => {
                         const sc = formStatusColor(form.status);
-                        return (
-                          <tr key={form.id} style={styles.tr}>
-                            <td style={styles.td}>{cleanDate(form.sent_at)}</td>
-                            <td style={styles.td}>{form.requester_phone || "—"}</td>
-                            {isAdmin && <td style={styles.td}>{coordinatorNames[form.coordinator_id] || "—"}</td>}
-                            <td style={styles.td}>
-                              <span style={{ ...styles.statusPill, background: sc.bg, color: sc.color }}>
-                                {formStatusLabel(form.status, t)}
-                              </span>
-                            </td>
-                          </tr>
-                        );
+                          const isReturned = form.status === "submitted";
+                          return (
+                            <tr
+                              key={form.id}
+                              style={{
+                                ...styles.tr,
+                                cursor: isReturned ? "pointer" : "default",
+                              }}
+                              onClick={() => isReturned && handleFormRowClick(form)}
+                              title={isReturned ? (isHe ? "לחץ לפתיחת המקרה" : "Click to open case") : undefined}
+                            >
+                              <td style={styles.td}>{cleanDate(form.sent_at)}</td>
+                              <td style={styles.td}>{form.requester_phone || "—"}</td>
+                              {isAdmin && <td style={styles.td}>{coordinatorNames[form.coordinator_id] || "—"}</td>}
+                              <td style={styles.td}>
+                                <span style={{
+                                  ...styles.statusPill,
+                                  background: sc.bg,
+                                  color: sc.color,
+                                  ...(isReturned ? { textDecoration: "underline", textDecorationStyle: "dotted" } : {}),
+                                }}>
+                                  {formStatusLabel(form.status, t)}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        
                       })}
                     </tbody>
                   </table>
@@ -532,7 +562,7 @@ export default function RequestsView({
         </div>
 
         {/* ── CASES ── */}
-        <section style={styles.card} className="requests-card">
+        <section ref={casesRef} style={styles.card} className="requests-card">
           <h2 style={{ ...styles.sectionTitle, textAlign: isHe ? "right" : "left" }}>{t.casesTitle}</h2>
 
           {/* Filter pills */}
@@ -798,27 +828,14 @@ export default function RequestsView({
                             </span>
                           </div>
                         </div>
-                        <div style={styles.volunteerCardGrid}>
-                          <div style={styles.vcItem}><span style={styles.vcLabel}>{t.phone}</span><span>{selectedUser.phone || "—"}</span></div>
-                          <div style={styles.vcItem}><span style={styles.vcLabel}>{t.city}</span><span>{selectedUser.city || "—"}</span></div>
-                          <div style={styles.vcItem}><span style={styles.vcLabel}>{t.occupation}</span><span>{selectedUser.occupation || "—"}</span></div>
-                          <div style={styles.vcItem}><span style={styles.vcLabel}>{t.experience}</span><span>{translateExperience(selectedUser.experience_level, t)}</span></div>
-                          <div style={styles.vcItem}><span style={styles.vcLabel}>{t.heightLicense}</span><span>{selectedUser.licenses?.height_work ? t.yes : t.no}</span></div>
-                          <div style={styles.vcItem}>
-                            <span style={styles.vcLabel}>{t.totalRescues}</span>
-                            <span>{statsLoading ? t.loading : (volunteerStats?.completedRescues ?? "—")}</span>
-                          </div>
-                        </div>
-                        {/* Equipment */}
-                        <div style={{ marginTop: "8px" }}>
-                          <span style={styles.vcLabel}>{t.equipment2}: </span>
-                          <span style={{ fontSize: "13px", color: "#3d332b" }}>
-                            {Object.entries(selectedUser.equipment || {})
-                              .filter(([, v]) => v)
-                              .map(([k]) => equipmentLabels[k] || k)
-                              .join(", ") || "—"}
-                          </span>
-                        </div>
+
+<div style={styles.volunteerCardGrid}>
+  <div style={styles.vcItem}><span style={styles.vcLabel}>{t.phone}</span><span>{selectedUser.phone || "—"}</span></div>
+  <div style={styles.vcItem}><span style={styles.vcLabel}>{t.city}</span><span>{selectedUser.city || "—"}</span></div>
+  <div style={styles.vcItem}><span style={styles.vcLabel}>{t.occupation}</span><span>{selectedUser.occupation || "—"}</span></div>
+  <div style={styles.vcItem}><span style={styles.vcLabel}>{t.experience}</span><span>{translateExperience(selectedUser.experience_level, t)}</span></div>
+  <div style={styles.vcItem}><span style={styles.vcLabel}>{t.heightLicense}</span><span>{selectedUser.licenses?.height_work ? t.yes : t.no}</span></div>
+</div>
                       </div>
                     )}
 
