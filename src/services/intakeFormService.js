@@ -112,43 +112,43 @@ export async function getAllIntakeForms() {
  * Subscribe to all intake forms (admin).
  * Returns an unsubscribe function.
  */
-export function subscribeToAllIntakeForms(callback) {
-  const q = collection(db, "intakeForms");
 
-  return onSnapshot(q, async (snap) => {
-    const forms = await Promise.all(
-      snap.docs.map(async (docItem) => {
-        const updatedData = await markExpiredIfNeeded(docItem);
-        return { id: docItem.id, ...updatedData };
-      })
-    );
-    callback(forms);
+
+function computeStatus(docItem) {
+  const data = docItem.data();
+  // If already submitted or expired in DB, trust it
+  if (data.status === "submitted" || data.status === "expired") {
+    return { id: docItem.id, ...data };
+  }
+  // For "sent" forms, check expiry client-side without writing
+  if (data.status === "sent") {
+    const expires = data.expires_at?.toDate
+      ? data.expires_at.toDate()
+      : new Date(data.expires_at);
+    if (expires < new Date()) {
+      return { id: docItem.id, ...data, status: "expired" };
+    }
+  }
+  return { id: docItem.id, ...data };
+}
+
+export function subscribeToAllIntakeForms(callback) {
+  return onSnapshot(collection(db, "intakeForms"), (snap) => {
+    callback(snap.docs.map(computeStatus));
   });
 }
 
-/**
- * Subscribe to intake forms sent by a specific coordinator.
- * Returns an unsubscribe function.
- */
 export function subscribeToCoordinatorIntakeForms(coordinator_id, callback) {
   if (!coordinator_id) {
     callback([]);
     return () => {};
   }
-
   const q = query(
     collection(db, "intakeForms"),
     where("coordinator_id", "==", coordinator_id)
   );
-
-  return onSnapshot(q, async (snap) => {
-    const forms = await Promise.all(
-      snap.docs.map(async (docItem) => {
-        const updatedData = await markExpiredIfNeeded(docItem);
-        return { id: docItem.id, ...updatedData };
-      })
-    );
-    callback(forms);
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(computeStatus));
   });
 }
 

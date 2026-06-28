@@ -3,15 +3,15 @@ import RequestsView from "../components/views/RequestsView";
 import { recommendVolunteersForCase } from "../services/recommendationService";
 import { logoutUser } from "../services/authService";
 import {
-  getCasesForCoordinatorById,
-  getAllCases,
   updateCaseStatus,
   updateCaseComplexity,
   updateCaseCoordinator,
   attachFeedbackToken,
+  subscribeToAllCases,
+  subscribeToCasesForCoordinator,
 } from "../services/caseService";
-import { getFeedbackByCaseIds } from "../services/feedbackService";
-import { useEffect, useState } from "react";
+import { subscribeToFeedbackForCases } from "../services/feedbackService";
+import { useEffect, useRef, useState } from "react";
 import {
   getAssignableUsers,
   getAssignmentsByCaseIds,
@@ -20,8 +20,8 @@ import {
 } from "../services/assignmentService";
 import { generateToken } from "../utils/generateToken";
 import {
-  getAllIntakeForms,
-  getIntakeFormsByCoordinator,
+  subscribeToAllIntakeForms,
+  subscribeToCoordinatorIntakeForms,
 } from "../services/intakeFormService";
 
 function CoordinatorRequests() {
@@ -38,20 +38,10 @@ function CoordinatorRequests() {
   const [sortColumn, setSortColumn] = useState("opened_at");
   const [sortDirection, setSortDirection] = useState("desc");
 
-  // Intake forms state
   const [intakeForms, setIntakeForms] = useState([]);
   const [coordinatorNames, setCoordinatorNames] = useState({});
   const [formSortDir, setFormSortDir] = useState("desc");
   const [formStatusFilter, setFormStatusFilter] = useState("all");
-
-  const handleSortClick = (column) => {
-    if (sortColumn === column) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
-    }
-  };
 
   const [detailsCase, setDetailsCase] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
@@ -74,6 +64,21 @@ function CoordinatorRequests() {
 
   const [feedbackByCase, setFeedbackByCase] = useState({});
 
+  // Keeps a ref to the current feedback unsubscribe so we can swap it
+  // out whenever the case list changes (different set of case IDs).
+  const feedbackUnsubRef = useRef(null);
+
+  const [shouldCloseDrawer, setShouldCloseDrawer] = useState(false);
+
+  const handleSortClick = (column) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
   const currentUserId = userProfile?.uid || null;
   const currentUserRole = userProfile?.role || "";
   const currentUserName =
@@ -84,45 +89,79 @@ function CoordinatorRequests() {
 
   const PRESET_EQUIPMENT = ["ladder", "net", "bee house"];
 
-// AFTER
-useEffect(() => {
-  if (!currentUserId) return;
-  loadUsers();
-  loadCases();
-  loadIntakeForms();
-
-  // Poll every 30s to pick up status changes (form sent→returned,
-  // feedback not-yet→received) without a manual refresh.
-  const pollInterval = setInterval(() => {
-    loadIntakeForms();
-    loadCases(); // also refreshes feedbackByCase
-  }, 30000);
-
-  return () => clearInterval(pollInterval);
-}, [currentUserId, currentUserRole]);
-
+  // ── Real-time: cases ──────────────────────────────────────────────────────
   useEffect(() => {
-    if (!modalState.open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [modalState.open]);
+    if (!currentUserId) return;
 
+    const unsub =
+      currentUserRole === "admin"
+        ? subscribeToAllCases(async (freshCases) => {
+            setCases(freshCases);
+            await refreshAssignmentsAndFeedback(freshCases);
+          })
+        : subscribeToCasesForCoordinator(currentUserId, async (freshCases) => {
+            setCases(freshCases);
+            await refreshAssignmentsAndFeedback(freshCases);
+          });
+
+    return () => unsub();
+  }, [currentUserId, currentUserRole]);
+
+  // ── Real-time: intake forms ───────────────────────────────────────────────
   useEffect(() => {
-  if (!users.length || !intakeForms.length) return;
+    if (!currentUserId) return;
 
-  const nameMap = {};
+    const unsub =
+      currentUserRole === "admin"
+        ? subscribeToAllIntakeForms(setIntakeForms)
+        : subscribeToCoordinatorIntakeForms(currentUserId, setIntakeForms);
 
-  users.forEach((u) => {
-    if (u.role === "coordinator" || u.role === "admin") {
-      nameMap[u.id] = u.full_name || u.email || u.id;
+    return () => unsub();
+  }, [currentUserId, currentUserRole]);
+
+  // ── Real-time: feedback (re-subscribes when case IDs change) ─────────────
+  // We manage this imperatively via a ref so we can cleanly swap the
+  // subscription whenever the case list (and therefore the set of IDs) changes,
+  // without needing feedback to be a dependency of the cases useEffect.
+  async function refreshAssignmentsAndFeedback(freshCases) {
+    const ids = (freshCases || []).map((c) => c.id);
+
+    // Refresh assignments (still a one-shot fetch — no heavy churn expected)
+    try {
+      const assignmentMap = await getAssignmentsByCaseIds(ids);
+      setAssignments(assignmentMap || {});
+    } catch (err) {
+      console.error("Failed to refresh assignments", err);
     }
-  });
 
-  setCoordinatorNames(nameMap);
-}, [users, intakeForms]);
+    // Swap feedback listener to the current set of case IDs
+    if (feedbackUnsubRef.current) feedbackUnsubRef.current();
+    feedbackUnsubRef.current = subscribeToFeedbackForCases(ids, setFeedbackByCase);
+  }
+
+  // Cleanup feedback listener on unmount
+  useEffect(() => {
+    return () => { if (feedbackUnsubRef.current) feedbackUnsubRef.current(); };
+  }, []);
+
+  // ── Coordinator name map ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!users.length) return;
+    const nameMap = {};
+    users.forEach((u) => {
+      if (u.role === "coordinator" || u.role === "admin") {
+        nameMap[u.id] = u.full_name || u.email || u.id;
+      }
+    });
+    setCoordinatorNames(nameMap);
+  }, [users, intakeForms]);
+
+  // ── One-time: users (doesn't change in real time for this use case) ───────
+  useEffect(() => {
+    if (!currentUserId) return;
+    loadUsers();
+  }, [currentUserId]);
+
   const loadUsers = async () => {
     try {
       const allUsers = await getAssignableUsers();
@@ -132,51 +171,16 @@ useEffect(() => {
     }
   };
 
-  const loadCases = async () => {
-    setError("");
-    try {
-      let data = [];
-      if (currentUserRole === "admin") {
-        data = await getAllCases();
-      } else if (currentUserRole === "coordinator") {
-        data = await getCasesForCoordinatorById(currentUserId);
-      }
-
-      setCases(data || []);
-
-      const assignmentMap = await getAssignmentsByCaseIds(
-        (data || []).map((item) => item.id)
-      );
-      setAssignments(assignmentMap || {});
-
-      const feedbackMap = await getFeedbackByCaseIds(
-        (data || []).map((item) => item.id)
-      );
-      setFeedbackByCase(feedbackMap || {});
-    } catch (err) {
-      setError(err.message || "Failed to load cases.");
-    }
-  };
-
-  const loadIntakeForms = async () => {
-    try {
-      let forms = [];
-      if (currentUserRole === "admin") {
-        forms = await getAllIntakeForms();
-      } else if (currentUserRole === "coordinator") {
-        forms = await getIntakeFormsByCoordinator(currentUserId);
-      }
-      setIntakeForms(forms || []);
-
-    } catch (err) {
-      console.error("Failed to load intake forms", err);
-    }
-  };
-
+  // refreshData is now just users + assignments (cases/forms/feedback are live)
   const refreshData = async () => {
-    await loadCases();
     await loadUsers();
-    await loadIntakeForms();
+    const ids = cases.map((c) => c.id);
+    try {
+      const assignmentMap = await getAssignmentsByCaseIds(ids);
+      setAssignments(assignmentMap || {});
+    } catch (err) {
+      console.error("Failed to refresh assignments", err);
+    }
   };
 
   const formatDate = (timestamp) => {
@@ -194,10 +198,7 @@ useEffect(() => {
   const FINISHING_STATUSES = [
     { value: "evacuated_by_volunteer", label: "Evacuated by a volunteer" },
     { value: "sent_to_chofesh_farm", label: "Sent to Chofesh Farm" },
-    {
-      value: "remains_in_place_without_treatment",
-      label: "Remains in place without treatment",
-    },
+    { value: "remains_in_place_without_treatment", label: "Remains in place without treatment" },
     { value: "cancelled", label: "Cancelled" },
   ];
 
@@ -234,9 +235,7 @@ useEffect(() => {
   const openCases =
     currentUserRole === "admin"
       ? activeCases.filter((c) => c.status === "open")
-      : activeCases.filter(
-          (c) => c.status === "open" && isMyCoordinatorCase(c)
-        );
+      : activeCases.filter((c) => c.status === "open" && isMyCoordinatorCase(c));
 
   const myCases = activeCases.filter((c) =>
     (assignments[c.id] || []).some((a) => a.user_id === currentUserId)
@@ -245,46 +244,33 @@ useEffect(() => {
   const assignedCases =
     currentUserRole === "admin"
       ? activeCases.filter((c) => hasVolunteerAssigned(c))
-      : activeCases.filter(
-          (c) => isMyCoordinatorCase(c) && hasVolunteerAssigned(c)
-        );
+      : activeCases.filter((c) => isMyCoordinatorCase(c) && hasVolunteerAssigned(c));
 
   const openCaseCount = openCases.length;
   const myCasesCount = myCases.length;
   const assignedCaseCount = assignedCases.length;
 
   const getCaseTime = (caseItem) => {
-    const value =
-      caseItem.opened_at ||
-      caseItem.created_at ||
-      caseItem.first_seen ||
-      caseItem.closed_at;
+    const value = caseItem.opened_at || caseItem.created_at || caseItem.first_seen || caseItem.closed_at;
     if (!value) return 0;
     const date = value.toDate ? value.toDate() : new Date(value);
     return date.getTime();
   };
 
   const baseCases =
-    activeFilter === "all"
-      ? cases
-      : activeFilter === "open"
-      ? openCases
-      : activeFilter === "assigned"
-      ? assignedCases
-      : activeFilter === "my"
-      ? myCases
-      : activeFilter === "closed"
-      ? closedCases
-      : activeCases;
+    activeFilter === "all" ? cases
+    : activeFilter === "open" ? openCases
+    : activeFilter === "assigned" ? assignedCases
+    : activeFilter === "my" ? myCases
+    : activeFilter === "closed" ? closedCases
+    : activeCases;
 
   const visibleCases = baseCases
     .filter((caseItem) => {
       const search = caseSearch.trim().toLowerCase();
       if (!search) return true;
       return (
-        `${caseItem.requester_first_name || ""} ${caseItem.requester_last_name || ""}`
-          .toLowerCase()
-          .includes(search) ||
+        `${caseItem.requester_first_name || ""} ${caseItem.requester_last_name || ""}`.toLowerCase().includes(search) ||
         (caseItem.requester_phone || "").toLowerCase().includes(search) ||
         (caseItem.city || "").toLowerCase().includes(search) ||
         (caseItem.status || "").toLowerCase().includes(search) ||
@@ -323,12 +309,8 @@ useEffect(() => {
   };
 
   const assignableUsersByRole = users.filter((user) => {
-    if (currentUserRole === "admin") {
-      return ["admin", "coordinator", "volunteer"].includes(user.role);
-    }
-    if (currentUserRole === "coordinator") {
-      return user.role === "volunteer" || user.id === currentUserId;
-    }
+    if (currentUserRole === "admin") return ["admin", "coordinator", "volunteer"].includes(user.role);
+    if (currentUserRole === "coordinator") return user.role === "volunteer" || user.id === currentUserId;
     return false;
   });
 
@@ -363,7 +345,7 @@ useEffect(() => {
         },
       });
       cancelCloseCase();
-      await loadCases();
+      // No manual reload needed — onSnapshot will push the update
     } catch (err) {
       setError(err.message || "Failed to close case.");
     }
@@ -388,8 +370,8 @@ useEffect(() => {
   const handleReopenCase = async (caseId) => {
     setError("");
     try {
-      const removed = await reopenCaseAndCleanConflicts(caseId);
-      await loadCases();
+      await reopenCaseAndCleanConflicts(caseId);
+      // onSnapshot handles the UI update
     } catch (err) {
       setError(err.message || "Failed to reopen case.");
     }
@@ -408,9 +390,7 @@ useEffect(() => {
       const selectedUser = users.find((user) => user.id === userId);
       const equipment = [
         ...(selected || []),
-        ...(other
-          ? other.split(",").map((item) => item.trim()).filter(Boolean)
-          : []),
+        ...(other ? other.split(",").map((item) => item.trim()).filter(Boolean) : []),
       ];
       await assignUserToCase({
         case_id: caseId,
@@ -423,6 +403,7 @@ useEffect(() => {
       setModalState({ open: false, caseId: null, userId: "", selected: [], other: "", notes: "" });
       setUserSearch("");
       setRecommendations(null);
+      setShouldCloseDrawer(true); // signal RequestsView to close the drawer
       await refreshData();
     } catch (err) {
       setError(err.message || "Failed to assign volunteer.");
@@ -435,7 +416,6 @@ useEffect(() => {
     setError("");
     try {
       await updateCaseComplexity(caseId, newComplexity);
-      await loadCases();
     } catch (err) {
       setError(err.message || "Failed to update complexity.");
     }
@@ -445,7 +425,6 @@ useEffect(() => {
     setError("");
     try {
       await updateCaseCoordinator(caseId, newCoordinatorId);
-      await loadCases();
     } catch (err) {
       setError(err.message || "Failed to update coordinator.");
     }
@@ -467,7 +446,6 @@ useEffect(() => {
       currentUserRole={currentUserRole}
       currentUserName={currentUserName}
       handleLogout={handleLogout}
-      // Cases props
       cases={cases}
       activeCases={visibleCases}
       closedCases={closedCases}
@@ -511,14 +489,15 @@ useEffect(() => {
       handleChangeComplexity={handleChangeComplexity}
       handleChangeCoordinator={handleChangeCoordinator}
       feedbackByCase={feedbackByCase}
-      // Intake forms props
       intakeForms={intakeForms}
       coordinatorNames={coordinatorNames}
       formSortDir={formSortDir}
       setFormSortDir={setFormSortDir}
       formStatusFilter={formStatusFilter}
       setFormStatusFilter={setFormStatusFilter}
-      onFormCreated={loadIntakeForms}
+      onFormCreated={() => {}} // no-op: intake forms are now live via onSnapshot
+      shouldCloseDrawer={shouldCloseDrawer}
+      onDrawerClosed={() => setShouldCloseDrawer(false)}
     />
   );
 }
