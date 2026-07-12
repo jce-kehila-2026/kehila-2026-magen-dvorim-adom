@@ -54,7 +54,7 @@ Briefly list major limitations or missing features and any workarounds.
 
 
 ## License
-Specify license (e.g., MIT) and any IP/ownership notes relevant to the non‑profit.
+This project is licensed under the MIT License. The source code is provided for the Magen Dvorim Adom organization, granting them full rights to use, modify, and manage the software for their operational needs.
 
 ## Use Case Documentation
 The detailed use case documentation for the system is available in the project Wiki.
