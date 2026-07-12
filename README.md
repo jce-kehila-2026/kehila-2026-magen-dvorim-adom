@@ -1,17 +1,16 @@
 
 # Magen Dvorim Adom 2026
-A web application designed for a non-profit organization dedicated to saving and safely relocating bees. The system enables members of the public to report cases involving bees in distress and allows organizational staff to manage cases efficiently through structured workflows.
-The system supports case intake, volunteer coordination, progress tracking, feedback collection, notifications, and statistical reporting.
+
+## Overview
+A web-based system engineered to digitize and optimize the entire bee rescue lifecycle for the organization Magen Dvorim Adom. By replacing manual, fragmented communication—such as WhatsApp messages—with an organized, role-based workflow, the platform effectively bridges the gap between the public, staff, and volunteers. The system provides a centralized hub for reporting bee-related incidents, automated volunteer dispatch, and a professional dashboard for coordinators to track missions in real-time, collect operational data, and view comprehensive statistics. By streamlining the entire rescue process, the platform enhances service efficiency, ensuring the timely resolution of distress calls and contributing to the protection of bee populations and environmental conservation.
+
 ## Contents
 - [Overview](#overview) • [Non‑Profit](#non-profit) • [Team](#team) • [Quick start](#quick-start) • [Handover](#handover) • [Privacy](#privacy) • [Contacts](#contacts)
 
-## Overview
-serves the magen dvorim adom volunteers to organiza tasks and bee saving missions.
-
 ## Non‑Profit
 - Organization: Magen Dvorim Adom  
-- Primary stakeholder(s): Name — role — email .
-- Key deliverable for them: e.g., "Simple roster export and sign-up form."
+- Primary stakeholder(s): Zeev Golan — Administrator.
+- Key deliverable: A fully integrated Bee Rescue and Volunteer Management System featuring real-time case intake, automated volunteer assignment, and a centralized operational dashboard.
 
 ## Team Introduction
 - Team lead — Aseel Janazira — Janaziraaseel@gmail.com — Aseel-zira  
@@ -28,25 +27,30 @@ Include student IDs if required.
 5. npm run dev
 Open http://localhost:3000
 
-(Or: docker-compose up --build)
-
 ## Demo / Deployment
-- Deployed app: https://your-app.example.com  
+- Deployed app: [https://magen-dvorim-adom-5024e.web.app/](https://magen-dvorim-adom-5024e.web.app)  
 - CI: GitHub Actions (push → deploy)
 
 ## Handover (minimum)
-- [ ] Deployed URL + admin credentials (shared securely)  
-- [ ] HANDOVER.md with maintenance steps  
-- [ ] Add non‑profit staff as repo collaborators or transfer repo.
+- [x] Deployed URL + admin credentials (shared securely)  
+- [x] HANDOVER.md with maintenance steps  
+- [x] Add non‑profit staff as repo collaborators or transfer repo.
 
 ## Privacy & Security
-List data collected (names, emails), storage location, and retention policy. Never commit secrets; use environment variables and GitHub secrets.
+
+We are committed to the security and privacy of our users. 
+
+*   **Data Collection:** The system collects essential information to facilitate bee rescue operations, including user names, contact emails, phone numbers, and incident location data.
+*   **Data Storage:** All operational data is securely stored and managed using **Firebase Firestore**.
+*   **Security Practices:** We adhere to industry standards for security. All sensitive API keys and credentials are kept out of the source code; they are managed exclusively through **GitHub Secrets** and local `.env` files.
 
 ## Known limitations
 Briefly list major limitations or missing features and any workarounds.
 
-## Contacts
-- Project lead: Asee Janazira — janaziraaseel@gmail.com  
+ ## Contacts
+- Aseel Janazira — janaziraaseel@gmail.com
+- Doaa Abdeen — doaaab@post.jce.ac.il 
+- Aya Diab — diabaya2004@gmail.com 
 
 
 ## License
