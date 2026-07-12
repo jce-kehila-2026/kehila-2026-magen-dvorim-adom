@@ -58,3 +58,4 @@ This project is licensed under the MIT License. The source code is provided for 
 
 ## Use Case Documentation
 The detailed use case documentation for the system is available in the project Wiki.
+https://github.com/jce-kehila-2026/kehila-2026-magen-dvorim-adom/wiki/User-Manual-and-System-Documentation
